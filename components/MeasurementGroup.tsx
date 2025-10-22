@@ -1,8 +1,6 @@
-
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Measurement, Film } from '../../types';
-import { AMBIENTES, TIPOS_APLICACAO } from '../../constants';
+import { Measurement, Film } from '../types';
+import { AMBIENTES, TIPOS_APLICACAO } from '../constants';
 import DynamicSelector from './ui/DynamicSelector';
 import Tooltip from './ui/Tooltip';
 

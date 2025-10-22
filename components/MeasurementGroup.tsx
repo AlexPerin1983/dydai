@@ -247,7 +247,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         ? `cursor-pointer ${isSelected ? 'border-blue-500 bg-blue-50/70 ring-1 ring-blue-500' : 'border-slate-200 hover:bg-slate-50/80'}`
         : 'border-slate-200';
     
-    const inputBaseClasses = "w-full text-center p-2.5 rounded-lg border text-base transition-colors duration-200";
+    const inputBaseClasses = "w-full text-center p-2 rounded-lg border text-sm transition-colors duration-200";
     
     const isDraggable = !isSelectionMode && translateX === 0 && !isModalMode;
 

@@ -576,7 +576,7 @@ const App: React.FC = () => {
         try {
             const genAI = new GoogleGenerativeAI(userInfo!.aiConfig!.apiKey);
             const model = genAI.getGenerativeModel({ 
-                model: "gemini-1.5-flash",
+                model: "gemini-2.0-flash-exp",
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: {

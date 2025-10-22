@@ -6,11 +6,10 @@ interface AIMeasurementModalProps {
     onClose: () => void;
     onProcess: (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => Promise<void>;
     isProcessing: boolean;
+    provider: 'gemini' | 'openai';
 }
 
-const MAX_IMAGES = 5;
-
-const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose, onProcess, isProcessing }) => {
+const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose, onProcess, isProcessing, provider }) => {
     const [activeTab, setActiveTab] = useState<'text' | 'image' | 'audio'>('text');
     const [text, setText] = useState('');
     const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -22,6 +21,8 @@ const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
+
+    const MAX_IMAGES = provider === 'openai' ? 1 : 5;
 
     const stopRecordingCleanup = () => {
         if (mediaRecorderRef.current?.stream) {
@@ -73,7 +74,7 @@ const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             if (imageFiles.length + newFiles.length >= MAX_IMAGES) {
-                 alert(`Você pode enviar no máximo ${MAX_IMAGES} imagens.`);
+                 alert(`Você pode enviar no máximo ${MAX_IMAGES} ${MAX_IMAGES > 1 ? 'imagens' : 'imagem'} com ${provider === 'openai' ? 'OpenAI' : 'Gemini'}.`);
                  break;
             }
             if (file && file.type.startsWith('image/')) {
@@ -201,7 +202,9 @@ const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose
                  <div className="flex space-x-2 p-1 bg-slate-100 rounded-lg">
                     <TabButton tab="text" icon="fas fa-font">Texto</TabButton>
                     <TabButton tab="image" icon="fas fa-image">Imagem</TabButton>
-                    <TabButton tab="audio" icon="fas fa-microphone">Áudio</TabButton>
+                    {provider === 'gemini' && (
+                        <TabButton tab="audio" icon="fas fa-microphone">Áudio</TabButton>
+                    )}
                 </div>
 
                 <div className="min-h-[250px] flex flex-col justify-center items-center">
@@ -258,7 +261,9 @@ const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose
                                     <label htmlFor="image-upload" className={isProcessing ? 'cursor-not-allowed' : 'cursor-pointer'}>
                                         <i className="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2"></i>
                                         <p className="text-slate-600 text-sm">Arraste e solte imagens aqui, ou <span className="font-semibold text-slate-800">clique para selecionar</span>.</p>
-                                        <p className="text-xs text-slate-500 mt-1">Até {MAX_IMAGES} imagens. Pode ser uma foto, um print ou um rascunho.</p>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            {provider === 'openai' ? 'Apenas 1 imagem por vez.' : `Até ${MAX_IMAGES} imagens.`} Pode ser uma foto, um print ou um rascunho.
+                                        </p>
                                     </label>
                                 </div>
                             )}

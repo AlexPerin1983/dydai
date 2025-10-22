@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, FormEvent } from 'react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
@@ -8,9 +7,10 @@ interface ApiKeyModalProps {
     onClose: () => void;
     onSave: (apiKey: string) => void;
     currentApiKey?: string;
+    provider: 'gemini' | 'openai';
 }
 
-const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSave, currentApiKey }) => {
+const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSave, currentApiKey, provider }) => {
     const [apiKey, setApiKey] = useState(currentApiKey || '');
 
     useEffect(() => {
@@ -23,6 +23,18 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSave, curr
         e.preventDefault();
         onSave(apiKey);
     };
+
+    const providerInfo = {
+        gemini: {
+            name: 'Google Gemini',
+            url: 'https://aistudio.google.com/app/apikey',
+        },
+        openai: {
+            name: 'OpenAI',
+            url: 'https://platform.openai.com/api-keys',
+        }
+    };
+    const currentProvider = providerInfo[provider];
 
     const footer = (
         <>
@@ -40,19 +52,19 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSave, curr
     );
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Configurar Chave de API (IA)" footer={footer}>
+        <Modal isOpen={isOpen} onClose={onClose} title={`Configurar Chave de API (${currentProvider.name})`} footer={footer}>
             <form id="apiKeyForm" onSubmit={handleSubmit} className="space-y-4">
                 <div className="text-sm text-slate-500 space-y-2">
                     <p>
-                        Esta aplicação utiliza o Google Gemini para a funcionalidade "Preencher com IA".
+                        Esta aplicação utiliza o {currentProvider.name} para a funcionalidade "Preencher com IA".
                     </p>
                     <p>
-                        No ambiente de desenvolvimento (Google AI Studio), uma chave de API de teste é utilizada por padrão. Para usar esta aplicação em produção ou de forma independente, você deve inserir sua própria chave de API. Você pode obter uma gratuitamente no <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.
+                        Você deve inserir sua própria chave de API. Você pode obter uma no site da <a href={currentProvider.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{currentProvider.name}</a>.
                     </p>
                 </div>
                 <Input
                     id="apiKey"
-                    label="Sua Chave de API do Google Gemini"
+                    label={`Sua Chave de API do ${currentProvider.name}`}
                     type="password"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}

@@ -85,7 +85,7 @@ export interface UserInfo {
     };
     employees?: Employee[];
     aiConfig?: {
-        provider: 'gemini';
+        provider: 'gemini' | 'openai';
         apiKey: string;
     };
 }

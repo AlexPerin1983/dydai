@@ -155,6 +155,16 @@ const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, o
         setIsSignatureModalOpen(false);
     };
 
+    const handleProviderChange = (provider: 'gemini' | 'openai') => {
+        setFormData(prev => ({
+            ...prev,
+            aiConfig: {
+                ...(prev.aiConfig || { apiKey: '' }),
+                provider: provider,
+            }
+        }));
+    };
+
     const labelClass = "block text-sm font-medium text-slate-700 mb-1";
     const sectionTitleClass = "text-lg font-semibold text-slate-800";
     const sectionClass = "pt-6 mt-6 border-t border-slate-200";
@@ -382,8 +392,27 @@ const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, o
             <div className={sectionClass}>
                 <h3 className={sectionTitleClass}>Inteligência Artificial (IA)</h3>
                 <p className="text-sm text-slate-500 mt-2">
-                    Configure sua chave de API do Google Gemini para habilitar funcionalidades como o preenchimento automático de medidas.
+                    Escolha o provedor de IA e configure sua chave de API para habilitar funcionalidades como o preenchimento automático de medidas.
                 </p>
+                <div className="mt-4">
+                    <label className={labelClass}>Provedor de IA</label>
+                    <div className="flex space-x-2 p-1 bg-slate-100 rounded-lg mt-1">
+                        <button
+                            type="button"
+                            onClick={() => handleProviderChange('gemini')}
+                            className={`flex-1 px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-200 ${formData.aiConfig?.provider === 'gemini' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
+                        >
+                            Google Gemini
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleProviderChange('openai')}
+                            className={`flex-1 px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-200 ${formData.aiConfig?.provider === 'openai' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
+                        >
+                            OpenAI
+                        </button>
+                    </div>
+                </div>
                 <div className="mt-4">
                     <button
                         type="button"

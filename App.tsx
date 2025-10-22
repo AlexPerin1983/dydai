@@ -587,16 +587,9 @@ const App: React.FC = () => {
         });
     };
 
-    const handleProcessAIInput = async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
-        if (!userInfo?.aiConfig?.apiKey) {
-            alert("Por favor, configure sua chave de API do Google Gemini na aba 'Empresa' para usar esta funcionalidade.");
-            return;
-        }
-    
-        setIsProcessingAI(true);
-    
+    const processWithGemini = async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
         try {
-            const ai = new GoogleGenAI({ apiKey: userInfo.aiConfig.apiKey });
+            const ai = new GoogleGenAI({ apiKey: userInfo!.aiConfig!.apiKey });
             
             const schema = {
                 type: Type.ARRAY,
@@ -667,10 +660,135 @@ const App: React.FC = () => {
             } else {
                 throw new Error("A resposta da IA não está no formato esperado.");
             }
-    
         } catch (error) {
-            console.error("Erro ao processar com IA:", error);
-            alert(`Ocorreu um erro: ${error instanceof Error ? error.message : String(error)}`);
+            console.error("Erro ao processar com Gemini:", error);
+            alert(`Ocorreu um erro com Gemini: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    };
+
+    const processWithOpenAI = async (input: { type: 'text' | 'image'; data: string | File[] }) => {
+        try {
+            const prompt = `Você é um assistente especialista para uma empresa de instalação de películas de vidro. Sua tarefa é extrair dados de medidas da entrada fornecida pelo usuário. Extraia as seguintes informações para cada medida: largura, altura, quantidade e uma descrição do ambiente/local (ex: "sala", "quarto", "janela da cozinha"). As medidas estão em metros. Se o usuário disser '1 e meio por 2', interprete como 1,50m por 2,00m. Sempre formate as medidas com duas casas decimais e vírgula como separador. O ambiente deve ser uma descrição curta e útil.`;
+
+            const tools = [
+                {
+                    type: "function" as const,
+                    function: {
+                        name: "extract_measurements",
+                        description: "Extrai os dados de medidas da entrada do usuário.",
+                        parameters: {
+                            type: "object",
+                            properties: {
+                                measurements: {
+                                    type: "array",
+                                    items: {
+                                        type: "object",
+                                        properties: {
+                                            largura: { type: "string", description: "Largura em metros, com vírgula. Ex: '1,50'" },
+                                            altura: { type: "string", description: "Altura em metros, com vírgula. Ex: '2,10'" },
+                                            quantidade: { type: "number", description: "Quantidade de itens." },
+                                            ambiente: { type: "string", description: "Local do item. Ex: 'Janela da Sala'" }
+                                        },
+                                        required: ["largura", "altura", "quantidade", "ambiente"]
+                                    }
+                                }
+                            },
+                            required: ["measurements"]
+                        }
+                    }
+                }
+            ];
+
+            let userContent: any;
+
+            if (input.type === 'text') {
+                userContent = [{ type: 'text', text: input.data as string }];
+            } else if (input.type === 'image') {
+                const file = (input.data as File[])[0];
+                const { mimeType, data } = await blobToBase64(file);
+                userContent = [
+                    { type: 'text', text: 'Extraia as medidas desta imagem.' },
+                    { type: 'image_url', image_url: { url: `data:${mimeType};base64,${data}` } }
+                ];
+            }
+
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userInfo!.aiConfig!.apiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o',
+                    messages: [
+                        { role: 'system', content: prompt },
+                        { role: 'user', content: userContent }
+                    ],
+                    tools: tools,
+                    tool_choice: { "type": "function", "function": { "name": "extract_measurements" } }
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`OpenAI API Error: ${errorData.error.message}`);
+            }
+
+            const data = await response.json();
+            const toolCall = data.choices[0].message.tool_calls?.[0];
+
+            if (!toolCall || toolCall.type !== 'function') {
+                throw new Error("A resposta da IA (OpenAI) não continha os dados esperados.");
+            }
+
+            const extractedData = JSON.parse(toolCall.function.arguments);
+            const newMeasurementsData = extractedData.measurements || [];
+
+            if (Array.isArray(newMeasurementsData) && newMeasurementsData.length > 0) {
+                const newMeasurements: UIMeasurement[] = newMeasurementsData.map((item: any, index: number) => ({
+                    id: Date.now() + index,
+                    largura: item.largura || '',
+                    altura: item.altura || '',
+                    quantidade: item.quantidade || 1,
+                    ambiente: item.ambiente || 'Desconhecido',
+                    tipoAplicacao: 'Desconhecido',
+                    pelicula: films[0]?.nome || 'Nenhuma',
+                    active: true,
+                    isNew: index === 0,
+                    discount: 0,
+                    discountType: 'percentage',
+                }));
+    
+                handleMeasurementsChange([...newMeasurements, ...measurements.map(m => ({...m, isNew: false}))]);
+                setIsAIMeasurementModalOpen(false);
+            } else {
+                alert("Nenhuma medida foi extraída com OpenAI. Tente novamente com mais detalhes.");
+            }
+
+        } catch (error) {
+            console.error("Erro ao processar com OpenAI:", error);
+            alert(`Ocorreu um erro com OpenAI: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    const handleProcessAIInput = async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
+        if (!userInfo?.aiConfig?.apiKey || !userInfo?.aiConfig?.provider) {
+            alert("Por favor, configure seu provedor e chave de API na aba 'Empresa' para usar esta funcionalidade.");
+            return;
+        }
+    
+        setIsProcessingAI(true);
+    
+        try {
+            if (userInfo.aiConfig.provider === 'gemini') {
+                await processWithGemini(input);
+            } else if (userInfo.aiConfig.provider === 'openai') {
+                if (input.type === 'audio') {
+                    alert("O provedor OpenAI não suporta entrada de áudio nesta aplicação.");
+                    return;
+                }
+                await processWithOpenAI(input as { type: 'text' | 'image'; data: string | File[] });
+            }
         } finally {
             setIsProcessingAI(false);
         }
@@ -1161,7 +1279,7 @@ const App: React.FC = () => {
             const updatedUserInfo = {
                 ...userInfo,
                 aiConfig: {
-                    provider: 'gemini' as const,
+                    ...(userInfo.aiConfig || { provider: 'gemini' }),
                     apiKey: apiKey,
                 }
             };
@@ -1612,6 +1730,7 @@ const App: React.FC = () => {
                     onClose={() => setIsAIMeasurementModalOpen(false)}
                     onProcess={handleProcessAIInput}
                     isProcessing={isProcessingAI}
+                    provider={userInfo?.aiConfig?.provider || 'gemini'}
                 />
             )}
             {isApiKeyModalOpen && userInfo && (
@@ -1620,6 +1739,7 @@ const App: React.FC = () => {
                     onClose={() => setIsApiKeyModalOpen(false)}
                     onSave={handleSaveApiKey}
                     currentApiKey={userInfo.aiConfig?.apiKey}
+                    provider={userInfo.aiConfig?.provider || 'gemini'}
                 />
             )}
             {numpadConfig.isOpen && (

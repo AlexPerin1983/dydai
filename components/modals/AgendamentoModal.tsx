@@ -4,7 +4,7 @@ import { SchedulingInfo } from '../../App';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import SearchableSelect from '../ui/SearchableSelect';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 interface AgendamentoModalProps {
     isOpen: boolean;
@@ -36,9 +36,6 @@ const StatusBadge: React.FC<{ status?: SavedPDF['status'] }> = ({ status = 'pend
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-// FIX: Added a helper function to construct a full address from the Client object's
-// structured address fields, resolving the error where 'client.endereco' was used
-// after being refactored.
 const formatClientAddress = (client: Client): string => {
     const parts = [
         client.logradouro,
@@ -119,8 +116,6 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
         }
 
         const client = clients.find(c => c.id === selectedClientId);
-        // FIX: The 'Client' type's 'endereco' property was refactored into structured fields.
-        // This creates a full address string for use in the AI prompt.
         const clientAddress = client ? formatClientAddress(client) : '';
         if (!client || !clientAddress.trim()) {
              setValidationError("O cliente selecionado precisa ter um endereço cadastrado para a otimização de rota.");
@@ -129,10 +124,8 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
         }
 
         try {
-            // FIX: Add optional chaining to prevent runtime error if userInfo is null.
             const companyAddress = userInfo?.endereco || 'Endereço da empresa não configurado';
             const newClientAddress = clientAddress;
-            // FIX: Ensure Map is correctly typed to prevent type inference issues.
             const clientsById: Map<number, Client> = new Map(clients.filter(c => c.id != null).map(c => [c.id!, c]));
 
             const appointmentsOnDate = agendamentos
@@ -167,28 +160,30 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
                 **Formato da Resposta:**
                 Responda APENAS com um objeto JSON válido que corresponda ao schema fornecido.
             `;
-
-            const schema = {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        startTime: { type: Type.STRING, description: 'Horário de início sugerido no formato "HH:mm".' },
-                        endTime: { type: Type.STRING, description: 'Horário de término sugerido no formato "HH:mm".' },
-                        reason: { type: Type.STRING, description: 'Breve justificativa para a sugestão.' },
-                    },
-                    required: ['startTime', 'endTime', 'reason']
-                }
-            };
             
-            const ai = new GoogleGenAI({ apiKey: userInfo.aiConfig.apiKey });
-            const response = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
-                contents: prompt,
-                config: { responseMimeType: "application/json", responseSchema: schema }
+            const genAI = new GoogleGenerativeAI(userInfo.aiConfig.apiKey);
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-1.5-flash",
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "array" as const,
+                        items: {
+                            type: "object" as const,
+                            properties: {
+                                startTime: { type: "string" as const, description: 'Horário de início sugerido no formato "HH:mm".' },
+                                endTime: { type: "string" as const, description: 'Horário de término sugerido no formato "HH:mm".' },
+                                reason: { type: "string" as const, description: 'Breve justificativa para a sugestão.' },
+                            },
+                            required: ['startTime', 'endTime', 'reason']
+                        }
+                    }
+                }
             });
             
-            const suggestions = JSON.parse(response.text.trim());
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const suggestions = JSON.parse(response.text());
             setAiSuggestions(suggestions);
 
         } catch (error) {

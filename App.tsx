@@ -21,7 +21,7 @@ import AgendamentoModal from './components/modals/AgendamentoModal';
 import DiscountModal from './components/modals/DiscountModal';
 import AIMeasurementModal from './components/modals/AIMeasurementModal';
 import ApiKeyModal from './components/modals/ApiKeyModal';
-import { GoogleGenAI, Type, Part } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 
 const UserSettingsView = lazy(() => import('./components/views/UserSettingsView'));
@@ -590,21 +590,38 @@ const App: React.FC = () => {
 
     const processWithGemini = async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
         try {
-            const ai = new GoogleGenAI({ apiKey: userInfo!.aiConfig!.apiKey });
-            
-            const schema = {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        largura: { type: Type.STRING, description: 'Largura em metros, com vírgula como separador decimal. Ex: "1,50"' },
-                        altura: { type: Type.STRING, description: 'Altura em metros, com vírgula como separador decimal. Ex: "2,10"' },
-                        quantidade: { type: Type.NUMBER, description: 'A quantidade de itens com essa medida.' },
-                        ambiente: { type: Type.STRING, description: 'O local ou descrição do item. Ex: "Janela da Sala", "Porta do Quarto"' },
-                    },
-                    required: ['largura', 'altura', 'quantidade', 'ambiente'],
-                },
-            };
+            const genAI = new GoogleGenerativeAI(userInfo!.aiConfig!.apiKey);
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-1.5-flash",
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "array" as const,
+                        items: {
+                            type: "object" as const,
+                            properties: {
+                                largura: { 
+                                    type: "string" as const, 
+                                    description: 'Largura em metros, com vírgula como separador decimal. Ex: "1,50"' 
+                                },
+                                altura: { 
+                                    type: "string" as const, 
+                                    description: 'Altura em metros, com vírgula como separador decimal. Ex: "2,10"' 
+                                },
+                                quantidade: { 
+                                    type: "number" as const, 
+                                    description: 'A quantidade de itens com essa medida.' 
+                                },
+                                ambiente: { 
+                                    type: "string" as const, 
+                                    description: 'O local ou descrição do item. Ex: "Janela da Sala", "Porta do Quarto"' 
+                                },
+                            },
+                            required: ['largura', 'altura', 'quantidade', 'ambiente'],
+                        },
+                    }
+                }
+            });
     
             const prompt = `
                 Você é um assistente especialista para uma empresa de instalação de películas de vidro. Sua tarefa é extrair dados de medidas de uma entrada fornecida pelo usuário.
@@ -615,10 +632,10 @@ const App: React.FC = () => {
                 Responda APENAS com um objeto JSON válido que corresponda ao schema fornecido. Não inclua nenhuma outra explicação ou texto.
             `;
     
-            const parts: Part[] = [{ text: prompt }];
+            const parts: any[] = [prompt];
     
             if (input.type === 'text') {
-                parts.push({ text: input.data as string });
+                parts.push(input.data as string);
             } else if (input.type === 'image') {
                 for (const file of input.data as File[]) {
                     const { mimeType, data } = await blobToBase64(file);
@@ -629,13 +646,9 @@ const App: React.FC = () => {
                 parts.push({ inlineData: { mimeType, data } });
             }
     
-            const response = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
-                contents: [{ role: "user", parts }],
-                config: { responseMimeType: "application/json", responseSchema: schema }
-            });
-    
-            const extractedData = JSON.parse(response.text.trim());
+            const result = await model.generateContent(parts);
+            const response = await result.response;
+            const extractedData = JSON.parse(response.text());
     
             if (Array.isArray(extractedData)) {
                 const newMeasurements: UIMeasurement[] = extractedData.map((item: any, index: number) => ({

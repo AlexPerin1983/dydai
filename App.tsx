@@ -91,6 +91,7 @@ const App: React.FC = () => {
     const [isAIMeasurementModalOpen, setIsAIMeasurementModalOpen] = useState(false);
     const [isProcessingAI, setIsProcessingAI] = useState(false);
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+    const [apiKeyModalProvider, setApiKeyModalProvider] = useState<'gemini' | 'openai'>('gemini');
 
     const [numpadConfig, setNumpadConfig] = useState<NumpadConfig>({
         isOpen: false,
@@ -1274,19 +1275,25 @@ const App: React.FC = () => {
         handleCloseDiscountModal();
     }, [editingMeasurementForDiscount, measurements, handleMeasurementsChange, handleCloseDiscountModal]);
 
+    const handleOpenApiKeyModal = useCallback((provider: 'gemini' | 'openai') => {
+        setApiKeyModalProvider(provider);
+        setIsApiKeyModalOpen(true);
+    }, []);
+
     const handleSaveApiKey = useCallback(async (apiKey: string) => {
         if (userInfo) {
             const updatedUserInfo = {
                 ...userInfo,
                 aiConfig: {
                     ...(userInfo.aiConfig || { provider: 'gemini' }),
+                    provider: apiKeyModalProvider,
                     apiKey: apiKey,
                 }
             };
             await handleSaveUserInfo(updatedUserInfo);
             setIsApiKeyModalOpen(false);
         }
-    }, [userInfo, handleSaveUserInfo]);
+    }, [userInfo, handleSaveUserInfo, apiKeyModalProvider]);
 
 
     const LoadingSpinner = () => (
@@ -1308,7 +1315,7 @@ const App: React.FC = () => {
                             userInfo={userInfo}
                             onSave={handleSaveUserInfo}
                             onOpenPaymentMethods={() => setIsPaymentModalOpen(true)}
-                            onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+                            onOpenApiKeyModal={handleOpenApiKeyModal}
                         />
                     </Suspense>
                 );
@@ -1738,8 +1745,8 @@ const App: React.FC = () => {
                     isOpen={isApiKeyModalOpen}
                     onClose={() => setIsApiKeyModalOpen(false)}
                     onSave={handleSaveApiKey}
-                    currentApiKey={userInfo.aiConfig?.apiKey}
-                    provider={userInfo.aiConfig?.provider || 'gemini'}
+                    currentApiKey={userInfo.aiConfig?.provider === apiKeyModalProvider ? userInfo.aiConfig?.apiKey : ''}
+                    provider={apiKeyModalProvider}
                 />
             )}
             {numpadConfig.isOpen && (

@@ -8,7 +8,7 @@ interface UserSettingsViewProps {
     userInfo: UserInfo;
     onSave: (userInfo: UserInfo) => void;
     onOpenPaymentMethods: () => void;
-    onOpenApiKeyModal: () => void;
+    onOpenApiKeyModal: (provider: 'gemini' | 'openai') => void;
 }
 
 const applyPhoneMask = (value: string) => {
@@ -416,7 +416,7 @@ const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, o
                 <div className="mt-4">
                     <button
                         type="button"
-                        onClick={onOpenApiKeyModal}
+                        onClick={() => onOpenApiKeyModal(formData.aiConfig?.provider || 'gemini')}
                         className="w-full px-4 py-3 bg-slate-100 text-slate-700 font-semibold rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
                     >
                         <i className="fas fa-key"></i>

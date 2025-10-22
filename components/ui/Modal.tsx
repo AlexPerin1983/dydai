@@ -6,13 +6,14 @@ interface ModalProps {
     title: ReactNode;
     children: ReactNode;
     footer?: ReactNode;
+    wrapperClassName?: string;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, wrapperClassName }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center transition-opacity duration-300 ease-in-out z-50 p-4">
+        <div className={`fixed inset-0 bg-black/60 flex items-center justify-center transition-opacity duration-300 ease-in-out z-50 p-4 ${wrapperClassName || ''}`}>
             <div className="bg-white rounded-lg shadow-xl transform transition-transform duration-300 ease-in-out max-w-lg w-full mx-4 sm:mx-0 scale-100 flex flex-col">
                 <div className="flex justify-between items-center p-4 border-b border-slate-200">
                     <h2 className="text-xl font-semibold text-slate-800 flex-grow min-w-0">{title}</h2>

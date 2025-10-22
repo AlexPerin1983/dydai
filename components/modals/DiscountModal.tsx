@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, FormEvent } from 'react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
@@ -51,7 +50,13 @@ const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose, onSave, 
     );
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Aplicar Desconto no Item" footer={footer}>
+        <Modal 
+            isOpen={isOpen} 
+            onClose={onClose} 
+            title="Aplicar Desconto no Item" 
+            footer={footer}
+            wrapperClassName="sm:items-center items-start pt-20 sm:pt-4"
+        >
             <form id="discountForm" onSubmit={handleSubmit} className="space-y-4">
                  <div>
                     <label className="block text-sm font-medium text-slate-600">Valor do Desconto</label>

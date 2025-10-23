@@ -20,7 +20,9 @@ const ProposalOptionsTabs: React.FC<ProposalOptionsTabsProps> = ({
 }) => {
     const [editingOptionId, setEditingOptionId] = useState<number | null>(null);
     const [editingName, setEditingName] = useState('');
+    const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const previousActiveIdRef = useRef<number>(activeOptionId);
 
     useEffect(() => {
         if (editingOptionId !== null && inputRef.current) {
@@ -28,6 +30,23 @@ const ProposalOptionsTabs: React.FC<ProposalOptionsTabsProps> = ({
             inputRef.current.select();
         }
     }, [editingOptionId]);
+
+    useEffect(() => {
+        if (previousActiveIdRef.current !== activeOptionId) {
+            const previousIndex = options.findIndex(opt => opt.id === previousActiveIdRef.current);
+            const currentIndex = options.findIndex(opt => opt.id === activeOptionId);
+            
+            if (previousIndex !== -1 && currentIndex !== -1) {
+                setSwipeDirection(currentIndex > previousIndex ? 'left' : 'right');
+                
+                setTimeout(() => {
+                    setSwipeDirection(null);
+                }, 300);
+            }
+            
+            previousActiveIdRef.current = activeOptionId;
+        }
+    }, [activeOptionId, options]);
 
     const handleStartEdit = (option: ProposalOption, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -57,72 +76,104 @@ const ProposalOptionsTabs: React.FC<ProposalOptionsTabsProps> = ({
     };
 
     return (
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-4 border-b border-slate-200">
-            {options.map((option) => (
-                <div
-                    key={option.id}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors cursor-pointer flex-shrink-0 ${
-                        activeOptionId === option.id
-                            ? 'bg-slate-800 text-white shadow-sm'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                >
-                    {editingOptionId === option.id ? (
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={editingName}
-                            onChange={(e) => setEditingName(e.target.value)}
-                            onBlur={handleSaveEdit}
-                            onKeyDown={handleKeyDown}
-                            className="w-24 px-2 py-1 text-sm bg-white text-slate-800 border border-slate-300 rounded"
-                            onClick={(e) => e.stopPropagation()}
-                        />
-                    ) : (
-                        <span
-                            onClick={() => onSelectOption(option.id)}
-                            className="text-sm font-semibold"
-                        >
-                            {option.name}
-                        </span>
-                    )}
-                    
-                    {activeOptionId === option.id && editingOptionId !== option.id && (
-                        <div className="flex items-center gap-1">
-                            <button
-                                onClick={(e) => handleStartEdit(option, e)}
-                                className="w-6 h-6 flex items-center justify-center rounded hover:bg-slate-700 transition-colors"
-                                aria-label="Renomear opção"
+        <>
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-4 border-b border-slate-200">
+                {options.map((option) => (
+                    <div
+                        key={option.id}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors cursor-pointer flex-shrink-0 ${
+                            activeOptionId === option.id
+                                ? 'bg-slate-800 text-white shadow-sm'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                    >
+                        {editingOptionId === option.id ? (
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                onBlur={handleSaveEdit}
+                                onKeyDown={handleKeyDown}
+                                className="w-24 px-2 py-1 text-sm bg-white text-slate-800 border border-slate-300 rounded"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        ) : (
+                            <span
+                                onClick={() => onSelectOption(option.id)}
+                                className="text-sm font-semibold"
                             >
-                                <i className="fas fa-pen text-xs"></i>
-                            </button>
-                            {options.length > 1 && (
+                                {option.name}
+                            </span>
+                        )}
+                        
+                        {activeOptionId === option.id && editingOptionId !== option.id && (
+                            <div className="flex items-center gap-1">
                                 <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (window.confirm(`Excluir a opção "${option.name}"?`)) {
-                                            onDeleteOption(option.id);
-                                        }
-                                    }}
-                                    className="w-6 h-6 flex items-center justify-center rounded hover:bg-red-600 transition-colors"
-                                    aria-label="Excluir opção"
+                                    onClick={(e) => handleStartEdit(option, e)}
+                                    className="w-6 h-6 flex items-center justify-center rounded hover:bg-slate-700 transition-colors"
+                                    aria-label="Renomear opção"
                                 >
-                                    <i className="fas fa-times text-xs"></i>
+                                    <i className="fas fa-pen text-xs"></i>
                                 </button>
-                            )}
-                        </div>
-                    )}
-                </div>
-            ))}
+                                {options.length > 1 && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (window.confirm(`Excluir a opção "${option.name}"?`)) {
+                                                onDeleteOption(option.id);
+                                            }
+                                        }}
+                                        className="w-6 h-6 flex items-center justify-center rounded hover:bg-red-600 transition-colors"
+                                        aria-label="Excluir opção"
+                                    >
+                                        <i className="fas fa-times text-xs"></i>
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                ))}
+                
+                <button
+                    onClick={onAddOption}
+                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors"
+                    aria-label="Adicionar nova opção"
+                >
+                    <i className="fas fa-plus text-sm"></i>
+                </button>
+            </div>
             
-            <button
-                onClick={onAddOption}
-                className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors"
-                aria-label="Adicionar nova opção"
-            >
-                <i className="fas fa-plus text-sm"></i>
-            </button>
-        </div>
+            {swipeDirection && (
+                <style jsx>{`
+                    @keyframes swipe-in-from-right {
+                        from {
+                            opacity: 0;
+                            transform: translateX(30px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateX(0);
+                        }
+                    }
+                    
+                    @keyframes swipe-in-from-left {
+                        from {
+                            opacity: 0;
+                            transform: translateX(-30px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateX(0);
+                        }
+                    }
+                    
+                    :global(#contentContainer) {
+                        animation: ${swipeDirection === 'left' ? 'swipe-in-from-right' : 'swipe-in-from-left'} 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                    }
+                `}</style>
+            )}
+        </>
     );
 };
 

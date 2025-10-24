@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface Totals {
     totalM2: number;
@@ -37,28 +37,53 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
     onOpenAIModal
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    const discountInputRef = useRef<HTMLInputElement>(null);
-    const wasFocusedRef = useRef(false);
+    const [localDiscountValue, setLocalDiscountValue] = useState(generalDiscount.value);
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Sync local state when prop changes externally
     useEffect(() => {
-        if (wasFocusedRef.current && discountInputRef.current) {
-            discountInputRef.current.focus();
-            wasFocusedRef.current = false;
-        }
-    });
+        setLocalDiscountValue(generalDiscount.value);
+    }, [generalDiscount.value]);
 
     const handleDiscountValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        wasFocusedRef.current = true;
         const { value } = e.target;
         const isValidFormat = /^[0-9]*[.,]?[0-9]*$/.test(value);
+        
         if (isValidFormat) {
-            onGeneralDiscountChange({ ...generalDiscount, value });
+            setLocalDiscountValue(value);
+            
+            // Clear existing timer
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+            
+            // Set new timer to propagate change after 500ms
+            debounceTimerRef.current = setTimeout(() => {
+                onGeneralDiscountChange({ ...generalDiscount, value });
+            }, 500);
         }
+    };
+    
+    const handleDiscountBlur = () => {
+        // Immediately propagate on blur
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+        onGeneralDiscountChange({ ...generalDiscount, value: localDiscountValue });
     };
     
     const handleDiscountTypeChange = (type: 'percentage' | 'fixed') => {
         onGeneralDiscountChange({ ...generalDiscount, type });
     };
+
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
+    }, []);
 
     const SummaryRow: React.FC<{label: string; value: string, className?: string}> = ({label, value, className}) => (
         <div className={`flex justify-between items-center text-sm ${className}`}>
@@ -72,10 +97,10 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
             <label className="block text-sm font-medium text-slate-600">Desconto Geral</label>
             <div className="mt-1 flex">
                 <input
-                    ref={discountInputRef}
                     type="text"
-                    value={generalDiscount.value}
+                    value={localDiscountValue}
                     onChange={handleDiscountValueChange}
+                    onBlur={handleDiscountBlur}
                     className="w-full p-2 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-l-md shadow-sm focus:ring-slate-500 focus:border-slate-500 sm:text-sm"
                     placeholder="0"
                     inputMode="decimal"

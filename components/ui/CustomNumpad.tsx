@@ -88,29 +88,23 @@ const CustomNumpad = forwardRef<HTMLDivElement, CustomNumpadProps>(({ onInput, o
                     </NumpadButton>
                 </div>
                 
-                {/* Barra de Ações - Distribuição equitativa */}
-                <div className="mt-3 flex justify-between items-center w-full relative">
-                    {/* Extremidade esquerda */}
-                    <div className="flex items-center gap-2">
-                        <IconButton action={onDuplicate} ariaLabel="Duplicar medida" icon="fas fa-copy" />
-                        <IconButton action={onClear} ariaLabel="Limpar campos" icon="fas fa-eraser" />
-                    </div>
+                {/* Barra de Ações - Distribuição uniforme */}
+                <div className="mt-3 grid grid-cols-5 gap-2">
+                    <IconButton action={onDuplicate} ariaLabel="Duplicar medida" icon="fas fa-copy" />
+                    <IconButton action={onClear} ariaLabel="Limpar campos" icon="fas fa-eraser" />
                     
-                    {/* Centro (Botão de Fechar) */}
-                    <div className="absolute left-1/2 transform -translate-x-1/2">
+                    {/* Espaço central para o botão de fechar */}
+                    <div className="col-span-1 flex justify-center">
                         <IconButton action={onClose} ariaLabel="Recolher teclado" icon="fas fa-chevron-down" />
                     </div>
 
-                    {/* Extremidade direita */}
-                    <div className="flex items-center gap-2">
-                        <IconButton action={onAddGroup} ariaLabel="Novo grupo" icon="fas fa-plus" />
-                        <IconButton
-                            action={onDone}
-                            ariaLabel={isLastField ? "Confirmar entrada" : "Próximo campo"}
-                            icon={isLastField ? "fas fa-check" : "fas fa-arrow-right"}
-                            isPrimary
-                        />
-                    </div>
+                    <IconButton action={onAddGroup} ariaLabel="Novo grupo" icon="fas fa-plus" />
+                    <IconButton
+                        action={onDone}
+                        ariaLabel={isLastField ? "Confirmar entrada" : "Próximo campo"}
+                        icon={isLastField ? "fas fa-check" : "fas fa-arrow-right"}
+                        isPrimary
+                    />
                 </div>
             </div>
              <style jsx>{`

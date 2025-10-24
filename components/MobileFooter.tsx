@@ -37,53 +37,70 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
     onOpenAIModal
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    const [localDiscountValue, setLocalDiscountValue] = useState(generalDiscount.value);
-    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const [localValue, setLocalValue] = useState(generalDiscount.value);
+    const debounceRef = useRef<NodeJS.Timeout>();
+    const isTypingRef = useRef(false);
 
-    // Sync local state when prop changes externally
+    // Sync from parent only when NOT typing
     useEffect(() => {
-        setLocalDiscountValue(generalDiscount.value);
+        if (!isTypingRef.current) {
+            setLocalValue(generalDiscount.value);
+        }
     }, [generalDiscount.value]);
 
-    const handleDiscountValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { value } = e.target;
-        const isValidFormat = /^[0-9]*[.,]?[0-9]*$/.test(value);
-        
-        if (isValidFormat) {
-            setLocalDiscountValue(value);
-            
-            // Clear existing timer
-            if (debounceTimerRef.current) {
-                clearTimeout(debounceTimerRef.current);
-            }
-            
-            // Set new timer to propagate change after 500ms
-            debounceTimerRef.current = setTimeout(() => {
-                onGeneralDiscountChange({ ...generalDiscount, value });
-            }, 500);
-        }
-    };
-    
-    const handleDiscountBlur = () => {
-        // Immediately propagate on blur
-        if (debounceTimerRef.current) {
-            clearTimeout(debounceTimerRef.current);
-        }
-        onGeneralDiscountChange({ ...generalDiscount, value: localDiscountValue });
-    };
-    
-    const handleDiscountTypeChange = (type: 'percentage' | 'fixed') => {
-        onGeneralDiscountChange({ ...generalDiscount, type });
-    };
-
-    // Cleanup timer on unmount
+    // Cleanup on unmount
     useEffect(() => {
         return () => {
-            if (debounceTimerRef.current) {
-                clearTimeout(debounceTimerRef.current);
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
             }
         };
     }, []);
+
+    const propagateChange = (value: string) => {
+        onGeneralDiscountChange({ ...generalDiscount, value });
+        isTypingRef.current = false;
+    };
+
+    const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        
+        // Validate format
+        if (!/^[0-9]*[.,]?[0-9]*$/.test(value)) {
+            return;
+        }
+
+        // Update local state immediately
+        setLocalValue(value);
+        isTypingRef.current = true;
+
+        // Clear existing debounce
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
+        // Debounce propagation
+        debounceRef.current = setTimeout(() => {
+            propagateChange(value);
+        }, 800);
+    };
+
+    const handleBlur = () => {
+        // Clear debounce and propagate immediately on blur
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+        propagateChange(localValue);
+    };
+
+    const handleTypeChange = (type: 'percentage' | 'fixed') => {
+        // Propagate type change immediately
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+        onGeneralDiscountChange({ value: localValue, type });
+        isTypingRef.current = false;
+    };
 
     const SummaryRow: React.FC<{label: string; value: string, className?: string}> = ({label, value, className}) => (
         <div className={`flex justify-between items-center text-sm ${className}`}>
@@ -94,22 +111,30 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
 
     const DiscountControls = () => (
         <div className="mt-4 pt-4 border-t border-slate-200">
-            <label className="block text-sm font-medium text-slate-600">Desconto Geral</label>
-            <div className="mt-1 flex">
+            <label className="block text-sm font-medium text-slate-600 mb-1">Desconto Geral</label>
+            <div className="flex">
                 <input
                     type="text"
-                    value={localDiscountValue}
-                    onChange={handleDiscountValueChange}
-                    onBlur={handleDiscountBlur}
-                    className="w-full p-2 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-l-md shadow-sm focus:ring-slate-500 focus:border-slate-500 sm:text-sm"
+                    value={localValue}
+                    onChange={handleValueChange}
+                    onBlur={handleBlur}
+                    className="w-full p-2 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-l-md shadow-sm focus:ring-slate-500 focus:border-slate-500 text-sm"
                     placeholder="0"
                     inputMode="decimal"
                 />
                 <div className="flex">
-                    <button type="button" onClick={() => handleDiscountTypeChange('percentage')} className={`px-4 py-2 text-sm font-semibold border-t border-b ${generalDiscount.type === 'percentage' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}>
+                    <button 
+                        type="button" 
+                        onClick={() => handleTypeChange('percentage')} 
+                        className={`px-4 py-2 text-sm font-semibold border-t border-b transition-colors ${generalDiscount.type === 'percentage' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
+                    >
                         %
                     </button>
-                    <button type="button" onClick={() => handleDiscountTypeChange('fixed')} className={`px-4 py-2 text-sm font-semibold border rounded-r-md ${generalDiscount.type === 'fixed' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}>
+                    <button 
+                        type="button" 
+                        onClick={() => handleTypeChange('fixed')} 
+                        className={`px-4 py-2 text-sm font-semibold border rounded-r-md transition-colors ${generalDiscount.type === 'fixed' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
+                    >
                         R$
                     </button>
                 </div>
@@ -149,7 +174,6 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
         }
         return <ActionButton onClick={onGeneratePdf} label="Gerar PDF" icon="fas fa-file-pdf" />;
     };
-
 
     return (
         <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm shadow-[0_-8px_20px_rgba(0,0,0,0.1)] border-t border-slate-200 z-30">

@@ -100,6 +100,8 @@ export const useNumpad = (
 
             if (isWidthOrHeight && matchesPattern) {
                 const finalValue = newValue.replace('.', ',');
+                
+                // SALVAR EM TEMPO REAL APENAS SE FOR O PADRÃO COMPLETO X.XX
                 const measurementsWithSavedValue = measurements.map(m =>
                     m.id === prev.measurementId ? { ...m, [prev.field!]: finalValue } : m
                 );
@@ -124,6 +126,13 @@ export const useNumpad = (
                 } else {
                     return { isOpen: false, measurementId: null, field: null, currentValue: '', shouldClearOnNextInput: false };
                 }
+            } else if (prev.field === 'quantidade') {
+                // Para quantidade, salvamos o inteiro em tempo real
+                const finalQty = parseInt(newValue, 10) || 0;
+                const measurementsWithSavedValue = measurements.map(m =>
+                    m.id === prev.measurementId ? { ...m, quantidade: finalQty } : m
+                );
+                onMeasurementsChange(measurementsWithSavedValue);
             }
 
             // FIX: Desativar shouldClearOnNextInput após o primeiro caractere digitado, a menos que seja um ponto/vírgula

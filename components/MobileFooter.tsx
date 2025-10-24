@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface Totals {
     totalM2: number;
@@ -37,8 +37,18 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
     onOpenAIModal
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const discountInputRef = useRef<HTMLInputElement>(null);
+    const wasFocusedRef = useRef(false);
+
+    useEffect(() => {
+        if (wasFocusedRef.current && discountInputRef.current) {
+            discountInputRef.current.focus();
+            wasFocusedRef.current = false;
+        }
+    });
 
     const handleDiscountValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        wasFocusedRef.current = true;
         const { value } = e.target;
         const isValidFormat = /^[0-9]*[.,]?[0-9]*$/.test(value);
         if (isValidFormat) {
@@ -62,6 +72,7 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
             <label className="block text-sm font-medium text-slate-600">Desconto Geral</label>
             <div className="mt-1 flex">
                 <input
+                    ref={discountInputRef}
                     type="text"
                     value={generalDiscount.value}
                     onChange={handleDiscountValueChange}

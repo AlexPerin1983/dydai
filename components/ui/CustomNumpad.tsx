@@ -88,12 +88,12 @@ const CustomNumpad = forwardRef<HTMLDivElement, CustomNumpadProps>(({ onInput, o
                     </NumpadButton>
                 </div>
                 
-                {/* Barra de Ações - Distribuição uniforme */}
+                {/* Barra de Ações - Distribuição uniforme com 5 colunas */}
                 <div className="mt-3 grid grid-cols-5 gap-2">
                     <IconButton action={onDuplicate} ariaLabel="Duplicar medida" icon="fas fa-copy" />
                     <IconButton action={onClear} ariaLabel="Limpar campos" icon="fas fa-eraser" />
                     
-                    {/* Espaço central para o botão de fechar */}
+                    {/* Botão de Fechar (Centralizado na coluna 3) */}
                     <div className="col-span-1 flex justify-center">
                         <IconButton action={onClose} ariaLabel="Recolher teclado" icon="fas fa-chevron-down" />
                     </div>

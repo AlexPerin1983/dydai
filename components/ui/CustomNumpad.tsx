@@ -83,28 +83,35 @@ const CustomNumpad = forwardRef<HTMLDivElement, CustomNumpadProps>(({ onInput, o
                     </NumpadButton>
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
+                    {/* Botões de Ação Esquerda: Duplicar, Limpar */}
                     <div className="flex items-center gap-2">
-                        <IconButton action={onAddGroup} ariaLabel="Novo grupo" icon="fas fa-plus" />
                         <IconButton action={onDuplicate} ariaLabel="Duplicar medida" icon="fas fa-copy" />
                         <IconButton action={onClear} ariaLabel="Limpar campos" icon="fas fa-eraser" />
-                        <IconButton action={onClose} ariaLabel="Recolher teclado" icon="fas fa-chevron-down" />
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            handleVibrate();
-                            onDone();
-                        }}
-                        aria-label={isLastField ? "Confirmar entrada" : "Próximo campo"}
-                        className="flex-grow h-10 rounded-xl shadow-sm text-base font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors duration-150 flex items-center justify-center gap-2"
-                    >
-                        {isLastField ? 'Pronto' : (
-                            <>
-                                <span>Próximo</span>
-                                <i className="fas fa-arrow-right"></i>
-                            </>
-                        )}
-                    </button>
+                    
+                    {/* Botão Central: Recolher Teclado */}
+                    <IconButton action={onClose} ariaLabel="Recolher teclado" icon="fas fa-chevron-down" />
+
+                    {/* Botões de Ação Direita: Adicionar Grupo, Próximo/Pronto */}
+                    <div className="flex items-center gap-2">
+                        <IconButton action={onAddGroup} ariaLabel="Novo grupo" icon="fas fa-plus" />
+                        <button
+                            type="button"
+                            onClick={() => {
+                                handleVibrate();
+                                onDone();
+                            }}
+                            aria-label={isLastField ? "Confirmar entrada" : "Próximo campo"}
+                            className="h-10 rounded-xl shadow-sm text-base font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors duration-150 flex items-center justify-center gap-2 px-4 min-w-[100px]"
+                        >
+                            {isLastField ? 'Pronto' : (
+                                <>
+                                    <span>Próximo</span>
+                                    <i className="fas fa-arrow-right"></i>
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
              <style jsx>{`

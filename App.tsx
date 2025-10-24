@@ -286,8 +286,8 @@ const App: React.FC = () => {
     const addMeasurement = useCallback(() => {
         const newMeasurement: UIMeasurement = { ...createEmptyMeasurement(), isNew: true };
         const updatedMeasurements = [
+            ...measurements.map(m => ({ ...m, isNew: false })),
             newMeasurement, 
-            ...measurements.map(m => ({ ...m, isNew: false }))
         ];
         handleMeasurementsChange(updatedMeasurements);
     }, [createEmptyMeasurement, measurements, handleMeasurementsChange]);
@@ -732,7 +732,7 @@ const App: React.FC = () => {
                 }));
     
                 if (newMeasurements.length > 0) {
-                    handleMeasurementsChange([...newMeasurements, ...measurements.map(m => ({...m, isNew: false}))]);
+                    handleMeasurementsChange([...measurements.map(m => ({...m, isNew: false})), ...newMeasurements]);
                     setIsAIMeasurementModalOpen(false);
                 } else {
                     alert("Nenhuma medida foi extraída. Tente novamente com mais detalhes.");
@@ -839,7 +839,7 @@ const App: React.FC = () => {
                     discountType: 'percentage',
                 }));
     
-                handleMeasurementsChange([...newMeasurements, ...measurements.map(m => ({...m, isNew: false}))]);
+                handleMeasurementsChange([...measurements.map(m => ({...m, isNew: false})), ...newMeasurements]);
                 setIsAIMeasurementModalOpen(false);
             } else {
                 alert("Nenhuma medida foi extraída com OpenAI. Tente novamente com mais detalhes.");
@@ -1071,7 +1071,7 @@ const App: React.FC = () => {
             const newMeasurement: UIMeasurement = { 
                 ...measurementToDuplicate, 
                 id: Date.now(), 
-                isNew: true
+                isNew: false
             };
             
             const index = measurementsWithSavedValue.findIndex(m => m.id === measurementId);
@@ -1126,8 +1126,8 @@ const App: React.FC = () => {
         
                 const newMeasurement: UIMeasurement = { ...createEmptyMeasurement(), isNew: true };
                 const finalMeasurements = [
+                    ...measurementsWithSavedValue.map(m => ({ ...m, isNew: false })),
                     newMeasurement,
-                    ...measurementsWithSavedValue.map(m => ({ ...m, isNew: false }))
                 ];
                 
                 return { ...opt, measurements: finalMeasurements };

@@ -42,7 +42,8 @@ const CustomNumpad = forwardRef<HTMLDivElement, CustomNumpadProps>(({ onInput, o
         action: () => void;
         icon: string;
         ariaLabel: string;
-    }> = ({ action, icon, ariaLabel }) => (
+        isPrimary?: boolean;
+    }> = ({ action, icon, ariaLabel, isPrimary = false }) => (
          <button
             type="button"
             onClick={() => {
@@ -50,7 +51,11 @@ const CustomNumpad = forwardRef<HTMLDivElement, CustomNumpadProps>(({ onInput, o
                 action();
             }}
             aria-label={ariaLabel}
-            className="flex items-center justify-center h-10 w-10 rounded-full text-lg transition-colors duration-150 bg-slate-100 text-slate-600 hover:bg-slate-200"
+            className={`flex items-center justify-center h-10 w-10 rounded-full text-lg transition-colors duration-150 ${
+                isPrimary 
+                    ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-md' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
         >
             <i className={icon}></i>
         </button>
@@ -95,22 +100,12 @@ const CustomNumpad = forwardRef<HTMLDivElement, CustomNumpadProps>(({ onInput, o
                     {/* Botões de Ação Direita: Adicionar Grupo, Próximo/Pronto */}
                     <div className="flex items-center gap-2">
                         <IconButton action={onAddGroup} ariaLabel="Novo grupo" icon="fas fa-plus" />
-                        <button
-                            type="button"
-                            onClick={() => {
-                                handleVibrate();
-                                onDone();
-                            }}
-                            aria-label={isLastField ? "Confirmar entrada" : "Próximo campo"}
-                            className="h-10 rounded-xl shadow-sm text-base font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors duration-150 flex items-center justify-center gap-2 px-4 min-w-[100px]"
-                        >
-                            {isLastField ? 'Pronto' : (
-                                <>
-                                    <span>Próximo</span>
-                                    <i className="fas fa-arrow-right"></i>
-                                </>
-                            )}
-                        </button>
+                        <IconButton
+                            action={onDone}
+                            ariaLabel={isLastField ? "Confirmar entrada" : "Próximo campo"}
+                            icon={isLastField ? "fas fa-check" : "fas fa-arrow-right"}
+                            isPrimary
+                        />
                     </div>
                 </div>
             </div>

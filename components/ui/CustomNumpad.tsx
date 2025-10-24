@@ -88,8 +88,8 @@ const CustomNumpad = forwardRef<HTMLDivElement, CustomNumpadProps>(({ onInput, o
                     </NumpadButton>
                 </div>
                 
-                {/* Barra de Ações - Ajustada para melhor distribuição */}
-                <div className="mt-3 flex items-center justify-center gap-4">
+                {/* Barra de Ações - Distribuição equilibrada */}
+                <div className="mt-3 flex items-center justify-between">
                     {/* Grupo Esquerda: Duplicar, Limpar */}
                     <div className="flex items-center gap-2">
                         <IconButton action={onDuplicate} ariaLabel="Duplicar medida" icon="fas fa-copy" />

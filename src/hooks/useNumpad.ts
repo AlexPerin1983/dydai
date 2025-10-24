@@ -126,7 +126,10 @@ export const useNumpad = (
                 }
             }
 
-            return { ...prev, currentValue: newValue, shouldClearOnNextInput: false };
+            // FIX: Desativar shouldClearOnNextInput após o primeiro caractere digitado, a menos que seja um ponto/vírgula
+            const nextShouldClear = shouldClear && value !== ',' && value !== '.';
+
+            return { ...prev, currentValue: newValue, shouldClearOnNextInput: nextShouldClear };
         });
     }, [measurements, onMeasurementsChange]);
 

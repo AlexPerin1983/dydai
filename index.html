@@ -2,16 +2,19 @@
 <html lang="pt-BR" class="h-full bg-gradient-to-r from-blue-50 via-white to-blue-100">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>Películas Brasil - Calculadora de Orçamentos</title>
     
     <!-- PWA Configuration -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
     <meta name="theme-color" content="#364562">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Películas BR">
     <link rel="apple-touch-icon" href="/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512x512.png">
     
     <!-- Description for SEO and PWA -->
     <meta name="description" content="Calculadora profissional de orçamento para instalação de películas de vidro">
@@ -175,16 +178,27 @@
     <div id="root" class="h-full"></div>
     <script type="module" src="/index.tsx"></script>
     <script>
-        // Service Worker Registration with better error handling
+        // Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
+                navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
                     .then(registration => {
-                        console.log('✅ Service Worker registrado com sucesso:', registration.scope);
+                        console.log('✅ Service Worker registrado:', registration.scope);
                         
-                        // Check for updates
+                        // Force update check
+                        registration.update();
+                        
                         registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
                             console.log('🔄 Nova versão do Service Worker encontrada');
+                            
+                            if (newWorker) {
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'activated') {
+                                        console.log('✅ Service Worker ativado');
+                                    }
+                                });
+                            }
                         });
                     })
                     .catch(error => {

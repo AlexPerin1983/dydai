@@ -1,29 +1,33 @@
-const CACHE_NAME = 'peliculas-brasil-v1';
-const RUNTIME_CACHE = 'peliculas-brasil-runtime-v1';
+const CACHE_NAME = 'peliculas-brasil-v2';
+const RUNTIME_CACHE = 'peliculas-brasil-runtime-v2';
 
 // Assets to cache on install
 const PRECACHE_URLS = [
     '/',
-    '/index.html',
-    '/manifest.json'
+    '/index.html'
 ];
 
 // Install event - cache essential assets
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing service worker...');
+    console.log('[SW] Installing service worker v2...');
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('[SW] Caching app shell');
-                return cache.addAll(PRECACHE_URLS);
+                return cache.addAll(PRECACHE_URLS).catch(err => {
+                    console.error('[SW] Failed to cache:', err);
+                });
             })
-            .then(() => self.skipWaiting())
+            .then(() => {
+                console.log('[SW] Skip waiting');
+                return self.skipWaiting();
+            })
     );
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating service worker...');
+    console.log('[SW] Activating service worker v2...');
     const currentCaches = [CACHE_NAME, RUNTIME_CACHE];
     event.waitUntil(
         caches.keys()
@@ -37,32 +41,60 @@ self.addEventListener('activate', (event) => {
                     })
                 );
             })
-            .then(() => self.clients.claim())
+            .then(() => {
+                console.log('[SW] Claiming clients');
+                return self.clients.claim();
+            })
     );
 });
 
-// Fetch event - network first, fallback to cache
+// Fetch event - Cache first for app shell, network first for API calls
 self.addEventListener('fetch', (event) => {
+    const { request } = event;
+    const url = new URL(request.url);
+
     // Skip cross-origin requests
-    if (!event.request.url.startsWith(self.location.origin)) {
+    if (url.origin !== location.origin) {
         return;
     }
 
     // Skip chrome-extension and other non-http(s) requests
-    if (!event.request.url.startsWith('http')) {
+    if (!request.url.startsWith('http')) {
         return;
     }
 
+    // For navigation requests (HTML pages)
+    if (request.mode === 'navigate') {
+        event.respondWith(
+            fetch(request)
+                .then(response => {
+                    // Cache the new version
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(request, responseClone);
+                    });
+                    return response;
+                })
+                .catch(() => {
+                    // Fallback to cache if offline
+                    return caches.match(request)
+                        .then(cachedResponse => {
+                            return cachedResponse || caches.match('/index.html');
+                        });
+                })
+        );
+        return;
+    }
+
+    // For all other requests - cache first strategy
     event.respondWith(
-        caches.match(event.request)
+        caches.match(request)
             .then((cachedResponse) => {
-                // Return cached response if found
                 if (cachedResponse) {
                     return cachedResponse;
                 }
 
-                // Otherwise, fetch from network
-                return fetch(event.request)
+                return fetch(request)
                     .then((response) => {
                         // Don't cache non-successful responses
                         if (!response || response.status !== 200 || response.type === 'error') {
@@ -75,18 +107,13 @@ self.addEventListener('fetch', (event) => {
                         // Cache the fetched response for runtime
                         caches.open(RUNTIME_CACHE)
                             .then((cache) => {
-                                cache.put(event.request, responseToCache);
+                                cache.put(request, responseToCache);
                             });
 
                         return response;
-                    })
-                    .catch(() => {
-                        // If both cache and network fail, return a custom offline page
-                        // (You could create an offline.html page for this)
-                        return cachedResponse || new Response('Offline');
                     });
             })
     );
 });
 
-console.log('[SW] Service Worker loaded');
+console.log('[SW] Service Worker v2 loaded');

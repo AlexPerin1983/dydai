@@ -718,7 +718,7 @@ const App: React.FC = () => {
                 }
             } else if (input.type === 'audio') {
                 const { mimeType, data } = await blobToBase64(input.data as Blob);
-                parts.push({ inlineData: { mimeType, data } });
+                    parts.push({ inlineData: { mimeType, data } });
             }
     
             const result = await model.generateContent(parts);
@@ -1362,6 +1362,17 @@ const App: React.FC = () => {
         </div>
     );
 
+    const handlePromptPwaInstall = useCallback(() => {
+        if (deferredPrompt) {
+            promptInstall();
+        } else {
+            // Fallback for browsers that don't fire the event (like Safari/iOS)
+            // We can't trigger the prompt, but we can instruct the user.
+            alert("Para instalar, use o menu 'Compartilhar' do seu navegador e selecione 'Adicionar à Tela de Início'.");
+        }
+    }, [deferredPrompt, promptInstall]);
+
+
     const renderContent = () => {
         if (isLoading) {
             return <LoadingSpinner />;
@@ -1376,6 +1387,8 @@ const App: React.FC = () => {
                             onSave={handleSaveUserInfo}
                             onOpenPaymentMethods={() => setIsPaymentModalOpen(true)}
                             onOpenApiKeyModal={handleOpenApiKeyModal}
+                            isPwaInstalled={isInstalled}
+                            onPromptPwaInstall={handlePromptPwaInstall}
                         />
                     </Suspense>
                 );

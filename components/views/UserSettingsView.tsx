@@ -9,6 +9,8 @@ interface UserSettingsViewProps {
     onSave: (userInfo: UserInfo) => void;
     onOpenPaymentMethods: () => void;
     onOpenApiKeyModal: (provider: 'gemini' | 'openai') => void;
+    isPwaInstalled: boolean;
+    onPromptPwaInstall: () => void;
 }
 
 const applyPhoneMask = (value: string) => {
@@ -35,7 +37,7 @@ const applyPhoneMask = (value: string) => {
     return "";
 };
 
-const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, onOpenPaymentMethods, onOpenApiKeyModal }) => {
+const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, onOpenPaymentMethods, onOpenApiKeyModal, isPwaInstalled, onPromptPwaInstall }) => {
     const [formData, setFormData] = useState<UserInfo>(userInfo);
     const [logoPreview, setLogoPreview] = useState<string | undefined>(userInfo.logo);
     const [isSaving, setIsSaving] = useState(false);
@@ -422,6 +424,30 @@ const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, o
                         <i className="fas fa-key"></i>
                         {userInfo.aiConfig?.apiKey ? 'Alterar Chave de API' : 'Configurar Chave de API'}
                     </button>
+                </div>
+            </div>
+            
+            <div className={sectionClass}>
+                <h3 className={sectionTitleClass}>Aplicativo (PWA)</h3>
+                <p className="text-sm text-slate-500 mt-2">
+                    Instale o aplicativo no seu dispositivo para acesso rápido e uso offline.
+                </p>
+                <div className="mt-4">
+                    {isPwaInstalled ? (
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 font-medium flex items-center gap-2">
+                            <i className="fas fa-check-circle"></i>
+                            <span>Aplicativo instalado com sucesso!</span>
+                        </div>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={onPromptPwaInstall}
+                            className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-md"
+                        >
+                            <i className="fas fa-download"></i>
+                            Instalar Aplicativo Agora
+                        </button>
+                    )}
                 </div>
             </div>
 

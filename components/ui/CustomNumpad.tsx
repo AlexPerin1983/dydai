@@ -93,10 +93,8 @@ const CustomNumpad = forwardRef<HTMLDivElement, CustomNumpadProps>(({ onInput, o
                     <IconButton action={onDuplicate} ariaLabel="Duplicar medida" icon="fas fa-copy" />
                     <IconButton action={onClear} ariaLabel="Limpar campos" icon="fas fa-eraser" />
                     
-                    {/* Botão de Fechar (Centralizado na coluna 3) */}
-                    <div className="col-span-1 flex justify-center">
-                        <IconButton action={onClose} ariaLabel="Recolher teclado" icon="fas fa-chevron-down" />
-                    </div>
+                    {/* Botão de Fechar (Agora como item normal do grid) */}
+                    <IconButton action={onClose} ariaLabel="Recolher teclado" icon="fas fa-chevron-down" />
 
                     <IconButton action={onAddGroup} ariaLabel="Novo grupo" icon="fas fa-plus" />
                     <IconButton

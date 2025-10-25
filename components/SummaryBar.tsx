@@ -32,14 +32,19 @@ const SummaryBar: React.FC<SummaryBarProps> = ({ totals, generalDiscount, onGene
 
     // Sincroniza o estado local APENAS quando o tipo muda ou na montagem/abertura.
     useEffect(() => {
-        // Se o valor da prop for diferente do valor local, atualiza o estado local.
-        // Isso é crucial para sincronizar quando o cliente/opção muda, mas não durante a digitação.
-        if (localDiscountValue !== generalDiscount.value) {
-            setLocalDiscountValue(generalDiscount.value);
-        }
+        const isActiveElement = document.activeElement === inputRef.current;
+        
+        // Se o tipo mudar, sempre sincroniza (e tenta focar)
         if (localDiscountType !== generalDiscount.type) {
             setLocalDiscountType(generalDiscount.type);
         }
+        
+        // Se o input não estiver focado E o valor externo for diferente do local, sincroniza.
+        // Isso impede que o valor digitado localmente seja sobrescrito enquanto o usuário digita.
+        if (!isActiveElement && localDiscountValue !== generalDiscount.value) {
+            setLocalDiscountValue(generalDiscount.value);
+        }
+        
         setShowDiscountControls(!!(parseFloat(String(generalDiscount.value).replace(',', '.')) || 0));
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [generalDiscount.value, generalDiscount.type]); 

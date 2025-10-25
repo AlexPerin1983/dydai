@@ -45,11 +45,16 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
 
     // Sincroniza o estado local APENAS quando o tipo muda ou na montagem/abertura.
     useEffect(() => {
-        if (localDiscountValue !== generalDiscount.value) {
-            setLocalDiscountValue(generalDiscount.value);
-        }
+        const isActiveElement = document.activeElement === inputRef.current;
+        
+        // Se o tipo mudar, sempre sincroniza (e tenta focar)
         if (localDiscountType !== generalDiscount.type) {
             setLocalDiscountType(generalDiscount.type);
+        }
+        
+        // Se o input não estiver focado E o valor externo for diferente do local, sincroniza.
+        if (!isActiveElement && localDiscountValue !== generalDiscount.value) {
+            setLocalDiscountValue(generalDiscount.value);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [generalDiscount.value, generalDiscount.type]);

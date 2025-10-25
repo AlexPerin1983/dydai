@@ -47,12 +47,10 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
     useEffect(() => {
         const isActiveElement = document.activeElement === inputRef.current;
         
-        // Se o tipo mudar, sempre sincroniza (e tenta focar)
         if (localDiscountType !== generalDiscount.type) {
             setLocalDiscountType(generalDiscount.type);
         }
         
-        // Se o input não estiver focado E o valor externo for diferente do local, sincroniza.
         if (!isActiveElement && localDiscountValue !== generalDiscount.value) {
             setLocalDiscountValue(generalDiscount.value);
         }
@@ -112,6 +110,12 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
                     value={localDiscountValue}
                     onChange={handleValueChange}
                     onBlur={handleBlur}
+                    onClick={(e) => {
+                        // Garante que se o usuário clicar no input, ele mantenha o foco
+                        if (document.activeElement !== inputRef.current) {
+                            inputRef.current?.focus();
+                        }
+                    }}
                     className="w-full p-2 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-l-md shadow-sm focus:ring-slate-500 focus:border-slate-500 text-sm"
                     placeholder="0"
                     inputMode="decimal"

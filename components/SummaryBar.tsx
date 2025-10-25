@@ -40,7 +40,6 @@ const SummaryBar: React.FC<SummaryBarProps> = ({ totals, generalDiscount, onGene
         }
         
         // Se o input não estiver focado E o valor externo for diferente do local, sincroniza.
-        // Isso impede que o valor digitado localmente seja sobrescrito enquanto o usuário digita.
         if (!isActiveElement && localDiscountValue !== generalDiscount.value) {
             setLocalDiscountValue(generalDiscount.value);
         }
@@ -101,6 +100,12 @@ const SummaryBar: React.FC<SummaryBarProps> = ({ totals, generalDiscount, onGene
                     value={localDiscountValue}
                     onChange={handleDiscountValueChange}
                     onBlur={handleBlur}
+                    onClick={(e) => {
+                        // Garante que se o usuário clicar no input, ele mantenha o foco
+                        if (document.activeElement !== inputRef.current) {
+                            inputRef.current?.focus();
+                        }
+                    }}
                     className="w-full p-2 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-l-md shadow-sm focus:ring-slate-500 focus:border-slate-500 sm:text-sm"
                     placeholder="0"
                     inputMode="decimal"

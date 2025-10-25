@@ -29,27 +29,43 @@ const SummaryBar: React.FC<SummaryBarProps> = ({ totals, generalDiscount, onGene
     const [localDiscountType, setLocalDiscountType] = useState(generalDiscount.type);
     const [showDiscountControls, setShowDiscountControls] = useState(!!(parseFloat(String(generalDiscount.value).replace(',', '.')) || 0));
 
-    // Sincroniza o estado local quando o valor externo muda (ex: ao trocar de cliente/opção)
+    // Sincroniza o estado local APENAS quando o valor externo (prop) muda,
+    // garantindo que a digitação local não seja interrompida.
     useEffect(() => {
-        setLocalDiscountValue(generalDiscount.value);
-        setLocalDiscountType(generalDiscount.type);
+        // Se o valor da prop for diferente do valor local, atualiza o estado local.
+        // Isso cobre casos como troca de cliente/opção ou carregamento inicial.
+        if (localDiscountValue !== generalDiscount.value) {
+            setLocalDiscountValue(generalDiscount.value);
+        }
+        if (localDiscountType !== generalDiscount.type) {
+            setLocalDiscountType(generalDiscount.type);
+        }
         setShowDiscountControls(!!(parseFloat(String(generalDiscount.value).replace(',', '.')) || 0));
-    }, [generalDiscount.value, generalDiscount.type]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [generalDiscount.value, generalDiscount.type]); // Dependências da prop
 
     const handleDiscountValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { value } = e.target;
-        const isValidFormat = /^[0-9]*[.,]?[0-9]*$/.test(value);
-        if (isValidFormat) {
+        
+        // Permite apenas números, vírgula e ponto
+        if (/^[0-9]*[.,]?[0-9]*$/.test(value)) {
             setLocalDiscountValue(value);
         }
     };
     
     const handleBlur = () => {
+        // Limpa o valor se for apenas vírgula ou ponto
+        let finalValue = localDiscountValue;
+        if (finalValue === ',' || finalValue === '.') {
+            finalValue = '';
+        }
+        
         // Sincroniza o valor digitado com o componente pai (App.tsx)
-        onGeneralDiscountChange({ value: localDiscountValue, type: localDiscountType });
+        onGeneralDiscountChange({ value: finalValue, type: localDiscountType });
+        setLocalDiscountValue(finalValue); // Atualiza o estado local para refletir a limpeza
     };
     
-    const handleDiscountTypeChange = (type: 'percentage' | 'fixed') => {
+    const handleTypeChange = (type: 'percentage' | 'fixed') => {
         setLocalDiscountType(type);
         // Sincroniza o tipo e o valor atual com o componente pai
         onGeneralDiscountChange({ value: localDiscountValue, type });
@@ -76,10 +92,10 @@ const SummaryBar: React.FC<SummaryBarProps> = ({ totals, generalDiscount, onGene
                     inputMode="decimal"
                 />
                 <div className="flex">
-                    <button type="button" onClick={() => handleDiscountTypeChange('percentage')} className={`px-4 py-2 text-sm font-semibold border-t border-b ${localDiscountType === 'percentage' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}>
+                    <button type="button" onClick={() => handleTypeChange('percentage')} className={`px-4 py-2 text-sm font-semibold border-t border-b ${localDiscountType === 'percentage' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}>
                         %
                     </button>
-                    <button type="button" onClick={() => handleDiscountTypeChange('fixed')} className={`px-4 py-2 text-sm font-semibold border rounded-r-md ${localDiscountType === 'fixed' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}>
+                    <button type="button" onClick={() => handleTypeChange('fixed')} className={`px-4 py-2 text-sm font-semibold border rounded-r-md ${localDiscountType === 'fixed' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}>
                         R$
                     </button>
                 </div>

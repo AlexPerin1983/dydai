@@ -42,10 +42,15 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
     const [localDiscountValue, setLocalDiscountValue] = useState(generalDiscount.value);
     const [localDiscountType, setLocalDiscountType] = useState(generalDiscount.type);
 
-    // Sincroniza o estado local quando o valor externo muda (ex: ao trocar de cliente/opção)
+    // Sincroniza o estado local APENAS quando o valor externo (prop) muda.
     useEffect(() => {
-        setLocalDiscountValue(generalDiscount.value);
-        setLocalDiscountType(generalDiscount.type);
+        if (localDiscountValue !== generalDiscount.value) {
+            setLocalDiscountValue(generalDiscount.value);
+        }
+        if (localDiscountType !== generalDiscount.type) {
+            setLocalDiscountType(generalDiscount.type);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [generalDiscount.value, generalDiscount.type]);
 
     const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,8 +64,15 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
     };
 
     const handleBlur = () => {
+        // Limpa o valor se for apenas vírgula ou ponto
+        let finalValue = localDiscountValue;
+        if (finalValue === ',' || finalValue === '.') {
+            finalValue = '';
+        }
+        
         // Sincroniza o valor digitado com o componente pai (App.tsx)
-        onGeneralDiscountChange({ value: localDiscountValue, type: localDiscountType });
+        onGeneralDiscountChange({ value: finalValue, type: localDiscountType });
+        setLocalDiscountValue(finalValue); // Atualiza o estado local para refletir a limpeza
     };
 
     const handleTypeChange = (type: 'percentage' | 'fixed') => {

@@ -11,11 +11,13 @@ interface DiscountModalProps {
 }
 
 const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose, onSave, initialValue, initialType = 'percentage' }) => {
+    // Usando string para o estado para permitir a digitação de vírgulas e números parciais
     const [value, setValue] = useState(initialValue?.toString().replace('.', ',') || '');
     const [type, setType] = useState<'percentage' | 'fixed'>(initialType);
 
     useEffect(() => {
         if (isOpen) {
+            // Sincroniza o estado local com as props iniciais ao abrir
             setValue(initialValue?.toString().replace('.', ',') || '');
             setType(initialType);
         }
@@ -23,6 +25,7 @@ const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose, onSave, 
     
     const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
+        // Permite apenas números, vírgula e ponto
         if (/^[0-9]*[.,]?[0-9]*$/.test(val)) {
             setValue(val);
         }
@@ -30,6 +33,7 @@ const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose, onSave, 
     
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
+        // Converte para número usando ponto como separador antes de salvar
         const numericValue = parseFloat(value.replace(',', '.')) || 0;
         onSave(numericValue, type);
     };
@@ -63,7 +67,7 @@ const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose, onSave, 
                     <div className="mt-1 flex">
                         <input
                             type="text"
-                            value={value}
+                            value={value} // Componente controlado
                             onChange={handleValueChange}
                             onFocus={(e) => e.target.select()}
                             className="w-full p-2 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-l-md shadow-sm focus:ring-slate-500 focus:border-slate-500 sm:text-sm"

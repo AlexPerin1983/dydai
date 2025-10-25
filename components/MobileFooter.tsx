@@ -37,61 +37,36 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
     onOpenAIModal
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    const inputRef = useRef<HTMLInputElement>(null);
-    const debounceRef = useRef<NodeJS.Timeout>();
+    
+    // Estado local para controlar o valor do input durante a digitação
+    const [localDiscountValue, setLocalDiscountValue] = useState(generalDiscount.value);
+    const [localDiscountType, setLocalDiscountType] = useState(generalDiscount.type);
 
-    // Cleanup on unmount
+    // Sincroniza o estado local quando o valor externo muda (ex: ao trocar de cliente/opção)
     useEffect(() => {
-        return () => {
-            if (debounceRef.current) {
-                clearTimeout(debounceRef.current);
-            }
-        };
-    }, []);
-
-    // Sync external changes to input (only when not focused)
-    useEffect(() => {
-        if (inputRef.current && document.activeElement !== inputRef.current) {
-            inputRef.current.value = generalDiscount.value;
-        }
-    }, [generalDiscount.value]);
+        setLocalDiscountValue(generalDiscount.value);
+        setLocalDiscountType(generalDiscount.type);
+    }, [generalDiscount.value, generalDiscount.type]);
 
     const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         
         // Validate format
         if (!/^[0-9]*[.,]?[0-9]*$/.test(value)) {
-            e.target.value = inputRef.current?.value || '';
             return;
         }
-
-        // Clear existing debounce
-        if (debounceRef.current) {
-            clearTimeout(debounceRef.current);
-        }
-
-        // Debounce propagation
-        debounceRef.current = setTimeout(() => {
-            onGeneralDiscountChange({ ...generalDiscount, value });
-        }, 800);
+        setLocalDiscountValue(value);
     };
 
     const handleBlur = () => {
-        // Clear debounce and propagate immediately on blur
-        if (debounceRef.current) {
-            clearTimeout(debounceRef.current);
-        }
-        const currentValue = inputRef.current?.value || '';
-        onGeneralDiscountChange({ ...generalDiscount, value: currentValue });
+        // Sincroniza o valor digitado com o componente pai (App.tsx)
+        onGeneralDiscountChange({ value: localDiscountValue, type: localDiscountType });
     };
 
     const handleTypeChange = (type: 'percentage' | 'fixed') => {
-        // Propagate type change immediately
-        if (debounceRef.current) {
-            clearTimeout(debounceRef.current);
-        }
-        const currentValue = inputRef.current?.value || '';
-        onGeneralDiscountChange({ value: currentValue, type });
+        setLocalDiscountType(type);
+        // Sincroniza o tipo e o valor atual com o componente pai
+        onGeneralDiscountChange({ value: localDiscountValue, type });
     };
 
     const SummaryRow: React.FC<{label: string; value: string, className?: string}> = ({label, value, className}) => (
@@ -106,9 +81,8 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
             <label className="block text-sm font-medium text-slate-600 mb-1">Desconto Geral</label>
             <div className="flex">
                 <input
-                    ref={inputRef}
                     type="text"
-                    defaultValue={generalDiscount.value}
+                    value={localDiscountValue}
                     onChange={handleValueChange}
                     onBlur={handleBlur}
                     className="w-full p-2 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-l-md shadow-sm focus:ring-slate-500 focus:border-slate-500 text-sm"
@@ -119,14 +93,14 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
                     <button 
                         type="button" 
                         onClick={() => handleTypeChange('percentage')} 
-                        className={`px-4 py-2 text-sm font-semibold border-t border-b transition-colors ${generalDiscount.type === 'percentage' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
+                        className={`px-4 py-2 text-sm font-semibold border-t border-b transition-colors ${localDiscountType === 'percentage' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
                     >
                         %
                     </button>
                     <button 
                         type="button" 
                         onClick={() => handleTypeChange('fixed')} 
-                        className={`px-4 py-2 text-sm font-semibold border rounded-r-md transition-colors ${generalDiscount.type === 'fixed' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
+                        className={`px-4 py-2 text-sm font-semibold border rounded-r-md transition-colors ${localDiscountType === 'fixed' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
                     >
                         R$
                     </button>

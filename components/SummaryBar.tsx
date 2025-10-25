@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface Totals {
     totalM2: number;
@@ -25,23 +24,35 @@ const formatNumberBR = (number: number) => {
 
 const SummaryBar: React.FC<SummaryBarProps> = ({ totals, generalDiscount, onGeneralDiscountChange, isDesktop = false }) => {
     
-    const hasExistingDiscount = !!(parseFloat(String(generalDiscount.value).replace(',', '.')) || 0);
-    const [showDiscountControls, setShowDiscountControls] = useState(hasExistingDiscount);
-    
+    // Estado local para controlar o valor do input durante a digitação
+    const [localDiscountValue, setLocalDiscountValue] = useState(generalDiscount.value);
+    const [localDiscountType, setLocalDiscountType] = useState(generalDiscount.type);
+    const [showDiscountControls, setShowDiscountControls] = useState(!!(parseFloat(String(generalDiscount.value).replace(',', '.')) || 0));
+
+    // Sincroniza o estado local quando o valor externo muda (ex: ao trocar de cliente/opção)
     useEffect(() => {
+        setLocalDiscountValue(generalDiscount.value);
+        setLocalDiscountType(generalDiscount.type);
         setShowDiscountControls(!!(parseFloat(String(generalDiscount.value).replace(',', '.')) || 0));
-    }, [generalDiscount.value]);
+    }, [generalDiscount.value, generalDiscount.type]);
 
     const handleDiscountValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { value } = e.target;
         const isValidFormat = /^[0-9]*[.,]?[0-9]*$/.test(value);
         if (isValidFormat) {
-            onGeneralDiscountChange({ ...generalDiscount, value });
+            setLocalDiscountValue(value);
         }
     };
     
+    const handleBlur = () => {
+        // Sincroniza o valor digitado com o componente pai (App.tsx)
+        onGeneralDiscountChange({ value: localDiscountValue, type: localDiscountType });
+    };
+    
     const handleDiscountTypeChange = (type: 'percentage' | 'fixed') => {
-        onGeneralDiscountChange({ ...generalDiscount, type });
+        setLocalDiscountType(type);
+        // Sincroniza o tipo e o valor atual com o componente pai
+        onGeneralDiscountChange({ value: localDiscountValue, type });
     };
 
     const SummaryRow: React.FC<{label: string; value: string, className?: string}> = ({label, value, className}) => (
@@ -57,17 +68,18 @@ const SummaryBar: React.FC<SummaryBarProps> = ({ totals, generalDiscount, onGene
             <div className="mt-1 flex">
                 <input
                     type="text"
-                    value={generalDiscount.value}
+                    value={localDiscountValue}
                     onChange={handleDiscountValueChange}
+                    onBlur={handleBlur}
                     className="w-full p-2 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-l-md shadow-sm focus:ring-slate-500 focus:border-slate-500 sm:text-sm"
                     placeholder="0"
                     inputMode="decimal"
                 />
                 <div className="flex">
-                    <button type="button" onClick={() => handleDiscountTypeChange('percentage')} className={`px-4 py-2 text-sm font-semibold border-t border-b ${generalDiscount.type === 'percentage' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}>
+                    <button type="button" onClick={() => handleDiscountTypeChange('percentage')} className={`px-4 py-2 text-sm font-semibold border-t border-b ${localDiscountType === 'percentage' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}>
                         %
                     </button>
-                    <button type="button" onClick={() => handleDiscountTypeChange('fixed')} className={`px-4 py-2 text-sm font-semibold border rounded-r-md ${generalDiscount.type === 'fixed' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}>
+                    <button type="button" onClick={() => handleDiscountTypeChange('fixed')} className={`px-4 py-2 text-sm font-semibold border rounded-r-md ${localDiscountType === 'fixed' ? 'bg-slate-800 text-white border-slate-800 z-10' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}>
                         R$
                     </button>
                 </div>

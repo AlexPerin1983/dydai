@@ -30,20 +30,18 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = memo(({
     onOpenFilmModal,
     onOpenFilmSelectionModal,
 }) => {
-    // Estado local para evitar re-renderização do App.tsx a cada digitação
+    // Inicialização lazy: o estado só é definido com a prop na primeira renderização
     const [localMeasurement, setLocalMeasurement] = useState<UIMeasurement>(measurement);
 
-    useEffect(() => {
-        // Sincroniza o estado local com a prop inicial ao abrir
-        if (isOpen) {
-            setLocalMeasurement(measurement);
-        }
-    }, [isOpen, measurement]);
-
+    // Se o modal não estiver aberto, não renderize nada.
     if (!isOpen) return null;
+    
+    // Se a prop 'measurement' mudar enquanto o modal está aberto, isso é um erro de fluxo.
+    // Mas se o modal for aberto com uma nova medida, o App.tsx deve forçar a recriação
+    // do componente (usando 'key' no App.tsx, que faremos no próximo passo).
+    // Por enquanto, garantimos que o estado local não seja resetado por um useEffect.
 
     const handleLocalInputChange = useCallback((field: keyof Measurement, value: string | number) => {
-        // Esta função é estável e só atualiza o estado local
         setLocalMeasurement(prev => ({ ...prev, [field]: value }));
     }, []);
 
@@ -195,7 +193,6 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = memo(({
                                 label="Ambiente"
                                 options={AMBIENTES}
                                 value={localMeasurement.ambiente}
-                                // DynamicSelector chama onChange(value), que chama handleLocalInputChange(field, value)
                                 onChange={(value) => handleLocalInputChange('ambiente', value)}
                                 disabled={!localMeasurement.active}
                             />
@@ -203,7 +200,6 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = memo(({
                                 label="Tipo de Aplicação"
                                 options={TIPOS_APLICACAO}
                                 value={localMeasurement.tipoAplicacao}
-                                // DynamicSelector chama onChange(value), que chama handleLocalInputChange(field, value)
                                 onChange={(value) => handleLocalInputChange('tipoAplicacao', value)}
                                 disabled={!localMeasurement.active}
                             />

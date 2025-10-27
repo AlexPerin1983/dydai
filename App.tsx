@@ -902,11 +902,10 @@ const App: React.FC = () => {
         try {
             if (userInfo.aiConfig.provider === 'gemini') {
                 await processWithGemini(input);
+            } else if (input.type === 'audio') {
+                alert("O provedor OpenAI não suporta entrada de áudio nesta aplicação.");
+                return;
             } else if (userInfo.aiConfig.provider === 'openai') {
-                if (input.type === 'audio') {
-                    alert("O provedor OpenAI não suporta entrada de áudio nesta aplicação.");
-                    return;
-                }
                 await processWithOpenAI(input as { type: 'text' | 'image'; data: string | File[] });
             }
         } finally {
@@ -1257,8 +1256,11 @@ const App: React.FC = () => {
 
     const handleUpdateEditingMeasurement = useCallback((updatedData: Partial<Measurement>) => {
         if (!editingMeasurement) return;
+        // Criamos uma nova instância de updatedMeasurement para garantir que o React detecte a mudança
         const updatedMeasurement = { ...editingMeasurement, ...updatedData };
         setEditingMeasurement(updatedMeasurement);
+        
+        // Atualizamos a lista principal de medidas
         const newMeasurements = measurements.map(m => m.id === updatedMeasurement.id ? updatedMeasurement : m);
         handleMeasurementsChange(newMeasurements);
     }, [editingMeasurement, measurements, handleMeasurementsChange]);
@@ -1746,6 +1748,7 @@ const App: React.FC = () => {
             )}
             {editingMeasurement && (
                 <EditMeasurementModal
+                    key={editingMeasurement.id} // Adicionando a chave para forçar a recriação
                     isOpen={!!editingMeasurement}
                     onClose={handleCloseEditMeasurementModal}
                     measurement={editingMeasurement}
@@ -1763,7 +1766,7 @@ const App: React.FC = () => {
                                 id: Date.now(), 
                                 isNew: false
                             };
-                            const index = measurements.findIndex(m => m.id === measurementToDuplicate.id);
+                            const index = measurements.findIndex(m => m.id === editingMeasurement.id);
                             const newMeasurements = [...measurements];
                             newMeasurements.splice(index + 1, 0, newMeasurement);
                             handleMeasurementsChange(newMeasurements);

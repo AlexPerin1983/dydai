@@ -124,6 +124,8 @@ const FilmCard: React.FC<{
     };
     
     const hasTechnicalData = film.uv || film.ir || film.vtl || film.espessura || film.tser;
+    const hasImages = (film.imagens?.length || 0) > 0;
+    const hasExpandableContent = hasTechnicalData || hasImages;
     
     const TechnicalDataItem: React.FC<{ label: string; value: number | undefined; unit: string; }> = ({ label, value, unit }) => {
         if (!value) return null;
@@ -165,8 +167,8 @@ const FilmCard: React.FC<{
                 className="relative z-10 w-full bg-white rounded-lg"
             >
                 <div
-                    onClick={onToggleExpand}
-                    className="p-4 cursor-pointer"
+                    onClick={hasExpandableContent ? onToggleExpand : undefined}
+                    className={`p-4 ${hasExpandableContent ? 'cursor-pointer' : 'cursor-default'}`}
                     role="button"
                     aria-expanded={isExpanded}
                 >
@@ -189,23 +191,47 @@ const FilmCard: React.FC<{
                         </div>
                     </div>
 
-                    {hasTechnicalData && (
+                    {hasExpandableContent && (
                          <div className="text-center text-slate-400 mt-3 -mb-1">
                              <i className={`fas fa-chevron-down transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}></i>
                          </div>
                     )}
                 </div>
 
-                <div className={`transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className={`transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
                     <div className="p-4 pt-3 bg-slate-50/70 border-t border-slate-200/80 technical-data-section">
-                        <h4 className="text-sm font-semibold text-slate-700 mb-2">Dados Técnicos</h4>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm">
-                            <TechnicalDataItem label="UV" value={film.uv} unit="%" />
-                            <TechnicalDataItem label="IR" value={film.ir} unit="%" />
-                            <TechnicalDataItem label="VTL" value={film.vtl} unit="%" />
-                            <TechnicalDataItem label="Espessura" value={film.espessura} unit="mc" />
-                            <TechnicalDataItem label="TSER" value={film.tser} unit="%" />
-                        </div>
+                        
+                        {hasTechnicalData && (
+                            <>
+                                <h4 className="text-sm font-semibold text-slate-700 mb-2">Dados Técnicos</h4>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm mb-4 pb-4 border-b border-slate-200">
+                                    <TechnicalDataItem label="UV" value={film.uv} unit="%" />
+                                    <TechnicalDataItem label="IR" value={film.ir} unit="%" />
+                                    <TechnicalDataItem label="VTL" value={film.vtl} unit="%" />
+                                    <TechnicalDataItem label="Espessura" value={film.espessura} unit="mc" />
+                                    <TechnicalDataItem label="TSER" value={film.tser} unit="%" />
+                                </div>
+                            </>
+                        )}
+                        
+                        {hasImages && (
+                            <>
+                                <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                                    {film.imagens!.length} Imagens de Amostra
+                                </h4>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {film.imagens!.map((image, index) => (
+                                        <div key={index} className="aspect-square overflow-hidden rounded-lg shadow-md">
+                                            <img 
+                                                src={image} 
+                                                alt={`Amostra ${index + 1} de ${film.nome}`} 
+                                                className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

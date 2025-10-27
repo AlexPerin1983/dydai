@@ -351,17 +351,20 @@ const App: React.FC = () => {
     }, [activeOption, proposalOptions.length]);
 
     const handleAddProposalOption = useCallback(() => {
-        const newOption: ProposalOption = {
-            id: Date.now(),
-            name: `Opção ${proposalOptions.length + 1}`,
-            measurements: [],
-            generalDiscount: { value: '', type: 'percentage' }
-        };
-        
-        setProposalOptions(prev => [...prev, newOption]);
-        setActiveOptionId(newOption.id);
-        setIsDirty(true);
-    }, [proposalOptions.length]);
+        setProposalOptions(prevOptions => {
+            const newOption: ProposalOption = {
+                id: Date.now(),
+                name: `Opção ${prevOptions.length + 1}`,
+                measurements: [],
+                generalDiscount: { value: '', type: 'percentage' }
+            };
+            
+            const newOptions = [...prevOptions, newOption];
+            setActiveOptionId(newOption.id);
+            setIsDirty(true);
+            return newOptions;
+        });
+    }, []);
 
     const handleRenameProposalOption = useCallback((optionId: number, newName: string) => {
         setProposalOptions(prev => prev.map(opt =>
@@ -1434,6 +1437,11 @@ const App: React.FC = () => {
         }
 
         if (activeTab === 'history') {
+            // Load history data only when the tab is active for the first time
+            if (!hasLoadedHistory) {
+                loadAllPdfs();
+                setHasLoadedHistory(true);
+            }
             return (
                 <Suspense fallback={<LoadingSpinner />}>
                     <PdfHistoryView
@@ -1450,6 +1458,11 @@ const App: React.FC = () => {
         }
         
         if (activeTab === 'agenda') {
+            // Load agenda data only when the tab is active for the first time
+            if (!hasLoadedAgendamentos) {
+                loadAgendamentos();
+                setHasLoadedAgendamentos(true);
+            }
             return (
                 <Suspense fallback={<LoadingSpinner />}>
                     <AgendaView
@@ -1593,6 +1606,7 @@ const App: React.FC = () => {
                                                onSelectOption={setActiveOptionId}
                                                onRenameOption={handleRenameProposalOption}
                                                onDeleteOption={handleDeleteProposalOption}
+                                               onAddOption={handleAddProposalOption}
                                                onSwipeDirectionChange={handleSwipeDirectionChange}
                                            />
                                        )}

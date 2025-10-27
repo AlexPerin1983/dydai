@@ -6,6 +6,7 @@ interface FilmListViewProps {
     onAdd: () => void;
     onEdit: (film: Film) => void;
     onDelete: (filmName: string) => void;
+    onOpenGallery: (images: string[], initialIndex: number) => void;
 }
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -18,7 +19,8 @@ const FilmCard: React.FC<{
     onToggleExpand: () => void;
     swipedItemName: string | null;
     onSetSwipedItem: (name: string | null) => void;
-}> = ({ film, onEdit, onDelete, isExpanded, onToggleExpand, swipedItemName, onSetSwipedItem }) => {
+    onOpenGallery: (images: string[], initialIndex: number) => void;
+}> = ({ film, onEdit, onDelete, isExpanded, onToggleExpand, swipedItemName, onSetSwipedItem, onOpenGallery }) => {
     const [translateX, setTranslateX] = useState(0);
     const touchStartX = useRef(0);
     const touchStartY = useRef(0);
@@ -123,6 +125,13 @@ const FilmCard: React.FC<{
         onSetSwipedItem(null);
     };
     
+    const handleImageClick = (index: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (film.imagens && film.imagens.length > 0) {
+            onOpenGallery(film.imagens, index);
+        }
+    };
+    
     const hasTechnicalData = film.uv || film.ir || film.vtl || film.espessura || film.tser;
     const hasImages = (film.imagens?.length || 0) > 0;
     const hasExpandableContent = hasTechnicalData || hasImages;
@@ -221,10 +230,11 @@ const FilmCard: React.FC<{
                                 </h4>
                                 <div className="grid grid-cols-3 gap-3">
                                     {film.imagens!.map((image, index) => (
-                                        <div key={index} className="aspect-square overflow-hidden rounded-lg shadow-md">
+                                        <div key={index} className="aspect-square overflow-hidden rounded-lg shadow-md cursor-pointer">
                                             <img 
                                                 src={image} 
                                                 alt={`Amostra ${index + 1} de ${film.nome}`} 
+                                                onClick={(e) => handleImageClick(index, e)}
                                                 className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                                             />
                                         </div>
@@ -239,7 +249,7 @@ const FilmCard: React.FC<{
     );
 };
 
-const FilmListView: React.FC<FilmListViewProps> = ({ films, onAdd, onEdit, onDelete }) => {
+const FilmListView: React.FC<FilmListViewProps> = ({ films, onAdd, onEdit, onDelete, onOpenGallery }) => {
     const [expandedFilmName, setExpandedFilmName] = useState<string | null>(null);
     const [swipedItemName, setSwipedItemName] = useState<string | null>(null);
 
@@ -274,6 +284,7 @@ const FilmListView: React.FC<FilmListViewProps> = ({ films, onAdd, onEdit, onDel
                             onToggleExpand={() => handleToggleExpand(film.nome)}
                             swipedItemName={swipedItemName}
                             onSetSwipedItem={setSwipedItemName}
+                            onOpenGallery={onOpenGallery}
                         />
                     ))}
                 </div>

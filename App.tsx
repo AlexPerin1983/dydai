@@ -23,6 +23,7 @@ import GeneralDiscountModal from './components/modals/GeneralDiscountModal';
 import AIMeasurementModal from './components/modals/AIMeasurementModal';
 import ApiKeyModal from './components/modals/ApiKeyModal';
 import ProposalOptionsCarousel from './components/ProposalOptionsCarousel';
+import ImageGalleryModal from './components/modals/ImageGalleryModal'; // Importado
 import { usePwaInstallPrompt } from './src/hooks/usePwaInstallPrompt';
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
@@ -100,6 +101,12 @@ const App: React.FC = () => {
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
     const [apiKeyModalProvider, setApiKeyModalProvider] = useState<'gemini' | 'openai'>('gemini');
     const [isGeneralDiscountModalOpen, setIsGeneralDiscountModalOpen] = useState(false);
+    
+    // Image Gallery State
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+    const [galleryImages, setGalleryImages] = useState<string[]>([]);
+    const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
+
 
     const [numpadConfig, setNumpadConfig] = useState<NumpadConfig>({
         isOpen: false,
@@ -1197,6 +1204,7 @@ const App: React.FC = () => {
             vtl: 0,
             espessura: 0,
             tser: 0,
+            imagens: [],
         };
         handleOpenFilmModal(newFilmTemplate);
     }, [handleOpenFilmModal]);
@@ -1354,6 +1362,18 @@ const App: React.FC = () => {
         handleGeneralDiscountChange(discount);
         setIsGeneralDiscountModalOpen(false);
     }, [handleGeneralDiscountChange]);
+    
+    const handleOpenGallery = useCallback((images: string[], initialIndex: number) => {
+        setIsGalleryOpen(true);
+        setGalleryImages(images);
+        setGalleryInitialIndex(initialIndex);
+    }, []);
+
+    const handleCloseGallery = useCallback(() => {
+        setIsGalleryOpen(false);
+        setGalleryImages([]);
+        setGalleryInitialIndex(0);
+    }, []);
 
 
     const LoadingSpinner = () => (
@@ -1436,6 +1456,7 @@ const App: React.FC = () => {
                         onAdd={() => handleOpenFilmModal(null)}
                         onEdit={handleOpenFilmModal}
                         onDelete={handleRequestDeleteFilm}
+                        onOpenGallery={handleOpenGallery} // Passando a função para abrir a galeria
                     />
                 </Suspense>
             );
@@ -1551,7 +1572,6 @@ const App: React.FC = () => {
                                                options={proposalOptions}
                                                activeOptionId={activeOptionId}
                                                onSelectOption={setActiveOptionId}
-                                               onAddOption={handleAddProposalOption}
                                                onRenameOption={handleRenameProposalOption}
                                                onDeleteOption={handleDeleteProposalOption}
                                                onSwipeDirectionChange={handleSwipeDirectionChange}
@@ -1867,6 +1887,14 @@ const App: React.FC = () => {
                     onClear={handleNumpadClear}
                     onAddGroup={handleNumpadAddGroup}
                     activeField={numpadConfig.field}
+                />
+            )}
+            {isGalleryOpen && (
+                <ImageGalleryModal
+                    isOpen={isGalleryOpen}
+                    onClose={handleCloseGallery}
+                    images={galleryImages}
+                    initialIndex={galleryInitialIndex}
                 />
             )}
         </div>

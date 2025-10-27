@@ -428,7 +428,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                                     type="checkbox" 
                                     checked={isSelected} 
                                     onChange={(e) => onToggleSelection(measurement.id, index, e.shiftKey)}
-                                    className="form-checkbox h-4 w-4 text-blue-600 rounded-md border-slate-400 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                                    className="form-checkbox h-4 w-4 text-blue-600 rounded-md border-slate-400 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                                     aria-label={`Selecionar medida ${measurement.id}`}
                                 />
                             ) : (
@@ -437,7 +437,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                                         type="checkbox" 
                                         checked={measurement.active} 
                                         onChange={(e) => handleInputChange('active', e.target.checked)} 
-                                        className="form-checkbox h-4 w-4 text-blue-600 rounded-md border-slate-400 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                                        className="form-checkbox h-4 w-4 text-blue-600 rounded-md border-slate-400 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                                         aria-label="Ativar ou desativar esta medida do cálculo"
                                     />
                                 </Tooltip>

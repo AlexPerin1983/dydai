@@ -360,7 +360,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                         {/* Top Row: Film selector and Price */}
                         <div className="flex items-start justify-between">
                             {/* Left Side: Film Info & Selector */}
-                            <div className="flex-[2] pr-2 min-w-0">
+                            <div className="flex-1 pr-2 min-w-0">
                                 <div 
                                     role="button"
                                     tabIndex={(!measurement.active || isSelectionMode) ? -1 : 0}
@@ -379,7 +379,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                             </div>
 
                             {/* Right Side: Price & Options Menu */}
-                            <div className="flex items-center flex-1">
+                            <div className="flex items-center flex-none w-32">
                                 <Tooltip text={hasDiscount ? 'Editar Desconto' : 'Aplicar Desconto'}>
                                     <div
                                         role="button"

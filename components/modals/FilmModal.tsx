@@ -11,6 +11,8 @@ interface FilmModalProps {
     film: Film | null;
 }
 
+const MAX_IMAGES = 3;
+
 const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete, film }) => {
     const [formData, setFormData] = useState<Film>({
         nome: '',
@@ -22,9 +24,8 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
         vtl: 0,
         espessura: 0,
         tser: 0,
-        imagem: '',
+        imagens: [],
     });
-    const [imagePreview, setImagePreview] = useState<string | undefined>(film?.imagem);
 
     useEffect(() => {
         if (film) {
@@ -38,9 +39,8 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                 vtl: film.vtl || 0,
                 espessura: film.espessura || 0,
                 tser: film.tser || 0,
-                imagem: film.imagem || '',
+                imagens: film.imagens || [],
             });
-            setImagePreview(film.imagem);
         } else {
             setFormData({
                 nome: '',
@@ -52,9 +52,8 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                 vtl: 0,
                 espessura: 0,
                 tser: 0,
-                imagem: '',
+                imagens: [],
             });
-            setImagePreview(undefined);
         }
     }, [film, isOpen]);
 
@@ -72,21 +71,46 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
     };
     
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
+        const files = e.target.files;
+        if (!files) return;
+
+        const currentImagesCount = formData.imagens?.length || 0;
+        const filesToProcess = Array.from(files).slice(0, MAX_IMAGES - currentImagesCount);
+
+        if (filesToProcess.length === 0 && currentImagesCount >= MAX_IMAGES) {
+            alert(`Você já atingiu o limite de ${MAX_IMAGES} imagens.`);
+            return;
+        }
+
+        const newImages: string[] = [];
+        let filesProcessed = 0;
+
+        filesToProcess.forEach((file: File) => {
             const reader = new FileReader();
             reader.onloadend = () => {
                 const base64String = reader.result as string;
-                setFormData(prev => ({ ...prev, imagem: base64String }));
-                setImagePreview(base64String);
+                newImages.push(base64String);
+                filesProcessed++;
+
+                if (filesProcessed === filesToProcess.length) {
+                    setFormData(prev => ({ 
+                        ...prev, 
+                        imagens: [...(prev.imagens || []), ...newImages] 
+                    }));
+                }
             };
             reader.readAsDataURL(file);
-        }
+        });
+        
+        // Clear the input value so the same file can be selected again
+        e.target.value = '';
     };
     
-    const handleRemoveImage = () => {
-        setFormData(prev => ({ ...prev, imagem: '' }));
-        setImagePreview(undefined);
+    const handleRemoveImage = (indexToRemove: number) => {
+        setFormData(prev => ({ 
+            ...prev, 
+            imagens: (prev.imagens || []).filter((_, index) => index !== indexToRemove) 
+        }));
     };
 
     const handleSubmit = (e: FormEvent) => {
@@ -123,6 +147,9 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
         </button>
       </>
     );
+    
+    const currentImages = formData.imagens || [];
+    const canAddMore = currentImages.length < MAX_IMAGES;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={film ? 'Editar Película' : 'Adicionar Nova Película'} footer={footer}>
@@ -180,7 +207,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
 
                 <div className="pt-4 mt-4 border-t border-slate-200">
                     <h3 className="text-base font-semibold leading-6 text-slate-800 mb-2">
-                        Dados Técnicos e Imagem
+                        Dados Técnicos e Imagens ({currentImages.length}/{MAX_IMAGES})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         <Input
@@ -228,41 +255,46 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             step="0.1"
                         />
                         
-                        {/* Campo de Imagem */}
-                        <div className="col-span-1">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Imagem</label>
-                            <div className="relative">
-                                <input
-                                    id="film-image-upload"
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageChange}
-                                    className="sr-only"
-                                />
-                                <label 
-                                    htmlFor="film-image-upload" 
-                                    className={`w-full h-12 sm:h-20 flex flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors cursor-pointer ${imagePreview ? 'border-slate-300' : 'border-slate-300 hover:border-slate-400 bg-slate-50'}`}
-                                >
-                                    {imagePreview ? (
-                                        <div className="relative w-full h-full">
-                                            <img src={imagePreview} alt="Preview da Película" className="w-full h-full object-cover rounded-lg" />
-                                            <button 
-                                                type="button" 
-                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveImage(); }}
-                                                className="absolute top-1 right-1 h-6 w-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
-                                                aria-label="Remover imagem"
-                                            >
-                                                <i className="fas fa-times text-xs"></i>
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <>
+                        {/* Campo de Imagens */}
+                        <div className="col-span-full">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Imagens da Película</label>
+                            <div className="grid grid-cols-3 gap-3">
+                                {currentImages.map((image, index) => (
+                                    <div key={index} className="relative aspect-square">
+                                        <img src={image} alt={`Preview ${index + 1}`} className="w-full h-full object-cover rounded-lg border border-slate-200" />
+                                        <button 
+                                            type="button" 
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveImage(index); }}
+                                            className="absolute top-1 right-1 h-6 w-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
+                                            aria-label="Remover imagem"
+                                        >
+                                            <i className="fas fa-times text-xs"></i>
+                                        </button>
+                                    </div>
+                                ))}
+                                {canAddMore && (
+                                    <div className="relative aspect-square">
+                                        <input
+                                            id="film-image-upload"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageChange}
+                                            className="sr-only"
+                                            multiple
+                                        />
+                                        <label 
+                                            htmlFor="film-image-upload" 
+                                            className="w-full h-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 hover:border-slate-400 bg-slate-50 transition-colors cursor-pointer"
+                                        >
                                             <i className="fas fa-camera text-xl text-slate-400"></i>
-                                            <span className="text-xs text-slate-600 mt-1">Adicionar</span>
-                                        </>
-                                    )}
-                                </label>
+                                            <span className="text-xs text-slate-600 mt-1">Adicionar ({MAX_IMAGES - currentImages.length} restantes)</span>
+                                        </label>
+                                    </div>
+                                )}
                             </div>
+                            {!canAddMore && currentImages.length === 0 && (
+                                <p className="text-sm text-red-500 mt-2">O limite de {MAX_IMAGES} imagens foi atingido.</p>
+                            )}
                         </div>
                     </div>
                 </div>

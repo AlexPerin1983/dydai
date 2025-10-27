@@ -47,7 +47,7 @@ export interface Film {
     vtl?: number;
     espessura?: number;
     tser?: number;
-    imagem?: string; // Adicionado para armazenar a imagem em Base64
+    imagens?: string[]; // Alterado para array de strings (Base64)
 }
 
 export type PaymentMethodType = 'pix' | 'boleto' | 'parcelado_sem_juros' | 'parcelado_com_juros' | 'adiantamento' | 'observacao';

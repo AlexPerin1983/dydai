@@ -112,16 +112,16 @@ const ProposalOptionsCarousel: React.FC<ProposalOptionsCarouselProps> = ({
         <div className="flex flex-col">
             <div 
                 ref={carouselRef}
-                className="flex items-center gap-3 overflow-x-scroll pb-2 mb-4 border-b border-slate-200 snap-x snap-mandatory scrollbar-hide"
+                className="flex items-center gap-2 overflow-x-scroll pb-2 mb-4 border-b border-slate-200 snap-x snap-mandatory scrollbar-hide"
                 style={{ scrollPadding: '0 40%' }} // Padding to help center items
             >
                 {options.map((option) => (
                     <div
                         key={option.id}
                         ref={(el) => setItemRef(option.id, el)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 flex-shrink-0 snap-center ${
+                        className={`flex items-center gap-1 px-3 py-1 rounded-lg transition-all duration-200 flex-shrink-0 snap-center ${
                             activeOptionId === option.id
-                                ? 'bg-slate-800 text-white shadow-lg scale-105 ring-2 ring-slate-800'
+                                ? 'bg-slate-800 text-white shadow-md'
                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                         }`}
                     >
@@ -133,26 +133,26 @@ const ProposalOptionsCarousel: React.FC<ProposalOptionsCarouselProps> = ({
                                 onChange={(e) => setEditingName(e.target.value)}
                                 onBlur={handleSaveEdit}
                                 onKeyDown={handleKeyDown}
-                                className="w-24 px-2 py-1 text-sm bg-white text-slate-800 border border-slate-300 rounded"
+                                className="w-20 px-1 py-0.5 text-xs bg-white text-slate-800 border border-slate-300 rounded"
                                 onClick={(e) => e.stopPropagation()}
                             />
                         ) : (
                             <span
                                 onClick={() => onSelectOption(option.id)}
-                                className="text-sm font-semibold cursor-pointer"
+                                className="text-xs font-semibold cursor-pointer"
                             >
                                 {option.name}
                             </span>
                         )}
                         
                         {activeOptionId === option.id && editingOptionId !== option.id && (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-0.5">
                                 <button
                                     onClick={(e) => handleStartEdit(option, e)}
-                                    className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${activeOptionId === option.id ? 'hover:bg-slate-700' : 'hover:bg-slate-300'}`}
+                                    className={`w-5 h-5 flex items-center justify-center rounded transition-colors ${activeOptionId === option.id ? 'hover:bg-slate-700' : 'hover:bg-slate-300'}`}
                                     aria-label="Renomear opção"
                                 >
-                                    <i className="fas fa-pen text-xs"></i>
+                                    <i className="fas fa-pen text-[10px]"></i>
                                 </button>
                                 {options.length > 1 && (
                                     <button
@@ -162,10 +162,10 @@ const ProposalOptionsCarousel: React.FC<ProposalOptionsCarouselProps> = ({
                                                 onDeleteOption(option.id);
                                             }
                                         }}
-                                        className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${activeOptionId === option.id ? 'hover:bg-red-600' : 'hover:bg-red-100 text-red-600'}`}
+                                        className={`w-5 h-5 flex items-center justify-center rounded transition-colors ${activeOptionId === option.id ? 'hover:bg-red-600' : 'hover:bg-red-100 text-red-600'}`}
                                         aria-label="Excluir opção"
                                     >
-                                        <i className="fas fa-times text-xs"></i>
+                                        <i className="fas fa-times text-[10px]"></i>
                                     </button>
                                 )}
                             </div>
@@ -175,10 +175,10 @@ const ProposalOptionsCarousel: React.FC<ProposalOptionsCarouselProps> = ({
                 
                 <button
                     onClick={onAddOption}
-                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors snap-start"
+                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors snap-start"
                     aria-label="Adicionar nova opção"
                 >
-                    <i className="fas fa-plus text-sm"></i>
+                    <i className="fas fa-plus text-xs"></i>
                 </button>
             </div>
             

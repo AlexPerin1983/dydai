@@ -111,13 +111,13 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
                         <ActionButton onClick={onDuplicateMeasurements} label="Duplicar" icon="fas fa-copy" />
 
                         {/* Floating Action Button */}
-                        <div className="-translate-y-6">
+                        <div className="-translate-y-5">
                             <button
                                 onClick={onAddMeasurement}
                                 aria-label="Adicionar Nova Medida"
-                                className="w-16 h-16 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
+                                className="w-14 h-14 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
                             >
-                                <i className="fas fa-plus text-2xl"></i>
+                                <i className="fas fa-plus text-xl"></i>
                             </button>
                         </div>
 

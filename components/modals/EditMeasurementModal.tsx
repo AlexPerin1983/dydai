@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Measurement, Film } from '../../types';
 import { AMBIENTES, TIPOS_APLICACAO } from '../../constants';
 import DynamicSelector from '../ui/DynamicSelector';
@@ -40,8 +40,15 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
     onOpenFilmModal,
     onOpenFilmSelectionModal,
 }) => {
-    // 1. Estado local para isolar as alterações
     const [localMeasurement, setLocalMeasurement] = useState<UIMeasurement>(measurement);
+    const [focusedField, setFocusedField] = useState<'largura' | 'altura' | 'quantidade' | 'discount' | null>(null);
+    
+    const inputRefs = {
+        largura: useRef<HTMLInputElement>(null),
+        altura: useRef<HTMLInputElement>(null),
+        quantidade: useRef<HTMLInputElement>(null),
+        discount: useRef<HTMLInputElement>(null),
+    };
 
     // Sincroniza o estado local ao abrir o modal ou se a medida externa mudar (ex: numpad)
     useEffect(() => {
@@ -49,11 +56,37 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
             setLocalMeasurement(measurement);
         }
     }, [measurement, isOpen]);
+    
+    // Efeito para restaurar o foco e a seleção após a atualização do estado local
+    useEffect(() => {
+        if (focusedField && inputRefs[focusedField].current) {
+            const input = inputRefs[focusedField].current;
+            const cursorPosition = input.selectionStart;
+            
+            input.focus();
+            
+            // Se o cursor estava no final, mantenha no final. Caso contrário, selecione tudo.
+            if (cursorPosition === input.value.length - 1) {
+                 input.setSelectionRange(input.value.length, input.value.length);
+            } else {
+                 input.select();
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [localMeasurement]); // Depende do estado local para re-focar após a renderização
 
     if (!isOpen) return null;
 
     const handleLocalUpdate = (updatedData: Partial<Measurement>) => {
         setLocalMeasurement(prev => ({ ...prev, ...updatedData }));
+    };
+
+    const handleFocus = (field: 'largura' | 'altura' | 'quantidade' | 'discount') => {
+        setFocusedField(field);
+    };
+    
+    const handleBlur = () => {
+        setFocusedField(null);
     };
 
     const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'largura' | 'altura') => {
@@ -84,7 +117,6 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
     };
     
     const handleSave = () => {
-        // 4. Salva o estado local no componente pai e fecha
         onUpdate(localMeasurement);
         onClose();
     };
@@ -142,13 +174,40 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
                         <h3 className="font-semibold text-slate-800 mb-3 text-base">Medidas e Quantidade</h3>
                         <div className="grid grid-cols-3 gap-3">
                             <LabeledInput label="Largura (m)">
-                                <input type="text" inputMode="decimal" value={String(localMeasurement.largura)} onChange={(e) => handleNumericInputChange(e, 'largura')} className={inputClasses} />
+                                <input 
+                                    ref={inputRefs.largura}
+                                    type="text" 
+                                    inputMode="decimal" 
+                                    value={String(localMeasurement.largura)} 
+                                    onChange={(e) => handleNumericInputChange(e, 'largura')} 
+                                    onFocus={() => handleFocus('largura')}
+                                    onBlur={handleBlur}
+                                    className={inputClasses} 
+                                />
                             </LabeledInput>
                             <LabeledInput label="Altura (m)">
-                                <input type="text" inputMode="decimal" value={String(localMeasurement.altura)} onChange={(e) => handleNumericInputChange(e, 'altura')} className={inputClasses} />
+                                <input 
+                                    ref={inputRefs.altura}
+                                    type="text" 
+                                    inputMode="decimal" 
+                                    value={String(localMeasurement.altura)} 
+                                    onChange={(e) => handleNumericInputChange(e, 'altura')} 
+                                    onFocus={() => handleFocus('altura')}
+                                    onBlur={handleBlur}
+                                    className={inputClasses} 
+                                />
                             </LabeledInput>
                             <LabeledInput label="Quantidade">
-                                <input type="text" inputMode="numeric" value={String(localMeasurement.quantidade)} onChange={handleQuantityChange} className={inputClasses} />
+                                <input 
+                                    ref={inputRefs.quantidade}
+                                    type="text" 
+                                    inputMode="numeric" 
+                                    value={String(localMeasurement.quantidade)} 
+                                    onChange={handleQuantityChange} 
+                                    onFocus={() => handleFocus('quantidade')}
+                                    onBlur={handleBlur}
+                                    className={inputClasses} 
+                                />
                             </LabeledInput>
                         </div>
                     </div>
@@ -207,9 +266,12 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
                             <label className="block text-sm font-medium text-slate-600 mb-1">Valor do Desconto</label>
                             <div className="flex">
                                 <input
+                                    ref={inputRefs.discount}
                                     type="text"
                                     value={String(localMeasurement.discount || '').replace('.', ',')}
                                     onChange={handleDiscountValueChange}
+                                    onFocus={() => handleFocus('discount')}
+                                    onBlur={handleBlur}
                                     className="w-full p-2.5 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-l-md shadow-sm focus:ring-slate-500 focus:border-slate-500 sm:text-sm"
                                     placeholder="0"
                                     inputMode="decimal"

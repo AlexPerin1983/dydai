@@ -155,7 +155,13 @@ const dbDelete = async (storeName: string, key: IDBValidKey): Promise<void> => {
 
 // Client functions
 export const getAllClients = () => dbGetAll<Client>('clientes');
-export const saveClient = (client: Omit<Client, 'id'> | Client) => dbPut<Client>('clientes', client);
+export const saveClient = (client: Omit<Client, 'id'> | Client) => {
+    const clientToSave = {
+        ...client,
+        lastUpdated: new Date().toISOString() // Always update timestamp on direct save
+    };
+    return dbPut<Client>('clientes', clientToSave);
+};
 export const deleteClient = (id: number) => dbDelete('clientes', id);
 
 // Measurement functions (deprecated - use proposal options instead)
@@ -173,7 +179,19 @@ export const getProposalOptions = async (clientId: number): Promise<ProposalOpti
 };
 
 export const saveProposalOptions = async (clientId: number, options: ProposalOption[]) => {
-    return dbPut('proposal_options', { clienteId: clientId, options });
+    // 1. Save proposal options
+    await dbPut('proposal_options', { clienteId: clientId, options });
+
+    // 2. Update client's lastUpdated timestamp
+    const client = await dbGet<Client>('clientes', clientId);
+    if (client) {
+        const updatedClient = {
+            ...client,
+            lastUpdated: new Date().toISOString()
+        };
+        // Use dbPut directly to update the client object
+        await dbPut<Client>('clientes', updatedClient);
+    }
 };
 
 export const deleteProposalOptions = (clientId: number) => dbDelete('proposal_options', clientId);

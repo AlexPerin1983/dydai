@@ -12,6 +12,7 @@ export interface Client {
     bairro?: string;
     cidade?: string;
     uf?: string;
+    lastUpdated?: string; // Novo campo para rastrear a última modificação
 }
 
 export interface Measurement {

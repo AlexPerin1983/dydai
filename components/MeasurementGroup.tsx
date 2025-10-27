@@ -373,8 +373,8 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                                     className={`text-left w-full rounded-lg transition-colors`}
                                     aria-label={`Película atual: ${measurement.pelicula || 'Nenhuma'}. Clique para alterar.`}
                                 >
-                                    <div className="text-[10px] font-semibold uppercase text-slate-500 tracking-wider">Película</div>
-                                    <div className="text-xs font-bold text-slate-800 truncate leading-tight">{measurement.pelicula || 'Nenhuma'}</div>
+                                    <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Película</div>
+                                    <div className="text-sm font-bold text-slate-800 truncate leading-tight">{measurement.pelicula || 'Nenhuma'}</div>
                                 </div>
                             </div>
 
@@ -389,18 +389,18 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                                         className={`text-right rounded-lg transition-colors ${isSelectionMode ? 'cursor-default' : 'hover:bg-slate-100 cursor-pointer'}`}
                                         aria-label="Preço, clique para aplicar ou editar desconto"
                                     >
-                                        <div className="text-[10px] font-semibold uppercase text-slate-500 tracking-wider">Preço</div>
+                                        <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Preço</div>
                                         {basePrice > 0 ? (
                                             finalPrice < basePrice ? (
                                                 <div className="flex flex-col items-end leading-tight">
-                                                    <s className="text-red-500/80 text-[9px] font-normal">{formatCurrency(basePrice)}</s>
-                                                    <span className="text-xs font-bold text-slate-800 leading-tight">{formatCurrency(finalPrice)}</span>
+                                                    <s className="text-red-500/80 text-[10px] font-normal">{formatCurrency(basePrice)}</s>
+                                                    <span className="text-sm font-bold text-slate-800 leading-tight">{formatCurrency(finalPrice)}</span>
                                                 </div>
                                             ) : (
-                                                <span className="text-xs font-bold text-slate-800 leading-tight">{formatCurrency(basePrice)}</span>
+                                                <span className="text-sm font-bold text-slate-800 leading-tight">{formatCurrency(basePrice)}</span>
                                             )
                                         ) : (
-                                        <span className="text-xs font-bold text-slate-800 leading-tight">-</span>
+                                        <span className="text-sm font-bold text-slate-800 leading-tight">-</span>
                                         )}
                                     </div>
                                 </Tooltip>

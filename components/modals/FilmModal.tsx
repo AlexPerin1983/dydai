@@ -22,7 +22,9 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
         vtl: 0,
         espessura: 0,
         tser: 0,
+        imagem: '',
     });
+    const [imagePreview, setImagePreview] = useState<string | undefined>(film?.imagem);
 
     useEffect(() => {
         if (film) {
@@ -36,7 +38,9 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                 vtl: film.vtl || 0,
                 espessura: film.espessura || 0,
                 tser: film.tser || 0,
+                imagem: film.imagem || '',
             });
+            setImagePreview(film.imagem);
         } else {
             setFormData({
                 nome: '',
@@ -48,7 +52,9 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                 vtl: 0,
                 espessura: 0,
                 tser: 0,
+                imagem: '',
             });
+            setImagePreview(undefined);
         }
     }, [film, isOpen]);
 
@@ -63,6 +69,24 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
         }
         
         setFormData(prev => ({ ...prev, [id]: processedValue }));
+    };
+    
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                setFormData(prev => ({ ...prev, imagem: base64String }));
+                setImagePreview(base64String);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    
+    const handleRemoveImage = () => {
+        setFormData(prev => ({ ...prev, imagem: '' }));
+        setImagePreview(undefined);
     };
 
     const handleSubmit = (e: FormEvent) => {
@@ -156,7 +180,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
 
                 <div className="pt-4 mt-4 border-t border-slate-200">
                     <h3 className="text-base font-semibold leading-6 text-slate-800 mb-2">
-                        Dados Técnicos
+                        Dados Técnicos e Imagem
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         <Input
@@ -203,6 +227,43 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             min="0"
                             step="0.1"
                         />
+                        
+                        {/* Campo de Imagem */}
+                        <div className="col-span-1">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Imagem</label>
+                            <div className="relative">
+                                <input
+                                    id="film-image-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    className="sr-only"
+                                />
+                                <label 
+                                    htmlFor="film-image-upload" 
+                                    className={`w-full h-12 sm:h-20 flex flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors cursor-pointer ${imagePreview ? 'border-slate-300' : 'border-slate-300 hover:border-slate-400 bg-slate-50'}`}
+                                >
+                                    {imagePreview ? (
+                                        <div className="relative w-full h-full">
+                                            <img src={imagePreview} alt="Preview da Película" className="w-full h-full object-cover rounded-lg" />
+                                            <button 
+                                                type="button" 
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveImage(); }}
+                                                className="absolute top-1 right-1 h-6 w-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
+                                                aria-label="Remover imagem"
+                                            >
+                                                <i className="fas fa-times text-xs"></i>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-camera text-xl text-slate-400"></i>
+                                            <span className="text-xs text-slate-600 mt-1">Adicionar</span>
+                                        </>
+                                    )}
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </form>

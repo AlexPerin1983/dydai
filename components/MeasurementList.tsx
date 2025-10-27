@@ -25,7 +25,7 @@ interface MeasurementListProps {
     activeMeasurementId: number | null;
     onOpenEditModal: (measurement: UIMeasurement) => void;
     onOpenDiscountModal: (measurement: UIMeasurement) => void;
-    onDeleteMeasurement: (measurementId: number) => void; // Nova prop
+    onDeleteMeasurement: (measurementId: number) => void; // Prop que aciona o modal no App.tsx
     swipeDirection?: 'left' | 'right' | null;
     swipeDistance?: number;
 }
@@ -43,7 +43,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     activeMeasurementId,
     onOpenEditModal,
     onOpenDiscountModal,
-    onDeleteMeasurement, // Usando a nova prop
+    onDeleteMeasurement, // Usando a prop
     swipeDirection = null,
     swipeDistance = 0
 }) => {
@@ -56,9 +56,6 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     const [swipedItemId, setSwipedItemId] = useState<number | null>(null);
     const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
     
-    // Removendo o estado local de exclusão individual, pois ele foi movido para App.tsx
-    // const [measurementToDeleteId, setMeasurementToDeleteId] = useState<number | null>(null);
-
     const scrollVelocityRef = useRef(0);
     const animationFrameRef = useRef<number | null>(null);
     const listContainerRef = useRef<HTMLDivElement>(null);
@@ -216,7 +213,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     
     // Função que o MeasurementGroup chama para iniciar a exclusão
     const requestDeleteMeasurement = (id: number) => {
-        onDeleteMeasurement(id); // Chama a função do App.tsx
+        onDeleteMeasurement(id); // Chama a função do App.tsx que abre o modal
     };
     
     const duplicateMeasurement = (id: number) => {
@@ -277,8 +274,6 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
         };
     };
     
-    // Removendo a variável local measurementToDelete
-
     return (
         <>
             <div className="my-4 pt-4 border-t border-slate-200">
@@ -404,8 +399,6 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                     confirmButtonVariant="danger"
                 />
             )}
-            
-            {/* O modal de exclusão individual foi movido para App.tsx */}
             
             <style jsx>{`
                 @keyframes carousel-left {

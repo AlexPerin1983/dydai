@@ -101,6 +101,7 @@ const App: React.FC = () => {
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
     const [apiKeyModalProvider, setApiKeyModalProvider] = useState<'gemini' | 'openai'>('gemini');
     const [isGeneralDiscountModalOpen, setIsGeneralDiscountModalOpen] = useState(false);
+    const [isDuplicateAllModalOpen, setIsDuplicateAllModalOpen] = useState(false); // NOVO ESTADO
     
     // Image Gallery State
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -334,6 +335,13 @@ const App: React.FC = () => {
     const duplicateAllMeasurements = useCallback(() => {
         if (!activeOption) return;
         
+        // Abre o modal de confirmação
+        setIsDuplicateAllModalOpen(true);
+    }, [activeOption]);
+    
+    const handleConfirmDuplicateAll = useCallback(() => {
+        if (!activeOption) return;
+        
         const newOption: ProposalOption = {
             id: Date.now(),
             name: `Opção ${proposalOptions.length + 1}`,
@@ -348,6 +356,7 @@ const App: React.FC = () => {
         setProposalOptions(prev => [...prev, newOption]);
         setActiveOptionId(newOption.id);
         setIsDirty(true);
+        setIsDuplicateAllModalOpen(false);
     }, [activeOption, proposalOptions.length]);
 
     const handleAddProposalOption = useCallback(() => {
@@ -1928,6 +1937,25 @@ const App: React.FC = () => {
                     onClose={handleCloseGallery}
                     images={galleryImages}
                     initialIndex={galleryInitialIndex}
+                />
+            )}
+            {isDuplicateAllModalOpen && activeOption && (
+                <ConfirmationModal
+                    isOpen={isDuplicateAllModalOpen}
+                    onClose={() => setIsDuplicateAllModalOpen(false)}
+                    onConfirm={handleConfirmDuplicateAll}
+                    title="Duplicar Opção de Proposta"
+                    message={
+                        <>
+                            <p className="text-slate-700">
+                                Você está prestes a duplicar a opção atual "<strong>{activeOption.name}</strong>" ({activeOption.measurements.length} medidas) e criar uma nova opção de proposta.
+                            </p>
+                            <p className="mt-2 text-sm text-slate-600">
+                                Deseja continuar?
+                            </p>
+                        </>
+                    }
+                    confirmButtonText="Sim, Duplicar Opção"
                 />
             )}
         </div>

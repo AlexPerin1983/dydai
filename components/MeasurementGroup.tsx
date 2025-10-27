@@ -249,8 +249,8 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         ? `cursor-pointer ${isSelected ? 'border-blue-500 bg-blue-50/70 ring-1 ring-blue-500' : 'border-slate-200 hover:bg-slate-50/80'}`
         : 'border-slate-200';
     
-    // Reduzindo o tamanho da fonte dos inputs para text-xs
-    const inputBaseClasses = "w-full text-center p-1.5 rounded-lg border text-xs transition-colors duration-200";
+    // Ajustando para text-sm e py-2
+    const inputBaseClasses = "w-full text-center py-2 px-1.5 rounded-lg border text-sm transition-colors duration-200";
     
     const isDraggable = !isSelectionMode && translateX === 0 && !isModalMode;
 
@@ -275,7 +275,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         };
         
         const renderContent = () => {
-            // Usando text-xs para o conteúdo também
+            // Voltando para text-sm
             const displayValWithComma = (isEditing ? displayValue.replace('.', ',') : displayValue);
 
             if (isEditing) {
@@ -289,7 +289,8 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                 return (
                     <>
                         {displayValWithComma}
-                        <span className="inline-block w-px h-3 bg-blue-500 align-text-bottom ml-0.5 animate-blink" />
+                        {/* Aumentando a altura do cursor para text-sm */}
+                        <span className="inline-block w-px h-4 bg-blue-500 align-text-bottom ml-0.5 animate-blink" />
                     </>
                 );
             }

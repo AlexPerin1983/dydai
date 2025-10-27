@@ -257,7 +257,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                         
                         {/* Campo de Imagens */}
                         <div className="col-span-full">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Imagens da Película</label>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Imagens da Película</label>
                             <div className="grid grid-cols-3 gap-3">
                                 {currentImages.map((image, index) => (
                                     <div key={index} className="relative aspect-square">
@@ -284,7 +284,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                                         />
                                         <label 
                                             htmlFor="film-image-upload" 
-                                            className="w-full h-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 hover:border-slate-400 bg-slate-50 transition-colors cursor-pointer"
+                                            className={`w-full h-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors cursor-pointer ${currentImages.length === 0 ? 'border-slate-400 hover:border-slate-500 bg-slate-50 min-h-[120px]' : 'border-slate-300 hover:border-slate-400 bg-slate-50'}`}
                                         >
                                             <i className="fas fa-camera text-xl text-slate-400"></i>
                                             <span className="text-xs text-slate-600 mt-1">Adicionar ({MAX_IMAGES - currentImages.length} restantes)</span>

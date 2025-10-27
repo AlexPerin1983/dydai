@@ -22,7 +22,8 @@ const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
 
-    const MAX_IMAGES = provider === 'openai' ? 1 : 5;
+    // Limite de 3 imagens conforme solicitado
+    const MAX_IMAGES = 3; 
 
     const stopRecordingCleanup = () => {
         if (mediaRecorderRef.current?.stream) {
@@ -74,7 +75,7 @@ const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             if (imageFiles.length + newFiles.length >= MAX_IMAGES) {
-                 alert(`Você pode enviar no máximo ${MAX_IMAGES} ${MAX_IMAGES > 1 ? 'imagens' : 'imagem'} com ${provider === 'openai' ? 'OpenAI' : 'Gemini'}.`);
+                 alert(`Você pode enviar no máximo ${MAX_IMAGES} ${MAX_IMAGES > 1 ? 'imagens' : 'imagem'}.`);
                  break;
             }
             if (file && file.type.startsWith('image/')) {
@@ -262,7 +263,7 @@ const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose
                                         <i className="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2"></i>
                                         <p className="text-slate-600 text-sm">Arraste e solte imagens aqui, ou <span className="font-semibold text-slate-800">clique para selecionar</span>.</p>
                                         <p className="text-xs text-slate-500 mt-1">
-                                            {provider === 'openai' ? 'Apenas 1 imagem por vez.' : `Até ${MAX_IMAGES} imagens.`} Pode ser uma foto, um print ou um rascunho.
+                                            Até {MAX_IMAGES} imagens. Pode ser uma foto, um print ou um rascunho.
                                         </p>
                                     </label>
                                 </div>

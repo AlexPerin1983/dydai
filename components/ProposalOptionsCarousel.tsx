@@ -1,0 +1,198 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { ProposalOption } from '../types';
+
+interface ProposalOptionsCarouselProps {
+    options: ProposalOption[];
+    activeOptionId: number;
+    onSelectOption: (optionId: number) => void;
+    onAddOption: () => void;
+    onRenameOption: (optionId: number, newName: string) => void;
+    onDeleteOption: (optionId: number) => void;
+    onSwipeDirectionChange: (direction: 'left' | 'right' | null, distance: number) => void;
+}
+
+const ProposalOptionsCarousel: React.FC<ProposalOptionsCarouselProps> = ({
+    options,
+    activeOptionId,
+    onSelectOption,
+    onRenameOption,
+    onDeleteOption,
+    onAddOption,
+    onSwipeDirectionChange
+}) => {
+    const [editingOptionId, setEditingOptionId] = useState<number | null>(null);
+    const [editingName, setEditingName] = useState('');
+    const inputRef = useRef<HTMLInputElement>(null);
+    const carouselRef = useRef<HTMLDivElement>(null);
+    const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const previousActiveIdRef = useRef<number>(activeOptionId);
+
+    // Effect to scroll the active item into view
+    useEffect(() => {
+        const activeItem = itemRefs.current.get(activeOptionId);
+        const carousel = carouselRef.current;
+
+        if (activeItem && carousel) {
+            const itemRect = activeItem.getBoundingClientRect();
+            const carouselRect = carousel.getBoundingClientRect();
+
+            // Calculate scroll position to center the item
+            const scrollPosition = activeItem.offsetLeft - (carouselRect.width / 2) + (itemRect.width / 2);
+            
+            carousel.scrollTo({
+                left: scrollPosition,
+                behavior: 'smooth'
+            });
+            
+            // Handle swipe direction change for the parent component animation
+            if (previousActiveIdRef.current !== activeOptionId) {
+                const previousIndex = options.findIndex(opt => opt.id === previousActiveIdRef.current);
+                const currentIndex = options.findIndex(opt => opt.id === activeOptionId);
+                
+                if (previousIndex !== -1 && currentIndex !== -1) {
+                    const distance = Math.abs(currentIndex - previousIndex);
+                    const direction = currentIndex > previousIndex ? 'left' : 'right';
+                    
+                    onSwipeDirectionChange(direction, distance);
+                    
+                    // Clear animation state after a fixed duration
+                    setTimeout(() => {
+                        onSwipeDirectionChange(null, 0);
+                    }, 500); // Use a fixed duration for the visual effect
+                }
+                previousActiveIdRef.current = activeOptionId;
+            }
+        }
+    }, [activeOptionId, options, onSwipeDirectionChange]);
+
+    // Effect to focus input when editing starts
+    useEffect(() => {
+        if (editingOptionId !== null && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [editingOptionId]);
+
+    const handleStartEdit = (option: ProposalOption, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditingOptionId(option.id);
+        setEditingName(option.name);
+    };
+
+    const handleSaveEdit = () => {
+        if (editingOptionId !== null && editingName.trim()) {
+            onRenameOption(editingOptionId, editingName.trim());
+        }
+        setEditingOptionId(null);
+        setEditingName('');
+    };
+
+    const handleCancelEdit = () => {
+        setEditingOptionId(null);
+        setEditingName('');
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleSaveEdit();
+        } else if (e.key === 'Escape') {
+            handleCancelEdit();
+        }
+    };
+    
+    const setItemRef = useCallback((id: number, el: HTMLDivElement | null) => {
+        if (el) {
+            itemRefs.current.set(id, el);
+        } else {
+            itemRefs.current.delete(id);
+        }
+    }, []);
+
+    return (
+        <div className="flex flex-col">
+            <div 
+                ref={carouselRef}
+                className="flex items-center gap-3 overflow-x-scroll pb-2 mb-4 border-b border-slate-200 snap-x snap-mandatory scrollbar-hide"
+                style={{ scrollPadding: '0 40%' }} // Padding to help center items
+            >
+                {options.map((option) => (
+                    <div
+                        key={option.id}
+                        ref={(el) => setItemRef(option.id, el)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 flex-shrink-0 snap-center ${
+                            activeOptionId === option.id
+                                ? 'bg-slate-800 text-white shadow-lg scale-105 ring-2 ring-slate-800'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                    >
+                        {editingOptionId === option.id ? (
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                onBlur={handleSaveEdit}
+                                onKeyDown={handleKeyDown}
+                                className="w-24 px-2 py-1 text-sm bg-white text-slate-800 border border-slate-300 rounded"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        ) : (
+                            <span
+                                onClick={() => onSelectOption(option.id)}
+                                className="text-sm font-semibold cursor-pointer"
+                            >
+                                {option.name}
+                            </span>
+                        )}
+                        
+                        {activeOptionId === option.id && editingOptionId !== option.id && (
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={(e) => handleStartEdit(option, e)}
+                                    className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${activeOptionId === option.id ? 'hover:bg-slate-700' : 'hover:bg-slate-300'}`}
+                                    aria-label="Renomear opção"
+                                >
+                                    <i className="fas fa-pen text-xs"></i>
+                                </button>
+                                {options.length > 1 && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (window.confirm(`Excluir a opção "${option.name}"?`)) {
+                                                onDeleteOption(option.id);
+                                            }
+                                        }}
+                                        className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${activeOptionId === option.id ? 'hover:bg-red-600' : 'hover:bg-red-100 text-red-600'}`}
+                                        aria-label="Excluir opção"
+                                    >
+                                        <i className="fas fa-times text-xs"></i>
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                ))}
+                
+                <button
+                    onClick={onAddOption}
+                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors snap-start"
+                    aria-label="Adicionar nova opção"
+                >
+                    <i className="fas fa-plus text-sm"></i>
+                </button>
+            </div>
+            
+            <style jsx>{`
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+                .scrollbar-hide {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}</style>
+        </div>
+    );
+};
+
+export default React.memo(ProposalOptionsCarousel);

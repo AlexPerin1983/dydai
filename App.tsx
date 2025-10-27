@@ -22,7 +22,7 @@ import DiscountModal from './components/modals/DiscountModal';
 import GeneralDiscountModal from './components/modals/GeneralDiscountModal';
 import AIMeasurementModal from './components/modals/AIMeasurementModal';
 import ApiKeyModal from './components/modals/ApiKeyModal';
-import ProposalOptionsTabs from './components/ProposalOptionsTabs';
+import ProposalOptionsCarousel from './components/ProposalOptionsCarousel';
 import { usePwaInstallPrompt } from './src/hooks/usePwaInstallPrompt';
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
@@ -1547,7 +1547,7 @@ const App: React.FC = () => {
                                        />
                                        
                                        {proposalOptions.length > 0 && activeOptionId && (
-                                           <ProposalOptionsTabs
+                                           <ProposalOptionsCarousel
                                                options={proposalOptions}
                                                activeOptionId={activeOptionId}
                                                onSelectOption={setActiveOptionId}

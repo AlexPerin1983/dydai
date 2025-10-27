@@ -89,7 +89,7 @@ const App: React.FC = () => {
     const [isFilmSelectionModalOpen, setIsFilmSelectionModalOpen] = useState(false);
     const [isApplyFilmToAllModalOpen, setIsApplyFilmToAllModalOpen] = useState(false);
     const [filmToApplyToAll, setFilmToApplyToAll] = useState<string | null>(null);
-    const [editingMeasurementIdForFilm, setEditingMeasurementIdForFilm] = useState<number | null>(null);
+    const [editingMeasurementIdForFilm, setEditingMeasurementIdForFilm, ] = useState<number | null>(null);
     const [newClientName, setNewClientName] = useState<string>('');
     const [editingMeasurement, setEditingMeasurement] = useState<UIMeasurement | null>(null);
     const [schedulingInfo, setSchedulingInfo] = useState<SchedulingInfo | null>(null);
@@ -155,14 +155,25 @@ const App: React.FC = () => {
     const loadClients = useCallback(async (clientIdToSelect?: number) => {
         const storedClients = await db.getAllClients();
         setClients(storedClients);
-        if (clientIdToSelect) {
-            setSelectedClientId(clientIdToSelect);
+        
+        let idToSelect = clientIdToSelect;
+        
+        // If no specific ID is passed, try to use the last selected ID from userInfo
+        if (!idToSelect && userInfo?.lastSelectedClientId) {
+            const lastClient = storedClients.find(c => c.id === userInfo.lastSelectedClientId);
+            if (lastClient) {
+                idToSelect = lastClient.id;
+            }
+        }
+
+        if (idToSelect) {
+            setSelectedClientId(idToSelect);
         } else if (storedClients.length > 0) {
             setSelectedClientId(storedClients[0].id!);
         } else {
             setSelectedClientId(null);
         }
-    }, []);
+    }, [userInfo?.lastSelectedClientId]);
 
     const loadFilms = useCallback(async () => {
         const customFilms = await db.getAllCustomFilms();
@@ -183,24 +194,27 @@ const App: React.FC = () => {
     useEffect(() => {
         const init = async () => {
             setIsLoading(true);
+            const loadedUserInfo = await db.getUserInfo();
+            setUserInfo(loadedUserInfo);
+            
             await Promise.all([
-                loadClients(),
+                loadClients(), // loadClients now depends on userInfo, so we call it after setting userInfo
                 loadFilms(),
-                db.getUserInfo().then(setUserInfo),
             ]);
             setIsLoading(false);
         };
         init();
-    }, []);
-    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Run only once on mount
+
+    // Effect to persist selectedClientId
     useEffect(() => {
-        if (activeTab === 'history' && !hasLoadedHistory) {
-            loadAllPdfs().then(() => setHasLoadedHistory(true));
+        if (selectedClientId !== null && userInfo && userInfo.lastSelectedClientId !== selectedClientId) {
+            const updatedUserInfo = { ...userInfo, lastSelectedClientId: selectedClientId };
+            setUserInfo(updatedUserInfo);
+            db.saveUserInfo(updatedUserInfo);
         }
-        if (activeTab === 'agenda' && !hasLoadedAgendamentos) {
-            loadAgendamentos().then(() => setHasLoadedAgendamentos(true));
-        }
-    }, [activeTab, hasLoadedHistory, loadAllPdfs, hasLoadedAgendamentos, loadAgendamentos]);
+    }, [selectedClientId, userInfo]);
 
     useEffect(() => {
         const loadDataForClient = async () => {
@@ -447,7 +461,9 @@ const App: React.FC = () => {
 
         const remainingClients = clients.filter(c => c.id !== selectedClientId);
         setClients(remainingClients);
-        setSelectedClientId(remainingClients.length > 0 ? remainingClients[0].id! : null);
+        
+        const newSelectedId = remainingClients.length > 0 ? remainingClients[0].id! : null;
+        setSelectedClientId(newSelectedId);
         
         if (hasLoadedHistory) {
             await loadAllPdfs();

@@ -754,7 +754,7 @@ const App: React.FC = () => {
             });
     
             const prompt = `
-                Você é um assistente especialista em extração de dados de clientes. Sua tarefa é extrair o máximo de informações de contato e endereço de um cliente a partir da entrada fornecida (texto, imagem ou áudio).
+                Você é um assistente especialista em extração de dados de clientes. Sua tarefa é extrair o máximo de informações de contato, endereço completo (incluindo CEP, logradouro, número, bairro, cidade e UF) e documento (CPF ou CNPJ) de um cliente a partir da entrada fornecida (texto, imagem ou áudio).
                 Formate os campos de telefone, CPF/CNPJ e CEP APENAS com dígitos, sem pontuação ou espaços.
                 Responda APENAS com um objeto JSON válido que corresponda ao schema fornecido. Não inclua nenhuma outra explicação ou texto.
             `;

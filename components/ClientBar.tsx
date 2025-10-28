@@ -35,7 +35,7 @@ const ClientBar: React.FC<ClientBarProps> = ({
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const touchStartX = useRef(0);
-    const touchStartY = useRef(0); // Adicionado touchStartY
+    const touchStartY = useRef(0);
     const touchStartTime = useRef(0);
     const isSwiping = useRef(false);
     const SWIPE_THRESHOLD = 50;
@@ -71,7 +71,6 @@ const ClientBar: React.FC<ClientBarProps> = ({
 
     const handleTouchMove = (e: React.TouchEvent) => {
         if (!isSwiping.current) return;
-        // Previne o scroll horizontal da página enquanto desliza
         // Não previne o default aqui para permitir o scroll vertical
     };
 
@@ -159,7 +158,7 @@ const ClientBar: React.FC<ClientBarProps> = ({
                 style={{ touchAction: 'pan-y' }} // Permite o scroll vertical, mas captura o horizontal
             >
                 {selectedClient ? (
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3">
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 animate-fade-in-scale">
                         <div className="flex items-start gap-3">
                             {/* Avatar - Agora clicável e com ícone de múltiplos clientes */}
                             <div 
@@ -254,7 +253,7 @@ const ClientBar: React.FC<ClientBarProps> = ({
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectClientClick() }}
-                        className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 cursor-pointer active:bg-slate-50 transition-colors"
+                        className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 cursor-pointer active:bg-slate-50 transition-colors animate-fade-in-scale"
                         aria-label="Selecionar cliente"
                     >
                         <div className="flex items-center justify-between">
@@ -351,6 +350,21 @@ const ClientBar: React.FC<ClientBarProps> = ({
                     />
                 </div>
             </div>
+            <style jsx>{`
+                @keyframes fade-in-scale {
+                    from {
+                        opacity: 0;
+                        transform: scale(0.98);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                }
+                .animate-fade-in-scale {
+                    animation: fade-in-scale 0.3s ease-out forwards;
+                }
+            `}</style>
         </div>
     );
 };

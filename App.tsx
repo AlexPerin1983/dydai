@@ -88,6 +88,7 @@ const App: React.FC = () => {
     const [hasLoadedAgendamentos, setHasLoadedAgendamentos] = useState(false);
     const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
     const [swipeDistance, setSwipeDistance] = useState(0);
+    const [clientTransitionKey, setClientTransitionKey] = useState(0); // NOVO ESTADO PARA ANIMAÇÃO
 
 
     // Modal States
@@ -242,6 +243,8 @@ const App: React.FC = () => {
             setUserInfo(updatedUserInfo);
             db.saveUserInfo(updatedUserInfo);
         }
+        // Update transition key whenever client changes
+        setClientTransitionKey(prev => prev + 1);
     }, [selectedClientId, userInfo]);
 
     useEffect(() => {
@@ -1780,6 +1783,7 @@ const App: React.FC = () => {
                                {clients.length > 0 ? (
                                    <div className="bg-slate-100 p-2 px-2 rounded-xl">
                                        <ClientBar
+                                           key={clientTransitionKey} // Chave para forçar a remontagem e animação
                                            selectedClient={selectedClient}
                                            onSelectClientClick={handleOpenClientSelectionModal}
                                            onAddClient={() => handleOpenClientModal('add')}

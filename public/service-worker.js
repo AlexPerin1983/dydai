@@ -1,119 +1,72 @@
-const CACHE_NAME = 'peliculas-brasil-v2';
-const RUNTIME_CACHE = 'peliculas-brasil-runtime-v2';
+importScripts('https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js');
 
-// Assets to cache on install
-const PRECACHE_URLS = [
-    '/',
-    '/index.html'
-];
+const { registerRoute } = workbox.routing;
+const { CacheFirst, NetworkFirst, StaleWhileRevalidate } = workbox.strategies;
+const { CacheableResponsePlugin } = workbox.cacheableResponse;
+const { ExpirationPlugin } = workbox.expiration;
+const { precacheAndRoute } = workbox.precaching;
 
-// Install event - cache essential assets
-self.addEventListener('install', (event) => {
-    console.log('[SW] Installing service worker v2...');
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('[SW] Caching app shell');
-                return cache.addAll(PRECACHE_URLS).catch(err => {
-                    console.error('[SW] Failed to cache:', err);
-                });
-            })
-            .then(() => {
-                console.log('[SW] Skip waiting');
-                return self.skipWaiting();
-            })
-    );
-});
+// Precache and route
+precacheAndRoute([
+    { url: '/index.html', revision: '2' },
+    { url: '/offline.html', revision: '1' }
+]);
 
-// Activate event - clean up old caches
-self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating service worker v2...');
-    const currentCaches = [CACHE_NAME, RUNTIME_CACHE];
-    event.waitUntil(
-        caches.keys()
-            .then((cacheNames) => {
-                return Promise.all(
-                    cacheNames.map((cacheName) => {
-                        if (!currentCaches.includes(cacheName)) {
-                            console.log('[SW] Deleting old cache:', cacheName);
-                            return caches.delete(cacheName);
-                        }
-                    })
-                );
-            })
-            .then(() => {
-                console.log('[SW] Claiming clients');
-                return self.clients.claim();
-            })
-    );
-});
+// Cache page navigations (HTML) with a Network First strategy
+registerRoute(
+    ({ request }) => request.mode === 'navigate',
+    new NetworkFirst({
+        cacheName: 'pages-cache',
+        plugins: [
+            new CacheableResponsePlugin({
+                statuses: [0, 200],
+            }),
+        ],
+    })
+);
 
-// Fetch event - Cache first for app shell, network first for API calls
+// Cache CSS, JS, and Web Worker requests with a Stale While Revalidate strategy
+registerRoute(
+    ({ request }) =>
+        request.destination === 'style' ||
+        request.destination === 'script' ||
+        request.destination === 'worker',
+    new StaleWhileRevalidate({
+        cacheName: 'assets-cache',
+        plugins: [
+            new CacheableResponsePlugin({
+                statuses: [0, 200],
+            }),
+        ],
+    })
+);
+
+// Cache images with a Cache First strategy
+registerRoute(
+    ({ request }) => request.destination === 'image',
+    new CacheFirst({
+        cacheName: 'images-cache',
+        plugins: [
+            new CacheableResponsePlugin({
+                statuses: [0, 200],
+            }),
+            new ExpirationPlugin({
+                maxEntries: 60,
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+            }),
+        ],
+    })
+);
+
+// Offline fallback
 self.addEventListener('fetch', (event) => {
-    const { request } = event;
-    const url = new URL(request.url);
-
-    // Skip cross-origin requests
-    if (url.origin !== location.origin) {
-        return;
-    }
-
-    // Skip chrome-extension and other non-http(s) requests
-    if (!request.url.startsWith('http')) {
-        return;
-    }
-
-    // For navigation requests (HTML pages)
-    if (request.mode === 'navigate') {
+    if (event.request.mode === 'navigate') {
         event.respondWith(
-            fetch(request)
-                .then(response => {
-                    // Cache the new version
-                    const responseClone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(request, responseClone);
-                    });
-                    return response;
-                })
-                .catch(() => {
-                    // Fallback to cache if offline
-                    return caches.match(request)
-                        .then(cachedResponse => {
-                            return cachedResponse || caches.match('/index.html');
-                        });
-                })
-        );
-        return;
-    }
-
-    // For all other requests - cache first strategy
-    event.respondWith(
-        caches.match(request)
-            .then((cachedResponse) => {
-                if (cachedResponse) {
-                    return cachedResponse;
-                }
-
-                return fetch(request)
-                    .then((response) => {
-                        // Don't cache non-successful responses
-                        if (!response || response.status !== 200 || response.type === 'error') {
-                            return response;
-                        }
-
-                        // Clone the response
-                        const responseToCache = response.clone();
-
-                        // Cache the fetched response for runtime
-                        caches.open(RUNTIME_CACHE)
-                            .then((cache) => {
-                                cache.put(request, responseToCache);
-                            });
-
-                        return response;
-                    });
+            fetch(event.request).catch(() => {
+                return caches.match('/offline.html');
             })
-    );
+        );
+    }
 });
 
-console.log('[SW] Service Worker v2 loaded');
+console.log('[SW] Workbox Service Worker loaded');

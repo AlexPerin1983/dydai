@@ -4,6 +4,7 @@ import Input from '../ui/Input';
 import ColorPicker from '../ui/ColorPicker';
 import SignatureModal from '../modals/SignatureModal';
 import PwaDiagnostics from '../PwaDiagnostics';
+import PwaQrCode from '../PwaQrCode'; // Importado
 
 interface UserSettingsViewProps {
     userInfo: UserInfo;
@@ -453,48 +454,51 @@ const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, o
                     Instale o aplicativo no seu dispositivo para acesso rápido e uso offline.
                 </p>
                 
-                {isInIframe && (
-                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="flex items-start gap-2">
-                            <i className="fas fa-exclamation-triangle text-yellow-600 mt-0.5"></i>
-                            <div className="flex-1">
-                                <p className="text-sm text-yellow-800 font-medium">App rodando em iframe</p>
-                                <p className="text-xs text-yellow-700 mt-1">
-                                    PWAs não podem ser instalados de dentro de iframes. Abra em uma nova janela para instalar.
-                                </p>
-                                <button
-                                    type="button"
-                                    onClick={handleOpenInNewWindow}
-                                    className="mt-2 px-3 py-1.5 bg-yellow-600 text-white text-xs font-semibold rounded-md hover:bg-yellow-700 transition-colors flex items-center gap-1"
-                                >
-                                    <i className="fas fa-external-link-alt"></i>
-                                    Abrir em Nova Janela
-                                </button>
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <PwaQrCode appUrl={window.location.href} />
+                    <div className="space-y-4">
+                        {isInIframe && (
+                            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <div className="flex items-start gap-2">
+                                    <i className="fas fa-exclamation-triangle text-yellow-600 mt-0.5"></i>
+                                    <div className="flex-1">
+                                        <p className="text-sm text-yellow-800 font-medium">App rodando em iframe</p>
+                                        <p className="text-xs text-yellow-700 mt-1">
+                                            PWAs não podem ser instalados de dentro de iframes. Abra em uma nova janela para instalar.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={handleOpenInNewWindow}
+                                            className="mt-2 px-3 py-1.5 bg-yellow-600 text-white text-xs font-semibold rounded-md hover:bg-yellow-700 transition-colors flex items-center gap-1"
+                                        >
+                                            <i className="fas fa-external-link-alt"></i>
+                                            Abrir em Nova Janela
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        )}
+                        
+                        {isPwaInstalled ? (
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 font-medium flex items-center gap-2">
+                                <i className="fas fa-check-circle"></i>
+                                <span>Aplicativo instalado com sucesso!</span>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={onPromptPwaInstall}
+                                disabled={isInIframe}
+                                className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
+                            >
+                                <i className="fas fa-download"></i>
+                                Instalar Aplicativo
+                            </button>
+                        )}
                     </div>
-                )}
+                </div>
                 
                 {showDiagnostics && <PwaDiagnostics />}
-                
-                <div className="mt-4">
-                    {isPwaInstalled ? (
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 font-medium flex items-center gap-2">
-                            <i className="fas fa-check-circle"></i>
-                            <span>Aplicativo instalado com sucesso!</span>
-                        </div>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={onPromptPwaInstall}
-                            disabled={isInIframe}
-                            className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-md disabled:bg-slate-400 disabled:cursor-not-allowed"
-                        >
-                            <i className="fas fa-download"></i>
-                            Instalar Aplicativo
-                        </button>
-                    )}
-                </div>
             </div>
 
             <div className={`${sectionClass} flex justify-end items-center`}>

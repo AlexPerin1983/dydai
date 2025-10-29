@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import QRCode from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 interface PwaQrCodeProps {
     appUrl: string;
@@ -22,7 +22,7 @@ const PwaQrCode: React.FC<PwaQrCodeProps> = ({ appUrl }) => {
     return (
         <div className="space-y-4">
             <div className="flex justify-center p-4 bg-white rounded-lg shadow-inner border border-slate-200">
-                <QRCode
+                <QRCodeCanvas
                     value={urlToEncode}
                     size={180}
                     level="H"

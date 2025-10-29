@@ -43,9 +43,24 @@
       "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "platform": "windows"
+      "platform": "windows",
+      "label": "Narrow Screenshot Example"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "platform": "windows",
+      "label": "Wide Screenshot Example"
     }
   ],
+  "related_applications": [
+    {
+      "platform": "windows",
+      "id": "PelículasBrasilAppIDPlaceholder"
+    }
+  ],
+  "iarc_rating_id": "51234567-1234-5678-90ab-cdef12345678",
   "categories": ["business", "productivity", "finance"],
   "prefer_related_applications": false
 }

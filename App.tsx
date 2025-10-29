@@ -173,23 +173,27 @@ const App: React.FC = () => {
         }
     }, [numpadConfig.isOpen, numpadConfig.measurementId]);
 
-    const loadClients = useCallback(async (clientIdToSelect?: number) => {
+    const loadClients = useCallback(async (clientIdToSelect?: number, shouldReorder: boolean = true) => {
         const storedClients = await db.getAllClients();
         
-        // Sort clients by lastUpdated descending
-        const sortedClients = storedClients.sort((a, b) => {
-            const dateA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
-            const dateB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
-            return dateB - dateA;
-        });
+        let finalClients = storedClients;
 
-        setClients(sortedClients);
+        if (shouldReorder) {
+            // Sort clients by lastUpdated descending
+            finalClients = storedClients.sort((a, b) => {
+                const dateA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
+                const dateB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
+                return dateB - dateA;
+            });
+        }
+
+        setClients(finalClients);
         
         let idToSelect = clientIdToSelect;
         
         // If no specific ID is passed, try to use the last selected ID from userInfo
         if (!idToSelect && userInfo?.lastSelectedClientId) {
-            const lastClient = sortedClients.find(c => c.id === userInfo.lastSelectedClientId);
+            const lastClient = finalClients.find(c => c.id === userInfo.lastSelectedClientId);
             if (lastClient) {
                 idToSelect = lastClient.id;
             }
@@ -197,8 +201,8 @@ const App: React.FC = () => {
 
         if (idToSelect) {
             setSelectedClientId(idToSelect);
-        } else if (sortedClients.length > 0) {
-            setSelectedClientId(sortedClients[0].id!);
+        } else if (finalClients.length > 0) {
+            setSelectedClientId(finalClients[0].id!);
         } else {
             setSelectedClientId(null);
         }
@@ -288,7 +292,7 @@ const App: React.FC = () => {
             await db.saveProposalOptions(selectedClientId, proposalOptions);
             setIsDirty(false);
             
-            // Reload clients to ensure the currently active client moves to the top of the list
+            // Recarrega clientes, mantendo a reordenação padrão (shouldReorder=true)
             await loadClients(selectedClientId);
         }
     }, [selectedClientId, proposalOptions, loadClients]);
@@ -385,7 +389,7 @@ const App: React.FC = () => {
         setProposalOptions(prevOptions => {
             const newOption: ProposalOption = {
                 id: Date.now(),
-                name: `Opção ${prevOptions.length + 1}`,
+                name: `Opção 1`, // Nome padrão
                 measurements: [],
                 generalDiscount: { value: '', type: 'percentage' }
             };
@@ -1588,6 +1592,9 @@ const App: React.FC = () => {
         if (clients.length <= 1 || !selectedClientId) return;
         const currentIndex = clients.findIndex(c => c.id === selectedClientId);
         const nextIndex = (currentIndex + 1) % clients.length;
+        
+        // Ao trocar via swipe, não reordenamos a lista de clientes (shouldReorder=false)
+        // A lista 'clients' já está na ordem de 'lastUpdated'
         setSelectedClientId(clients[nextIndex].id!);
     }, [clients, selectedClientId]);
 
@@ -1595,6 +1602,8 @@ const App: React.FC = () => {
         if (clients.length <= 1 || !selectedClientId) return;
         const currentIndex = clients.findIndex(c => c.id === selectedClientId);
         const prevIndex = (currentIndex - 1 + clients.length) % clients.length;
+        
+        // Ao trocar via swipe, não reordenamos a lista de clientes (shouldReorder=false)
         setSelectedClientId(clients[prevIndex].id!);
     }, [clients, selectedClientId]);
     // --- FIM LÓGICA DE PAGINAÇÃO POR SWIPE ---

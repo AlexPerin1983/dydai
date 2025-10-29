@@ -21,10 +21,10 @@ import AgendamentoModal from './components/modals/AgendamentoModal';
 import DiscountModal from './components/modals/DiscountModal';
 import GeneralDiscountModal from './components/modals/GeneralDiscountModal';
 import AIMeasurementModal from './components/modals/AIMeasurementModal';
-import AIClientModal from './components/modals/AIClientModal'; // Importado
+import AIClientModal from './components/modals/AIClientModal';
 import ApiKeyModal from './components/modals/ApiKeyModal';
 import ProposalOptionsCarousel from './components/ProposalOptionsCarousel';
-import ImageGalleryModal from './components/modals/ImageGalleryModal'; // Importado
+import ImageGalleryModal from './components/modals/ImageGalleryModal';
 import { usePwaInstallPrompt } from './src/hooks/usePwaInstallPrompt';
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
@@ -54,7 +54,6 @@ export type SchedulingInfo = {
     pdf?: SavedPDF;
 };
 
-// Tipo para os dados do cliente extraídos pela IA
 interface ExtractedClientData {
     nome?: string;
     telefone?: string;
@@ -88,7 +87,7 @@ const App: React.FC = () => {
     const [hasLoadedAgendamentos, setHasLoadedAgendamentos] = useState(false);
     const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
     const [swipeDistance, setSwipeDistance] = useState(0);
-    const [clientTransitionKey, setClientTransitionKey] = useState(0); // NOVO ESTADO PARA ANIMAÇÃO
+    const [clientTransitionKey, setClientTransitionKey] = useState(0);
 
 
     // Modal States
@@ -106,7 +105,7 @@ const App: React.FC = () => {
     const [isFilmSelectionModalOpen, setIsFilmSelectionModalOpen] = useState(false);
     const [isApplyFilmToAllModalOpen, setIsApplyFilmToAllModalOpen] = useState(false);
     const [filmToApplyToAll, setFilmToApplyToAll] = useState<string | null>(null);
-    const [editingMeasurementIdForFilm, setEditingMeasurementIdForFilm, ] = useState<number | null>(null);
+    const [editingMeasurementIdForFilm, setEditingMeasurementIdForFilm] = useState<number | null>(null);
     const [newClientName, setNewClientName] = useState<string>('');
     const [editingMeasurement, setEditingMeasurement] = useState<UIMeasurement | null>(null);
     const [schedulingInfo, setSchedulingInfo] = useState<SchedulingInfo | null>(null);
@@ -114,8 +113,8 @@ const App: React.FC = () => {
     const [postClientSaveAction, setPostClientSaveAction] = useState<'openAgendamentoModal' | null>(null);
     const [editingMeasurementForDiscount, setEditingMeasurementForDiscount] = useState<UIMeasurement | null>(null);
     const [isAIMeasurementModalOpen, setIsAIMeasurementModalOpen] = useState(false);
-    const [isAIClientModalOpen, setIsAIClientModalOpen] = useState(false); // NOVO ESTADO
-    const [aiClientData, setAiClientData] = useState<Partial<Client> | undefined>(undefined); // NOVO ESTADO
+    const [isAIClientModalOpen, setIsAIClientModalOpen] = useState(false);
+    const [aiClientData, setAiClientData] = useState<Partial<Client> | undefined>(undefined);
     const [isProcessingAI, setIsProcessingAI] = useState(false);
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
     const [apiKeyModalProvider, setApiKeyModalProvider] = useState<'gemini' | 'openai'>('gemini');
@@ -123,7 +122,6 @@ const App: React.FC = () => {
     const [isDuplicateAllModalOpen, setIsDuplicateAllModalOpen] = useState(false); 
     const [measurementToDeleteId, setMeasurementToDeleteId] = useState<number | null>(null); 
     
-    // Image Gallery State
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [galleryImages, setGalleryImages] = useState<string[]>([]);
     const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
@@ -139,6 +137,44 @@ const App: React.FC = () => {
     
     const mainRef = useRef<HTMLElement>(null);
     const numpadRef = useRef<HTMLDivElement>(null);
+
+    // Handle URL parameters (shortcuts, share target, etc.)
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Handle tab parameter from shortcuts
+        const tabParam = urlParams.get('tab');
+        if (tabParam && ['client', 'films', 'settings', 'history', 'agenda'].includes(tabParam)) {
+            setActiveTab(tabParam as ActiveTab);
+        }
+        
+        // Handle action parameter
+        const actionParam = urlParams.get('action');
+        if (actionParam === 'new') {
+            // Open new client modal after loading
+            setTimeout(() => {
+                setClientModalMode('add');
+                setIsClientModalOpen(true);
+            }, 500);
+        }
+        
+        // Handle share target parameters
+        const sharedTitle = urlParams.get('title');
+        const sharedText = urlParams.get('text');
+        const sharedUrl = urlParams.get('url');
+        
+        if (sharedText || sharedTitle) {
+            // If text was shared, open AI modal with the text
+            setTimeout(() => {
+                setIsAIMeasurementModalOpen(true);
+            }, 500);
+        }
+        
+        // Clear URL parameters after processing
+        if (urlParams.toString()) {
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+    }, []);
 
     useEffect(() => {
         const mainEl = mainRef.current;
@@ -179,7 +215,6 @@ const App: React.FC = () => {
         let finalClients = storedClients;
 
         if (shouldReorder) {
-            // Sort clients by lastUpdated descending
             finalClients = storedClients.sort((a, b) => {
                 const dateA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
                 const dateB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
@@ -191,7 +226,6 @@ const App: React.FC = () => {
         
         let idToSelect = clientIdToSelect;
         
-        // If no specific ID is passed, try to use the last selected ID from userInfo
         if (!idToSelect && userInfo?.lastSelectedClientId) {
             const lastClient = finalClients.find(c => c.id === userInfo.lastSelectedClientId);
             if (lastClient) {
@@ -230,24 +264,20 @@ const App: React.FC = () => {
             const loadedUserInfo = await db.getUserInfo();
             setUserInfo(loadedUserInfo);
             
-            // Load clients after userInfo is set, as loadClients depends on userInfo
             await loadClients(); 
             await loadFilms();
             
             setIsLoading(false);
         };
         init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Run only once on mount
+    }, []);
 
-    // Effect to persist selectedClientId
     useEffect(() => {
         if (selectedClientId !== null && userInfo && userInfo.lastSelectedClientId !== selectedClientId) {
             const updatedUserInfo = { ...userInfo, lastSelectedClientId: selectedClientId };
             setUserInfo(updatedUserInfo);
             db.saveUserInfo(updatedUserInfo);
         }
-        // Update transition key whenever client changes
         setClientTransitionKey(prev => prev + 1);
     }, [selectedClientId, userInfo]);
 
@@ -288,11 +318,9 @@ const App: React.FC = () => {
 
     const handleSaveChanges = useCallback(async () => {
         if (selectedClientId && proposalOptions.length > 0) {
-            // db.saveProposalOptions now handles updating the client's lastUpdated timestamp
             await db.saveProposalOptions(selectedClientId, proposalOptions);
             setIsDirty(false);
             
-            // Recarrega clientes, mantendo a reordenação padrão (shouldReorder=true)
             await loadClients(selectedClientId);
         }
     }, [selectedClientId, proposalOptions, loadClients]);
@@ -361,7 +389,6 @@ const App: React.FC = () => {
     const duplicateAllMeasurements = useCallback(() => {
         if (!activeOption) return;
         
-        // Abre o modal de confirmação
         setIsDuplicateAllModalOpen(true);
     }, [activeOption]);
     
@@ -389,7 +416,7 @@ const App: React.FC = () => {
         setProposalOptions(prevOptions => {
             const newOption: ProposalOption = {
                 id: Date.now(),
-                name: `Opção 1`, // Nome padrão
+                name: `Opção 1`,
                 measurements: [],
                 generalDiscount: { value: '', type: 'percentage' }
             };
@@ -458,7 +485,7 @@ const App: React.FC = () => {
             alert('Selecione um cliente para editar.');
             return;
         }
-        setAiClientData(undefined); // Clear AI data when opening manually
+        setAiClientData(undefined);
         setIsClientModalOpen(true);
     }, [selectedClientId, numpadConfig.isOpen, handleNumpadClose]);
     
@@ -469,19 +496,16 @@ const App: React.FC = () => {
     const handleSaveClient = useCallback(async (client: Omit<Client, 'id'>) => {
         let savedClient: Client;
         if (clientModalMode === 'edit' && selectedClientId) {
-            // saveClient now handles updating lastUpdated timestamp
             savedClient = await db.saveClient({ ...client, id: selectedClientId });
         } else {
-            // saveClient now handles updating lastUpdated timestamp
             savedClient = await db.saveClient(client);
         }
         
-        // Instead of manually updating state, reload clients to ensure correct sorting
         await loadClients(savedClient.id!); 
         
         setIsClientModalOpen(false);
         setNewClientName('');
-        setAiClientData(undefined); // Clear AI data after successful save
+        setAiClientData(undefined);
 
         if (postClientSaveAction === 'openAgendamentoModal') {
             handleOpenAgendamentoModal({
@@ -514,7 +538,6 @@ const App: React.FC = () => {
             }
         }
 
-        // Reload clients to ensure correct sorting and selection of the next client
         await loadClients();
         
         if (hasLoadedHistory) {
@@ -797,9 +820,6 @@ const App: React.FC = () => {
     };
 
     const processClientDataWithOpenAI = async (input: { type: 'text' | 'image'; data: string | File[] }): Promise<ExtractedClientData | null> => {
-        // OpenAI logic here (similar to processWithOpenAI but with client data schema)
-        // NOTE: For brevity and since Gemini is the primary AI, we'll focus on Gemini implementation for now.
-        // If the user selects OpenAI, we'll alert them that this specific feature is only fully supported by Gemini (especially for audio).
         alert("O preenchimento de dados do cliente com OpenAI ainda não está totalmente implementado. Por favor, use o Gemini ou preencha manualmente.");
         return null;
     };
@@ -827,7 +847,7 @@ const App: React.FC = () => {
             if (extractedData) {
                 setAiClientData(extractedData);
                 setIsAIClientModalOpen(false);
-                setIsClientModalOpen(true); // Reabre o modal do cliente com os dados da IA
+                setIsClientModalOpen(true);
             }
 
         } finally {
@@ -836,7 +856,6 @@ const App: React.FC = () => {
     }, [userInfo]);
 
     const processWithGemini = async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
-        // ... (Lógica de processamento de medidas com Gemini, mantida)
         try {
             const genAI = new GoogleGenerativeAI(userInfo!.aiConfig!.apiKey);
             const model = genAI.getGenerativeModel({ 
@@ -929,7 +948,6 @@ const App: React.FC = () => {
     };
 
     const processWithOpenAI = async (input: { type: 'text' | 'image'; data: string | File[] }) => {
-        // ... (Lógica de processamento de medidas com OpenAI, mantida)
         try {
             const prompt = `Você é um assistente especialista para uma empresa de instalação de películas de vidro. Sua tarefa é extrair dados de medidas da entrada fornecida pelo usuário. Extraia as seguintes informações para cada medida: largura, altura, quantidade e uma descrição do ambiente/local (ex: "sala", "quarto", "janela da cozinha"). As medidas estão em metros. Se o usuário disser '1 e meio por 2', interprete como 1,50m por 2,00m. Sempre formate as medidas com duas casas decimais e vírgula como separador. O ambiente deve ser uma descrição curta e útil.`;
 
@@ -1398,11 +1416,8 @@ const App: React.FC = () => {
         handleMeasurementsChange(newMeasurements);
     }, [editingMeasurement, measurements, handleMeasurementsChange]);
     
-    // Função que o MeasurementGroup e EditMeasurementModal chamam para iniciar a exclusão
     const handleRequestDeleteMeasurement = useCallback((measurementId: number) => {
-        // Fecha o modal de edição se estiver aberto
         handleCloseEditMeasurementModal(); 
-        // Define o ID para abrir o modal de confirmação no App.tsx
         setMeasurementToDeleteId(measurementId); 
     }, [handleCloseEditMeasurementModal]);
     
@@ -1413,14 +1428,12 @@ const App: React.FC = () => {
         }
     }, [measurementToDeleteId, measurements, handleMeasurementsChange]);
     
-    // A função onDelete passada para EditMeasurementModal
     const handleDeleteMeasurementFromEditModal = useCallback(() => {
         if (editingMeasurement) {
             handleRequestDeleteMeasurement(editingMeasurement.id);
         }
     }, [editingMeasurement, handleRequestDeleteMeasurement]);
     
-    // A função onDelete passada para MeasurementGroup
     const handleDeleteMeasurementFromGroup = useCallback((measurementId: number) => {
         handleRequestDeleteMeasurement(measurementId);
     }, [handleRequestDeleteMeasurement]);
@@ -1587,14 +1600,11 @@ const App: React.FC = () => {
         }
     }, [deferredPrompt, promptInstall]);
 
-    // --- LÓGICA DE PAGINAÇÃO POR SWIPE ---
     const goToNextClient = useCallback(() => {
         if (clients.length <= 1 || !selectedClientId) return;
         const currentIndex = clients.findIndex(c => c.id === selectedClientId);
         const nextIndex = (currentIndex + 1) % clients.length;
         
-        // Ao trocar via swipe, não reordenamos a lista de clientes (shouldReorder=false)
-        // A lista 'clients' já está na ordem de 'lastUpdated'
         setSelectedClientId(clients[nextIndex].id!);
     }, [clients, selectedClientId]);
 
@@ -1603,10 +1613,8 @@ const App: React.FC = () => {
         const currentIndex = clients.findIndex(c => c.id === selectedClientId);
         const prevIndex = (currentIndex - 1 + clients.length) % clients.length;
         
-        // Ao trocar via swipe, não reordenamos a lista de clientes (shouldReorder=false)
         setSelectedClientId(clients[prevIndex].id!);
     }, [clients, selectedClientId]);
-    // --- FIM LÓGICA DE PAGINAÇÃO POR SWIPE ---
 
 
     const renderContent = () => {
@@ -1633,7 +1641,6 @@ const App: React.FC = () => {
         }
 
         if (activeTab === 'history') {
-            // Load history data only when the tab is active for the first time
             if (!hasLoadedHistory) {
                 loadAllPdfs();
                 setHasLoadedHistory(true);
@@ -1654,7 +1661,6 @@ const App: React.FC = () => {
         }
         
         if (activeTab === 'agenda') {
-            // Load agenda data only when the tab is active for the first time
             if (!hasLoadedAgendamentos) {
                 loadAgendamentos();
                 setHasLoadedAgendamentos(true);
@@ -1684,7 +1690,7 @@ const App: React.FC = () => {
                         onAdd={() => handleOpenFilmModal(null)}
                         onEdit={handleOpenFilmModal}
                         onDelete={handleRequestDeleteFilm}
-                        onOpenGallery={handleOpenGallery} // Passando a função para abrir a galeria
+                        onOpenGallery={handleOpenGallery}
                     />
                 </Suspense>
             );
@@ -1725,8 +1731,8 @@ const App: React.FC = () => {
                     onOpenDiscountModal={handleOpenDiscountModal}
                     swipeDirection={swipeDirection}
                     swipeDistance={swipeDistance}
-                    onDeleteMeasurement={handleDeleteMeasurementFromGroup} // Passando a nova função
-                    totalM2={totals.totalM2} // Passando o total de m²
+                    onDeleteMeasurement={handleDeleteMeasurementFromGroup}
+                    totalM2={totals.totalM2}
                 />
             );
         }
@@ -1792,7 +1798,7 @@ const App: React.FC = () => {
                                {clients.length > 0 ? (
                                    <div className="bg-slate-100 p-2 px-2 rounded-xl">
                                        <ClientBar
-                                           key={clientTransitionKey} // Chave para forçar a remontagem e animação
+                                           key={clientTransitionKey}
                                            selectedClient={selectedClient}
                                            onSelectClientClick={handleOpenClientSelectionModal}
                                            onAddClient={() => handleOpenClientModal('add')}
@@ -1962,7 +1968,7 @@ const App: React.FC = () => {
                     measurement={editingMeasurement}
                     films={films}
                     onUpdate={handleUpdateEditingMeasurement}
-                    onDelete={handleDeleteMeasurementFromEditModal} // Chama a função que abre o modal de confirmação
+                    onDelete={handleDeleteMeasurementFromEditModal}
                     onDuplicate={() => {
                         const measurementToDuplicate = measurements.find(m => m.id === editingMeasurement.id);
                         if (measurementToDuplicate) {

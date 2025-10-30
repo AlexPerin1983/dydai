@@ -16,7 +16,24 @@ interface ClientModalProps {
 }
 
 const applyPhoneMask = (value: string) => {
-// ... (omitted for brevity)
+    if (!value) return "";
+    let digitsOnly = value.replace(/\D/g, "");
+    if (digitsOnly.length > 11) {
+      digitsOnly = digitsOnly.slice(0, 11);
+    }
+    if (digitsOnly.length > 10) {
+      return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 7)}-${digitsOnly.slice(7)}`;
+    }
+    if (digitsOnly.length > 6) {
+      return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 6)}-${digitsOnly.slice(6)}`;
+    }
+    if (digitsOnly.length > 2) {
+      return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2)}`;
+    }
+    if (digitsOnly.length > 0) {
+      return `(${digitsOnly}`;
+    }
+    return "";
 };
 
 const applyCpfCnpjMask = (value: string) => {
@@ -30,7 +47,9 @@ const applyCpfCnpjMask = (value: string) => {
 };
 
 const applyCepMask = (value: string) => {
-// ... (omitted for brevity)
+    if (!value) return "";
+    const digitsOnly = value.replace(/\D/g, "");
+    return digitsOnly.replace(/(\d{5})(\d{3})/, '$1-$2').slice(0, 9);
 };
 
 const popularDomains = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com'];
@@ -59,7 +78,111 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
     const isInitialLoadRef = useRef(true); // Para controlar o primeiro useEffect
 
     const handleCepBlur = async (cepValue?: string) => {
-// ... (omitted for brevity)
+        const cep = cepValue || formData.cep?.replace(/\D/g, '');
+        if (!cep || cep.length !== 8) {
+            if (!cepValue) { // Só limpa se não foi chamado por IA
+                setFormData(prev => ({ ...prev, logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '' }));
+            }
+            return;
+        }
+
+        setIsFetchingCep(true);
+        setError(null);
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const data = await response.json();
+
+            if (data.erro) {
+                setError("CEP não encontrado.");
+                setFormData(prev => ({ ...prev, logradouro: '', bairro: '', cidade: '', uf: '' }));
+            } else {
+                setFormData(prev => ({
+                    ...prev,
+                    logradouro: data.logradouro || '',
+                    bairro: data.bairro || '',
+                    cidade: data.localidade || '',
+                    uf: data.uf || '',
+                }));
+                // Foca no número após preencher o endereço
+                numberInputRef.current?.focus();
+            }
+        } catch (e) {
+            setError("Erro ao buscar CEP. Verifique sua conexão.");
+            console.error(e);
+        } finally {
+            setIsFetchingCep(false);
+        }
+    };
+
+    const handleAddressSearch = async () => {
+        const fullAddress = `${formData.logradouro} ${formData.numero}, ${formData.bairro}, ${formData.cidade} - ${formData.uf}`;
+        if (!fullAddress.trim() || fullAddress.length < 10) {
+            setError("Preencha o máximo de campos de endereço possível para buscar o CEP.");
+            return;
+        }
+        
+        setIsSearchingByAddress(true);
+        setError(null);
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${formData.cidade}/${formData.uf}/${encodeURIComponent(formData.logradouro)}/${formData.numero}/json/`);
+            const data = await response.json();
+
+            if (data && data.length > 0) {
+                const firstResult = data[0];
+                setFormData(prev => ({
+                    ...prev,
+                    cep: firstResult.cep?.replace('-', ''),
+                    logradouro: firstResult.logradouro || prev.logradouro,
+                    bairro: firstResult.bairro || prev.bairro,
+                    cidade: firstResult.localidade || prev.cidade,
+                    uf: firstResult.uf || prev.uf,
+                }));
+                handleCepBlur(firstResult.cep?.replace('-', '')); // Tenta buscar detalhes com o CEP encontrado
+            } else {
+                setError("Endereço não encontrado via busca reversa. Tente inserir o CEP manualmente.");
+            }
+        } catch (e) {
+            setError("Erro na busca reversa de endereço. Verifique sua conexão.");
+            console.error(e);
+        } finally {
+            setIsSearchingByAddress(false);
+        }
+    };
+
+    const updateEmailSuggestion = (value: string) => {
+        const atIndex = value.indexOf('@');
+        if (atIndex > 0) {
+            const domain = value.substring(atIndex + 1);
+            const potentialSuggestion = popularDomains.find(d => d.startsWith(domain) && d !== domain);
+            if (potentialSuggestion) {
+                setEmailSuggestion(`${value.substring(0, atIndex)}@${potentialSuggestion}`);
+                return;
+            }
+        }
+        setEmailSuggestion(null);
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { id, value } = e.target;
+        let maskedValue = value;
+        
+        setError(null); // Clear errors on any change
+
+        switch (id) {
+            case 'telefone':
+                maskedValue = applyPhoneMask(value);
+                break;
+            case 'cpfCnpj':
+                maskedValue = applyCpfCnpjMask(value); // Aplica máscara
+                break;
+            case 'cep':
+                maskedValue = applyCepMask(value);
+                break;
+            case 'email':
+                updateEmailSuggestion(value);
+                break;
+        }
+        setFormData(prev => ({ ...prev, [id]: maskedValue }));
     };
 
     useEffect(() => {
@@ -101,37 +224,6 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
             }
         }
     }, [mode, client, isOpen, initialName, aiData]);
-
-    const handleAddressSearch = async () => {
-// ... (omitted for brevity)
-    };
-
-    const updateEmailSuggestion = (value: string) => {
-// ... (omitted for brevity)
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { id, value } = e.target;
-        let maskedValue = value;
-        
-        setError(null); // Clear errors on any change
-
-        switch (id) {
-            case 'telefone':
-                maskedValue = applyPhoneMask(value);
-                break;
-            case 'cpfCnpj':
-                maskedValue = applyCpfCnpjMask(value); // Aplica máscara
-                break;
-            case 'cep':
-                maskedValue = applyCepMask(value);
-                break;
-            case 'email':
-                updateEmailSuggestion(value);
-                break;
-        }
-        setFormData(prev => ({ ...prev, [id]: maskedValue }));
-    };
 
     const handleEmailSuggestionClick = () => { if (emailSuggestion) { setFormData(prev => ({ ...prev, email: emailSuggestion })); setEmailSuggestion(null); } };
     const handleDomainTagClick = (domain: string) => { let currentValue = formData.email; const atIndex = currentValue.indexOf('@'); if (atIndex !== -1) { currentValue = currentValue.substring(0, atIndex); } const newValue = `${currentValue}@${domain}`; setFormData(prev => ({ ...prev, email: newValue })); setEmailSuggestion(null); };

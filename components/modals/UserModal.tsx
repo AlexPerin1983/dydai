@@ -59,9 +59,12 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, userInfo
             // Check if running in iframe
             setIsInIframe(window.self !== window.top);
             
+            // Garante que o CPF/CNPJ seja mascarado ao carregar o modal
+            const maskedCpfCnpj = applyCpfCnpjMask(userInfo.cpfCnpj || '');
+            
             setFormData(prev => ({
                 ...userInfo,
-                cpfCnpj: applyCpfCnpjMask(userInfo.cpfCnpj || '') // Aplica máscara ao carregar
+                cpfCnpj: maskedCpfCnpj
             }));
             setLogoPreview(userInfo.logo);
         }

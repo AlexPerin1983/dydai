@@ -11,7 +11,7 @@ export const mockUserInfo: UserInfo = {
     email: 'alexlacerdaperin@gmail.com',
     site: 'www.peliculasbrasil.com.br',
     endereco: 'Wind Palace - Intermares',
-    cpfCnpj: '00000000000000', // Alterado para 14 zeros (CNPJ genérico)
+    cpfCnpj: '00.000.000/0000-00', // CNPJ genérico de 14 zeros, já mascarado
     logo: mockLogo,
     assinatura: '',
     cores: { primaria: '#364562', secundaria: '#937e44' },

@@ -1,31 +1,54 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
-import ColorPicker from '../ui/ColorPicker'; // Importação adicionada (Erro 4, 6)
-import { UserInfo } from '../../types'; // Importação adicionada (Erro 1, 2, 3)
+import ColorPicker from '../ui/ColorPicker';
+import { UserInfo } from '../../types';
 
 interface UserModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (userInfo: UserInfo) => void; // Erro 1 corrigido
-    userInfo: UserInfo; // Erro 2 corrigido
+    onSave: (userInfo: UserInfo) => void;
+    userInfo: UserInfo;
     onOpenPaymentMethods: () => void;
 }
 
 const applyPhoneMask = (value: string) => {
-// ... (omitted for brevity)
+    if (!value) return "";
+    let digitsOnly = value.replace(/\D/g, "");
+    if (digitsOnly.length > 11) {
+      digitsOnly = digitsOnly.slice(0, 11);
+    }
+    if (digitsOnly.length > 10) {
+      return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 7)}-${digitsOnly.slice(7)}`;
+    }
+    if (digitsOnly.length > 6) {
+      return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 6)}-${digitsOnly.slice(6)}`;
+    }
+    if (digitsOnly.length > 2) {
+      return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2)}`;
+    }
+    if (digitsOnly.length > 0) {
+      return `(${digitsOnly}`;
+    }
+    return "";
 };
 
 const applyCpfCnpjMask = (value: string) => {
-// ... (omitted for brevity)
+    if (!value) return "";
+    const digitsOnly = value.replace(/\D/g, "");
+    if (digitsOnly.length <= 11) {
+        return digitsOnly.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14);
+    } else {
+        return digitsOnly.slice(0, 14).replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})/, '$1-$2');
+    }
 };
 
 const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, userInfo, onOpenPaymentMethods }) => {
-    const [formData, setFormData] = useState<UserInfo>(userInfo); // Erro 3 corrigido
+    const [formData, setFormData] = useState<UserInfo>(userInfo);
     const [logoPreview, setLogoPreview] = useState<string | undefined>(userInfo.logo);
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
-    const [newEmployeeName, setNewEmployeeName] = useState(''); // Erro 8 corrigido
+    const [newEmployeeName, setNewEmployeeName] = useState('');
     const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
     const [showDiagnostics, setShowDiagnostics] = useState(false);
     const [isInIframe, setIsInIframe] = useState(false);
@@ -56,7 +79,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, userInfo
         }
     };
     
-    const handleColorChange = (colorType: 'primaria' | 'secundaria', value: string) => { // Erro 5, 7 corrigido
+    const handleColorChange = (colorType: 'primaria' | 'secundaria', value: string) => {
         setFormData(prev => ({
             ...prev,
             cores: {
@@ -67,11 +90,21 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, userInfo
     };
     
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-// ... (omitted for brevity)
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                setFormData(prev => ({ ...prev, logo: base64String }));
+                setLogoPreview(base64String);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const handleRemoveLogo = () => {
-// ... (omitted for brevity)
+        setFormData(prev => ({ ...prev, logo: '' }));
+        setLogoPreview('');
     };
 
     const handleSubmit = async (e: FormEvent) => {
@@ -86,11 +119,33 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, userInfo
     };
 
     const handleWorkingDayChange = (dayIndex: number, checked: boolean) => {
-// ... (omitted for brevity)
+        setFormData(prev => {
+            const currentDays = prev.workingHours?.days || [];
+            const newDays = checked
+                ? [...currentDays, dayIndex]
+                : currentDays.filter(d => d !== dayIndex);
+            newDays.sort((a, b) => a - b);
+            return {
+                ...prev,
+                workingHours: {
+                    ...(prev.workingHours || { start: '08:00', end: '18:00', days: [] }),
+                    days: newDays,
+                }
+            };
+        });
     };
 
     const handleWorkingTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-// ... (omitted for brevity)
+        const { id, value } = e.target;
+        const field = id.split('-')[1] as 'start' | 'end';
+
+        setFormData(prev => ({
+            ...prev,
+            workingHours: {
+                ...(prev.workingHours || { start: '08:00', end: '18:00', days: [1, 2, 3, 4, 5] }),
+                [field]: value,
+            }
+        }));
     };
     
     const handleAddEmployee = () => {
@@ -199,7 +254,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, userInfo
                                 <div className="flex items-center gap-3">
                                     <ColorPicker 
                                         color={formData.cores?.primaria || '#918B45'} 
-                                        onChange={(value) => handleColorChange('primaria', value)} // Erro 5 corrigido
+                                        onChange={(value) => handleColorChange('primaria', value)} 
                                     />
                                     <div>
                                         <p className="font-medium text-slate-800">Primária</p>
@@ -211,7 +266,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, userInfo
                                 <div className="flex items-center gap-3">
                                      <ColorPicker 
                                         color={formData.cores?.secundaria || '#4E6441'} 
-                                        onChange={(value) => handleColorChange('secundaria', value)} // Erro 7 corrigido
+                                        onChange={(value) => handleColorChange('secundaria', value)} 
                                     />
                                     <div>
                                         <p className="font-medium text-slate-800">Secundária</p>
@@ -371,14 +426,14 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, userInfo
                     <div className="flex space-x-2 p-1 bg-slate-100 rounded-lg mt-1">
                         <button
                             type="button"
-                            onClick={() => { /* Implementar handleProviderChange('gemini') */ }}
+                            onClick={() => handleProviderChange('gemini')}
                             className={`flex-1 px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-200 ${formData.aiConfig?.provider === 'gemini' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
                         >
                             Google Gemini
                         </button>
                         <button
                             type="button"
-                            onClick={() => { /* Implementar handleProviderChange('openai') */ }}
+                            onClick={() => handleProviderChange('openai')}
                             className={`flex-1 px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-200 ${formData.aiConfig?.provider === 'openai' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
                         >
                             OpenAI
@@ -388,7 +443,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, userInfo
                 <div className="mt-4">
                     <button
                         type="button"
-                        onClick={() => { /* Implementar onOpenApiKeyModal */ }}
+                        onClick={() => onOpenPaymentMethods()} // Reutilizando onOpenPaymentMethods como placeholder para onOpenApiKeyModal
                         className="w-full px-4 py-3 bg-slate-100 text-slate-700 font-semibold rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
                     >
                         <i className="fas fa-key"></i>
@@ -429,7 +484,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, userInfo
                                     </p>
                                     <button
                                         type="button"
-                                        onClick={() => { /* Implementar handleOpenInNewWindow */ }}
+                                        onClick={() => handleOpenInNewWindow()}
                                         className="mt-2 px-3 py-1.5 bg-yellow-600 text-white text-xs font-semibold rounded-md hover:bg-yellow-700 transition-colors flex items-center gap-1"
                                     >
                                         <i className="fas fa-external-link-alt"></i>

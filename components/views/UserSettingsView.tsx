@@ -407,6 +407,11 @@ const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, o
                 <p className="text-sm text-slate-500 mt-2">
                     Escolha o provedor de IA e configure sua chave de API para habilitar funcionalidades como o preenchimento automático de medidas.
                 </p>
+                <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-xs text-yellow-800 font-medium">
+                        ⚠️ Aviso de Privacidade: Se você configurar uma chave de API, os dados de medidas ou clientes serão enviados ao provedor de IA escolhido para processamento. A responsabilidade e o custo do uso da API são inteiramente do usuário. Não controlamos as políticas de privacidade de serviços de terceiros.
+                    </p>
+                </div>
                 <div className="mt-4">
                     <label className={labelClass}>Provedor de IA</label>
                     <div className="flex space-x-2 p-1 bg-slate-100 rounded-lg mt-1">

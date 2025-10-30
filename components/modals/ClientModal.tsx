@@ -244,7 +244,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
         <Modal isOpen={isOpen} onClose={onClose} title={modalTitle}>
             <form id="clientForm" onSubmit={handleSubmit} className="space-y-4">
                  <fieldset disabled={isFetchingCep || isSearchingByAddress} className="space-y-4">
-                    <Input id="nome" label="Nome do Cliente" type="text" value={formData.nome} onChange={handleChange} required />
+                    <Input id="nome" label="Nome do Cliente" type="text" value={formData.nome} onChange={handleChange} required placeholder="Ex: João da Silva" />
                     <Input id="telefone" label="Telefone" type="tel" value={formData.telefone} onChange={handleChange} placeholder="(XX) XXXXX-XXXX" maxLength={15} />
                     <Input id="cpfCnpj" label="CPF/CNPJ" type="text" inputMode="numeric" value={formData.cpfCnpj} onChange={handleChange} maxLength={18} required placeholder="000.000.000-00 ou 00.000.000/0000-00" />
                     
@@ -257,13 +257,13 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
                     
                     <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
                         <p className="text-sm text-slate-600 -mt-1">Não sabe o CEP? Preencha os campos abaixo para buscar.</p>
-                        <Input id="logradouro" label="Rua / Logradouro" type="text" value={formData.logradouro || ''} onChange={handleChange} />
+                        <Input id="logradouro" label="Rua / Logradouro" type="text" value={formData.logradouro || ''} onChange={handleChange} placeholder="Ex: Av. Principal, 1234" />
                         <div className="grid grid-cols-3 gap-4">
                             <div className="col-span-2">
-                                <Input id="cidade" label="Cidade" type="text" value={formData.cidade || ''} onChange={handleChange} />
+                                <Input id="cidade" label="Cidade" type="text" value={formData.cidade || ''} onChange={handleChange} placeholder="Ex: São Paulo" />
                             </div>
                             <div className="col-span-1">
-                                <Input id="uf" label="UF" type="text" value={formData.uf || ''} onChange={handleChange} maxLength={2} />
+                                <Input id="uf" label="UF" type="text" value={formData.uf || ''} onChange={handleChange} maxLength={2} placeholder="Ex: SP" />
                             </div>
                         </div>
                         <button
@@ -281,16 +281,16 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
 
                     <div className="grid grid-cols-3 gap-4">
                         <div className="col-span-1">
-                            <Input id="numero" label="Número" type="text" value={formData.numero || ''} onChange={handleChange} ref={numberInputRef as React.Ref<HTMLInputElement>} />
+                            <Input id="numero" label="Número" type="text" value={formData.numero || ''} onChange={handleChange} ref={numberInputRef as React.Ref<HTMLInputElement>} placeholder="Ex: 123" />
                         </div>
                         <div className="col-span-2">
-                            <Input id="complemento" label="Complemento" type="text" value={formData.complemento || ''} onChange={handleChange} />
+                            <Input id="complemento" label="Complemento" type="text" value={formData.complemento || ''} onChange={handleChange} placeholder="Ex: Apto 101, Bloco B" />
                         </div>
                     </div>
-                    <Input id="bairro" label="Bairro" type="text" value={formData.bairro || ''} onChange={handleChange} />
+                    <Input id="bairro" label="Bairro" type="text" value={formData.bairro || ''} onChange={handleChange} placeholder="Ex: Centro" />
                     
                     <div className="pt-4 border-t border-slate-200">
-                        <Input id="email" label="Email" type="email" value={formData.email} onChange={handleChange} onKeyDown={handleEmailKeyDown} autoComplete="off" />
+                        <Input id="email" label="Email" type="email" value={formData.email} onChange={handleChange} onKeyDown={handleEmailKeyDown} autoComplete="off" placeholder="Ex: cliente@exemplo.com" />
                         {emailSuggestion && <div className="mt-1 text-left"><button type="button" onClick={handleEmailSuggestionClick} className="text-sm text-slate-500 hover:text-slate-800 transition-colors p-1 rounded">Sugestão: <span className="font-semibold">{emailSuggestion}</span></button></div>}
                         <div className="mt-2 flex flex-wrap gap-1.5">{popularDomains.map(domain => <button key={domain} type="button" onClick={() => handleDomainTagClick(domain)} className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded-full hover:bg-slate-200 transition-colors">@{domain}</button>)}</div>
                     </div>

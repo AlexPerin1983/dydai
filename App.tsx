@@ -25,6 +25,7 @@ import AIClientModal from './components/modals/AIClientModal';
 import ApiKeyModal from './components/modals/ApiKeyModal';
 import ProposalOptionsCarousel from './components/ProposalOptionsCarousel';
 import ImageGalleryModal from './components/modals/ImageGalleryModal';
+import AIConfigErrorModal from './components/modals/AIConfigErrorModal'; // Importando o novo modal
 import { usePwaInstallPrompt } from './src/hooks/usePwaInstallPrompt';
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
@@ -125,6 +126,9 @@ const App: React.FC = () => {
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [galleryImages, setGalleryImages] = useState<string[]>([]);
     const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
+    
+    // NOVO ESTADO PARA ERRO DE CONFIGURAÇÃO DA IA
+    const [aiConfigError, setAiConfigError] = useState<'measurement' | 'client' | null>(null);
 
 
     const [numpadConfig, setNumpadConfig] = useState<NumpadConfig>({
@@ -137,6 +141,19 @@ const App: React.FC = () => {
     
     const mainRef = useRef<HTMLElement>(null);
     const numpadRef = useRef<HTMLDivElement>(null);
+
+    // Função para lidar com o erro de configuração da IA
+    const handleAIConfigError = useCallback((source: 'measurement' | 'client') => {
+        setAiConfigError(source);
+        setIsAIMeasurementModalOpen(false);
+        setIsAIClientModalOpen(false);
+    }, []);
+    
+    const handleGoToSettingsFromAIError = useCallback(() => {
+        setAiConfigError(null);
+        setActiveTab('settings');
+    }, []);
+
 
     // Handle URL parameters (shortcuts, share target, etc.)
     useEffect(() => {
@@ -836,7 +853,7 @@ const App: React.FC = () => {
 
     const handleProcessAIClientInput = useCallback(async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
         if (!userInfo?.aiConfig?.apiKey || !userInfo?.aiConfig?.provider) {
-            alert("Por favor, configure seu provedor e chave de API na aba 'Empresa' para usar esta funcionalidade.");
+            handleAIConfigError('client');
             return;
         }
     
@@ -863,7 +880,7 @@ const App: React.FC = () => {
         } finally {
             setIsProcessingAI(false);
         }
-    }, [userInfo]);
+    }, [userInfo, handleAIConfigError]);
 
     const processWithGemini = async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
         try {
@@ -1055,7 +1072,7 @@ const App: React.FC = () => {
 
     const handleProcessAIInput = async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
         if (!userInfo?.aiConfig?.apiKey || !userInfo?.aiConfig?.provider) {
-            alert("Por favor, configure seu provedor e chave de API na aba 'Empresa' para usar esta funcionalidade.");
+            handleAIConfigError('measurement');
             return;
         }
     
@@ -2136,6 +2153,14 @@ const App: React.FC = () => {
                     onSave={handleSaveApiKey}
                     currentApiKey={userInfo.aiConfig?.provider === apiKeyModalProvider ? userInfo.aiConfig?.apiKey : ''}
                     provider={apiKeyModalProvider}
+                />
+            )}
+            {aiConfigError && userInfo && (
+                <AIConfigErrorModal
+                    isOpen={!!aiConfigError}
+                    onClose={() => setAiConfigError(null)}
+                    onGoToSettings={handleGoToSettingsFromAIError}
+                    provider={userInfo.aiConfig?.provider || 'gemini'}
                 />
             )}
             {numpadConfig.isOpen && (

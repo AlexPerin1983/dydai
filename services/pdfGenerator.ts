@@ -297,7 +297,17 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
                 const largura = parseFloat(String(m.largura).replace(',', '.')) || 0;
                 const altura = parseFloat(String(m.altura).replace(',', '.')) || 0;
                 const m2 = largura * altura * m.quantidade;
-                const basePrice = film ? m2 * film.preco : 0;
+                
+                let pricePerM2 = 0;
+                if (film) {
+                    if (film.preco > 0) {
+                        pricePerM2 = film.preco;
+                    } else if (film.maoDeObra && film.maoDeObra > 0) {
+                        pricePerM2 = film.maoDeObra;
+                    }
+                }
+                
+                const basePrice = pricePerM2 * m2;
                 
                 let itemDiscountAmount = 0;
                 let discountDisplay = '-';

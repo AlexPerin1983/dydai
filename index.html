@@ -181,7 +181,6 @@
         // Service Worker Registration (PWABuilder compatible)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // Explicitly set scope to root to ensure correct registration path
                 navigator.serviceWorker.register('/service-worker.js', { 
                     scope: '/'
                 })

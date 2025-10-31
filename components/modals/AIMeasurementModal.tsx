@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, FormEvent, DragEvent } from 'react';
 import Modal from '../ui/Modal';
+import ErrorModal from './ErrorModal';
 
 interface AIMeasurementModalProps {
     isOpen: boolean;
@@ -23,6 +24,8 @@ const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose
     const audioChunksRef = useRef<Blob[]>([]);
     
     const [error, setError] = useState<string | null>(null);
+    const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+    const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
 
     // Limite de 3 imagens conforme solicitado
     const MAX_IMAGES = 3; 
@@ -177,7 +180,7 @@ const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose
         <button
           type="submit"
           form="aiForm"
-          className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-700 min-w-[120px] disabled:bg-slate-500 disabled:cursor-wait"
+          className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-700 min-w-[120px] disabled:bg-slate-500 disabled:cursor-not-wait"
           disabled={isProcessing || !isProcessable}
         >
           {isProcessing ? (
@@ -202,6 +205,7 @@ const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose
     );
 
     return (
+        <>
         <Modal isOpen={isOpen} onClose={onClose} title="Preenchimento Automático com IA" footer={footer}>
             <form id="aiForm" onSubmit={handleSubmit} className="space-y-4">
                  <div className="flex space-x-2 p-1 bg-slate-100 rounded-lg">
@@ -286,7 +290,7 @@ const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose
                                 <>
                                     <i className="fas fa-microphone-alt text-3xl text-red-500 mb-3 animate-pulse"></i>
                                     <p className="text-slate-600 mb-4">Gravando... fale as medidas.</p>
-                                    <button type="button" onClick={stopRecording} className="px-6 py-2 bg-red-600 text-white rounded-full font-semibold shadow-md">
+                                    <button type="button" onClick={stopRecording} disabled={isProcessing} className="px-6 py-2 bg-red-600 text-white rounded-full font-semibold shadow-md hover:bg-red-700">
                                         Parar Gravação
                                     </button>
                                 </>
@@ -308,21 +312,28 @@ const AIMeasurementModal: React.FC<AIMeasurementModalProps> = ({ isOpen, onClose
                     </div>
                 )}
             </form>
-            <style jsx>{`
-                .loader-sm {
-                    border: 3px solid #f3f3f3;
-                    border-top: 3px solid #fff;
-                    border-radius: 50%;
-                    width: 20px;
-                    height: 20px;
-                    animation: spin 1s linear infinite;
-                }
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-            `}</style>
         </Modal>
+        <ErrorModal
+            isOpen={isErrorModalOpen}
+            onClose={() => setIsErrorModalOpen(false)}
+            title={errorModalContent.title}
+            message={errorModalContent.message}
+        />
+        <style jsx>{`
+            .loader-sm {
+                border: 3px solid #f3f3f3;
+                border-top: 3px solid #fff;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `}</style>
+        </>
     );
 };
 

@@ -4,4 +4,11 @@ import App from './App';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-// ... (restante do arquivo)
+    throw new Error('Root element not found!');
+}
+
+ReactDOM.createRoot(rootElement).render(
+    <React.StrictMode>
+        <App />
+    </React.StrictMode>
+);

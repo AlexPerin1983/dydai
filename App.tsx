@@ -1,4 +1,40 @@
-// ... (código anterior)
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from 'react';
+import { Client, Measurement, UserInfo, Film, PaymentMethods, SavedPDF, Agendamento, ProposalOption } from './types';
+import * as db from './services/db';
+import { generatePDF } from './services/pdfGenerator';
+import Header from './components/Header';
+import ClientBar from './components/ClientBar';
+import MeasurementList from './components/MeasurementList';
+import SummaryBar from './components/SummaryBar';
+import ActionsBar from './components/ActionsBar';
+import MobileFooter from './components/MobileFooter';
+import ClientModal from './components/modals/ClientModal';
+import ClientSelectionModal from './components/modals/ClientSelectionModal';
+import PaymentMethodsModal from './components/modals/PaymentMethodsModal';
+import FilmModal from './components/modals/FilmModal';
+import ConfirmationModal from './components/modals/ConfirmationModal';
+import CustomNumpad from './components/ui/CustomNumpad';
+import FilmSelectionModal from './components/modals/FilmSelectionModal';
+import PdfGenerationStatusModal from './components/modals/PdfGenerationStatusModal';
+import EditMeasurementModal from './components/modals/EditMeasurementModal';
+import AgendamentoModal from './components/modals/AgendamentoModal';
+import DiscountModal from './components/modals/DiscountModal';
+import GeneralDiscountModal from './components/modals/GeneralDiscountModal';
+import AIMeasurementModal from './components/modals/AIMeasurementModal';
+import AIClientModal from './components/modals/AIClientModal';
+import ApiKeyModal from './components/modals/ApiKeyModal';
+import ProposalOptionsCarousel from './components/ProposalOptionsCarousel';
+import ImageGalleryModal from './components/modals/ImageGalleryModal';
+import { usePwaInstallPrompt } from './src/hooks/usePwaInstallPrompt';
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import ErrorModal from './components/modals/ErrorModal'; // Importando ErrorModal
+
+
+const UserSettingsView = lazy(() => import('./components/views/UserSettingsView'));
+const PdfHistoryView = lazy(() => import('./components/views/PdfHistoryView'));
+const FilmListView = lazy(() => import('./components/views/FilmListView'));
+const AgendaView = lazy(() => import('./components/views/AgendaView'));
+
 
 type UIMeasurement = Measurement & { isNew?: boolean };
 type ActiveTab = 'client' | 'films' | 'settings' | 'history' | 'agenda';

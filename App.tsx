@@ -1596,9 +1596,16 @@ const App: React.FC = () => {
                 }
             };
             await handleSaveUserInfo(updatedUserInfo);
+            setUserInfo(updatedUserInfo);
             setIsApiKeyModalOpen(false);
+            
+            // Se o usuário estava tentando usar a IA de Medidas, reabra o modal de IA de Medidas
+            if (isAIMeasurementModalOpen) {
+                // Pequeno delay para garantir que o userInfo foi atualizado antes de tentar abrir
+                setTimeout(() => setIsAIMeasurementModalOpen(true), 100);
+            }
         }
-    }, [userInfo, handleSaveUserInfo, apiKeyModalProvider]);
+    }, [userInfo, handleSaveUserInfo, apiKeyModalProvider, isAIMeasurementModalOpen]);
 
     const handleSaveGeneralDiscount = useCallback((discount: { value: string; type: 'percentage' | 'fixed' }) => {
         handleGeneralDiscountChange(discount);
@@ -1626,8 +1633,16 @@ const App: React.FC = () => {
         if (numpadConfig.isOpen) {
             handleNumpadClose();
         }
-        setIsAIMeasurementModalOpen(true);
-    }, [numpadConfig.isOpen, handleNumpadClose]);
+        
+        if (userInfo && userInfo.aiConfig?.apiKey) {
+            setIsAIMeasurementModalOpen(true);
+        } else {
+            // Se a chave não estiver configurada, abre o modal de API Key e navega para configurações
+            setApiKeyModalProvider(userInfo?.aiConfig?.provider || 'gemini');
+            setIsApiKeyModalOpen(true);
+            setActiveTab('settings'); // Navega para a aba de configurações conforme solicitado
+        }
+    }, [numpadConfig.isOpen, handleNumpadClose, userInfo]);
 
 
     const LoadingSpinner = () => (

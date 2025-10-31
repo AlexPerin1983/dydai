@@ -5,6 +5,7 @@ import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import SearchableSelect from '../ui/SearchableSelect';
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import ErrorModal from '../modals/ErrorModal';
 
 interface AgendamentoModalProps {
     isOpen: boolean;
@@ -62,6 +63,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
     const [validationError, setValidationError] = useState<string | null>(null);
     const [isSuggesting, setIsSuggesting] = useState(false);
     const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[] | null>(null);
+    const [errorModal, setErrorModal] = useState<{ isOpen: boolean; title: string; message: string }>({ isOpen: false, title: '', message: '' });
 
     useEffect(() => {
         if (isOpen) {
@@ -96,7 +98,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
     }, [isOpen, agendamento, pdf, isEditing]);
 
     const handleClientMagicClick = (clientName: string) => {
-        alert(`Recurso de IA para o cliente "${clientName}" ainda não implementado.`);
+        // Não é mais necessário, pois o erro de API é tratado no handleAISuggestion
     };
 
     const handleAISuggestion = async () => {
@@ -105,7 +107,11 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
         setAiSuggestions(null);
 
         if (!userInfo?.aiConfig?.apiKey || userInfo.aiConfig.provider !== 'gemini') {
-            setValidationError("A sugestão por IA requer uma chave de API do Gemini configurada na aba 'Empresa'.");
+            setErrorModal({
+                isOpen: true,
+                title: "API Não Configurada",
+                message: "A sugestão por IA requer uma chave de API do Gemini configurada na aba 'Empresa'."
+            });
             setIsSuggesting(false);
             return;
         }
@@ -118,7 +124,11 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
         const client = clients.find(c => c.id === selectedClientId);
         const clientAddress = client ? formatClientAddress(client) : '';
         if (!client || !clientAddress.trim()) {
-             setValidationError("O cliente selecionado precisa ter um endereço cadastrado para a otimização de rota.");
+             setErrorModal({
+                isOpen: true,
+                title: "Endereço do Cliente Faltando",
+                message: "O cliente selecionado precisa ter um endereço cadastrado para a otimização de rota por IA."
+            });
              setIsSuggesting(false);
              return;
         }
@@ -188,7 +198,11 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
 
         } catch (error) {
             console.error("Erro ao obter sugestões da IA:", error);
-            setValidationError(`Ocorreu um erro ao comunicar com a IA. Detalhes: ${error instanceof Error ? error.message : String(error)}`);
+            setErrorModal({
+                isOpen: true,
+                title: "Erro na IA",
+                message: `Ocorreu um erro ao comunicar com a IA. Detalhes: ${error instanceof Error ? error.message : String(error)}`
+            });
         } finally {
             setIsSuggesting(false);
         }
@@ -223,13 +237,21 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
         const endDateTime = new Date(year, month - 1, day, endHours, endMinutes);
 
         if (!userInfo || !userInfo.workingHours || !userInfo.employees) {
-            setValidationError("Configurações da empresa (horário, equipe) não encontradas. Por favor, configure na aba 'Empresa'.");
+            setErrorModal({
+                isOpen: true,
+                title: "Configuração Incompleta",
+                message: "Configurações da empresa (horário, equipe) não encontradas. Por favor, configure na aba 'Empresa'."
+            });
             return;
         }
         
         const maxAppointments = userInfo.employees.length;
         if (maxAppointments === 0) {
-            setValidationError('Não há colaboradores cadastrados para realizar agendamentos. Adicione um colaborador na aba "Empresa".');
+            setErrorModal({
+                isOpen: true,
+                title: "Equipe Vazia",
+                message: 'Não há colaboradores cadastrados para realizar agendamentos. Adicione um colaborador na aba "Empresa".'
+            });
             return;
         }
 
@@ -306,7 +328,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
             description += `Referente ao orçamento #${pdf.id} no valor de ${formatCurrency(pdf.totalPreco)}.\\n`;
         }
         if (agendamento.notes) {
-            description += `\\nObservações:\\n${agendamento.notes.replace(/\n/g, '\\n')}`;
+            description += `\\nObservações:\\n${agendamento.notes.replace(/\\n/g, '\\n')}`;
         }
     
         const icsContent = [
@@ -329,7 +351,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        const filename = `agendamento_${client.nome.replace(/\s+/g, '_')}.ics`;
+        const filename = `agendamento_${client.nome.replace(/\\s+/g, '_')}.ics`;
         link.setAttribute('download', filename);
         document.body.appendChild(link);
         link.click();
@@ -381,6 +403,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
     const textareaClassName = `${inputClassName} min-h-[120px] resize-none`;
 
     return (
+        <>
         <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? "Editar Agendamento" : "Novo Agendamento"} footer={footerContent}>
             <form id="agendamentoForm" onSubmit={handleSubmit} className="space-y-5">
                 <div>
@@ -432,7 +455,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
                          <button 
                             type="button" 
                             onClick={handleAISuggestion}
-                            disabled={isSuggesting || !date || !selectedClientId}
+                            disabled={isSuggesting || !date || !selectedClientId || isClientLocked}
                             className="text-sm font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSuggesting ? (
@@ -493,6 +516,13 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
                 )}
             </form>
         </Modal>
+        <ErrorModal
+            isOpen={errorModal.isOpen}
+            onClose={() => setErrorModal({ isOpen: false, title: '', message: '' })}
+            title={errorModal.title}
+            message={errorModal.message}
+        />
+        </>
     );
 };
 

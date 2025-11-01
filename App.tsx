@@ -136,222 +136,86 @@ const App: React.FC = () => {
         shouldClearOnNextInput: false,
     });
 
-    // --- Hooks & Handlers (Simplified for brevity, focusing on state definitions) ---
+    // --- Hooks & Handlers ---
 
-    const handleNumpadClose = useCallback(() => {
-        setNumpadConfig({ isOpen: false, measurementId: null, field: null, currentValue: '', shouldClearOnNextInput: false });
-    }, []);
-
-    const handleMeasurementsChange = useCallback((newMeasurements: UIMeasurement[]) => {
-        if (!activeOptionId) return;
+    // Funções de Load (Declaradas aqui para serem usadas nos useEffects)
+    const loadClients = useCallback(async (clientIdToSelect?: number, shouldReorder: boolean = true) => {
+        const storedClients = await db.getAllClients();
         
-        setProposalOptions(prev => prev.map(opt =>
-            opt.id === activeOptionId
-                ? { ...opt, measurements: newMeasurements }
-                : opt
-        ));
-        setIsDirty(true);
-    }, [activeOptionId]);
+        let finalClients = storedClients;
 
-    const createEmptyMeasurement = useCallback((): Measurement => ({
-        id: Date.now(),
-        largura: '',
-        altura: '',
-        quantidade: 1,
-        ambiente: 'Desconhecido',
-        tipoAplicacao: 'Desconhecido',
-        pelicula: films[0]?.nome || 'Nenhuma',
-        active: true,
-        discount: 0,
-        discountType: 'percentage',
-    }), [films]);
-
-    const addMeasurement = useCallback(() => {
-        if (!activeOptionId) return;
-        const newMeasurement: UIMeasurement = { ...createEmptyMeasurement(), isNew: true };
-        const updatedMeasurements = [
-            newMeasurement, 
-            ...measurements.map(m => ({ ...m, isNew: false }))
-        ];
-        handleMeasurementsChange(updatedMeasurements);
-    }, [activeOptionId, createEmptyMeasurement, measurements, handleMeasurementsChange]);
-
-    const handleOpenNumpad = useCallback((measurementId: number, field: 'largura' | 'altura' | 'quantidade', currentValue: string | number) => {
-        const currentMeasurement = measurements.find(m => m.id === measurementId);
-        if (!currentMeasurement) return;
-
-        setNumpadConfig({
-            isOpen: true,
-            measurementId,
-            field,
-            currentValue: String(currentValue).replace(',', '.'),
-            shouldClearOnNextInput: true,
-        });
-    }, [measurements]);
-
-    const handleNumpadDone = useCallback(() => {
-        const { measurementId, field, currentValue } = numpadConfig;
-        if (measurementId === null || field === null) return;
-
-        let finalValue: string | number;
-        if (field === 'quantidade') {
-            finalValue = parseInt(String(currentValue), 10) || 1;
-        } else {
-            finalValue = (currentValue === '' || currentValue === '.') ? '0' : currentValue.replace('.', ',');
-        }
-
-        const updatedMeasurements = measurements.map(m =>
-            m.id === measurementId ? { ...m, [field]: finalValue } : m
-        );
-        handleMeasurementsChange(updatedMeasurements);
-
-        const fieldSequence: Array<'largura' | 'altura' | 'quantidade'> = ['largura', 'altura', 'quantidade'];
-        const currentIndex = fieldSequence.indexOf(field);
-        const nextIndex = currentIndex + 1;
-
-        if (nextIndex < fieldSequence.length) {
-            const nextField = fieldSequence[nextIndex];
-            const currentMeasurement = updatedMeasurements.find(m => m.id === measurementId);
-            const nextValue = currentMeasurement ? currentMeasurement[nextField] : '';
-
-            setNumpadConfig({
-                isOpen: true,
-                measurementId,
-                field: nextField,
-                currentValue: String(nextValue).replace(',', '.'),
-                shouldClearOnNextInput: true,
+        if (shouldReorder) {
+            finalClients = storedClients.sort((a, b) => {
+                const dateA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
+                const dateB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
+                return dateB - dateA;
             });
-        } else {
-            handleNumpadClose();
         }
-    }, [numpadConfig, measurements, handleMeasurementsChange, handleNumpadClose]);
 
-    const handleNumpadInput = useCallback((value: string) => {
-        setNumpadConfig(prev => {
-            const shouldClear = prev.shouldClearOnNextInput;
-            let newValue = prev.currentValue;
-
-            const char = value === ',' ? '.' : value;
-
-            if (char === '.') {
-                if (prev.field !== 'quantidade') {
-                    newValue = shouldClear ? '0.' : (newValue.includes('.') ? newValue : newValue + '.');
-                }
-            } else {
-                newValue = shouldClear ? char : newValue + char;
+        setClients(finalClients);
+        
+        let idToSelect = clientIdToSelect;
+        
+        if (!idToSelect && userInfo?.lastSelectedClientId) {
+            const lastClient = finalClients.find(c => c.id === userInfo.lastSelectedClientId);
+            if (lastClient) {
+                idToSelect = lastClient.id;
             }
+        }
 
-            const isWidthOrHeight = prev.field === 'largura' || prev.field === 'altura';
-            const matchesPattern = /^\d\.\d{2}$/.test(newValue);
+        if (idToSelect) {
+            setSelectedClientId(idToSelect);
+        } else if (finalClients.length > 0) {
+            setSelectedClientId(finalClients[0].id!);
+        } else {
+            setSelectedClientId(null);
+        }
+    }, [userInfo?.lastSelectedClientId]);
 
-            if (isWidthOrHeight && matchesPattern) {
-                const finalValue = newValue.replace('.', ',');
-                const measurementsWithSavedValue = measurements.map(m =>
-                    m.id === prev.measurementId ? { ...m, [prev.field!]: finalValue } : m
-                );
-                handleMeasurementsChange(measurementsWithSavedValue);
-
-                const fieldSequence: Array<'largura' | 'altura' | 'quantidade'> = ['largura', 'altura', 'quantidade'];
-                const currentIndex = fieldSequence.indexOf(prev.field!);
-                const nextIndex = currentIndex + 1;
-
-                if (nextIndex < fieldSequence.length) {
-                    const nextField = fieldSequence[nextIndex];
-                    const currentMeasurement = measurementsWithSavedValue.find(m => m.id === prev.measurementId);
-                    const nextValueForField = currentMeasurement ? currentMeasurement[nextField] : '';
-                    
-                    return {
-                        isOpen: true,
-                        measurementId: prev.measurementId,
-                        field: nextField,
-                        currentValue: String(nextValueForField).replace(',', '.'),
-                        shouldClearOnNextInput: true,
-                    };
-                } else {
-                    handleNumpadClose();
-                    return { isOpen: false, measurementId: null, field: null, currentValue: '', shouldClearOnNextInput: false };
-                }
-            }
-
-            return { ...prev, currentValue: newValue, shouldClearOnNextInput: false };
-        });
-    }, [measurements, handleMeasurementsChange, handleNumpadClose]);
-
-    const handleNumpadDelete = useCallback(() => {
-        setNumpadConfig(prev => ({ 
-            ...prev, 
-            currentValue: prev.currentValue.slice(0, -1),
-            shouldClearOnNextInput: false 
-        }));
+    const loadFilms = useCallback(async () => {
+        const loadedFilms = await db.getAllFilms();
+        setFilms(loadedFilms);
     }, []);
 
-    const handleNumpadClear = useCallback(() => {
-        const { measurementId, field } = numpadConfig;
-        if (measurementId === null) return;
+    const loadAllPdfs = useCallback(async () => {
+        if (!selectedClientId) return;
+        const loadedPdfs = await db.getPDFsForClient(selectedClientId);
+        setAllSavedPdfs(loadedPdfs);
+    }, [selectedClientId]);
+    
+    const loadAgendamentos = useCallback(async () => {
+        const loadedAgendamentos = await db.getAllAgendamentos();
+        setAgendamentos(loadedAgendamentos);
+    }, []);
 
-        const updatedMeasurements = measurements.map(m =>
-            m.id === measurementId ? { ...m, largura: '', altura: '', quantidade: 1 } : m
-        );
-        handleMeasurementsChange(updatedMeasurements);
-
-        setNumpadConfig(prev => ({
-            ...prev,
-            currentValue: field === 'quantidade' ? '1' : '',
-            shouldClearOnNextInput: true,
-        }));
-    }, [numpadConfig, measurements, handleMeasurementsChange]);
-
-    const handleNumpadDuplicate = useCallback(() => {
-        const { measurementId } = numpadConfig;
-        if (measurementId === null) return;
-
-        const measurementToDuplicate = measurements.find(m => m.id === measurementId);
-        if (measurementToDuplicate) {
-            const newMeasurement: UIMeasurement = { 
-                ...measurementToDuplicate, 
-                id: Date.now(), 
-                isNew: true 
+    const loadProposalOptions = useCallback(async (clientId: number) => {
+        const savedOptions = await db.getProposalOptions(clientId);
+        
+        if (savedOptions.length === 0) {
+            const defaultOption: ProposalOption = {
+                id: Date.now(),
+                name: 'Opção 1',
+                measurements: [],
+                generalDiscount: { value: '', type: 'percentage' }
             };
-            
-            const updatedMeasurements = [
-                newMeasurement,
-                ...measurements.map(m => ({ ...m, isNew: false }))
-            ];
-            
-            handleMeasurementsChange(updatedMeasurements);
-            setNumpadConfig(prev => ({ ...prev, measurementId: newMeasurement.id, currentValue: String(newMeasurement.largura).replace(',', '.'), shouldClearOnNextInput: true }));
+            setProposalOptions([defaultOption]);
+            setActiveOptionId(defaultOption.id);
+        } else {
+            setProposalOptions(savedOptions);
+            setActiveOptionId(savedOptions[0].id);
         }
-    }, [numpadConfig, measurements, handleMeasurementsChange]);
-
-    const handleNumpadAddGroup = useCallback(() => {
-        if (!activeOptionId) return;
-        const newMeasurement: UIMeasurement = { ...createEmptyMeasurement(), isNew: true };
-        const updatedMeasurements = [
-            newMeasurement,
-            ...measurements.map(m => ({ ...m, isNew: false }))
-        ];
-        handleMeasurementsChange(updatedMeasurements);
-        setNumpadConfig({
-            isOpen: true,
-            measurementId: newMeasurement.id,
-            field: 'largura',
-            currentValue: String(newMeasurement.largura).replace(',', '.'),
-            shouldClearOnNextInput: true,
-        });
-    }, [activeOptionId, createEmptyMeasurement, measurements, handleMeasurementsChange]);
+        setIsDirty(false);
+    }, []);
 
 
-    // --- Loaders & Initial Setup ---
-
+    // Efeitos de Inicialização e Persistência
     useEffect(() => {
         const init = async () => {
             setIsLoading(true);
             const loadedUserInfo = await db.getUserInfo();
             
-            // 1. Define UserInfo (incluindo aba ativa)
             setUserInfo(loadedUserInfo);
             
-            // 2. Define Active Tab based on loaded data or URL param (URL param takes precedence if present)
             const urlParams = new URLSearchParams(window.location.search);
             const tabParam = urlParams.get('tab');
             const initialTab: ActiveTab = tabParam && ['client', 'films', 'settings', 'history', 'agenda'].includes(tabParam) 
@@ -360,7 +224,6 @@ const App: React.FC = () => {
             
             setActiveTab(initialTab);
             
-            // 3. Load data
             await loadClients(); 
             await loadFilms();
             
@@ -378,7 +241,6 @@ const App: React.FC = () => {
         setClientTransitionKey(prev => prev + 1);
     }, [selectedClientId, userInfo]);
     
-    // NOVO EFEITO: Salva a aba ativa sempre que ela mudar
     useEffect(() => {
         if (userInfo && userInfo.activeTab !== activeTab) {
             const updatedUserInfo = { ...userInfo, activeTab: activeTab };
@@ -391,8 +253,8 @@ const App: React.FC = () => {
     useEffect(() => {
         if (selectedClientId) {
             loadProposalOptions(selectedClientId);
-            loadAllPdfs(); // Carrega PDFs quando o cliente muda
-            loadAgendamentos(); // Carrega agendamentos quando o cliente muda
+            loadAllPdfs(); 
+            loadAgendamentos(); 
         }
     }, [selectedClientId, loadProposalOptions, loadAllPdfs, loadAgendamentos]);
 
@@ -653,7 +515,15 @@ const App: React.FC = () => {
     
     const totals = useMemo(() => {
         const activeMeasurements = measurements.filter(m => m.active);
-        const subtotal = activeMeasurements.reduce((sum, m) => sum + (m.discountType === 'percentage' ? (m.discount > 0 ? (m.discount > 100 ? 0 : (m.discount < 0 ? 0 : (m.preco * (1 - m.discount / 100)))) : m.preco), 0);
+        // CORREÇÃO: Sintaxe do reduce corrigida para evitar erro TS1005/TS1005
+        const subtotal = activeMeasurements.reduce((sum, m) => {
+            const price = (m.discountType === 'percentage' && m.discount > 0 && m.discount <= 100) 
+                ? (m.preco * (1 - m.discount / 100)) 
+                : (m.discountType === 'fixed' && m.discount > 0) 
+                ? (m.preco - m.discount)
+                : m.preco;
+            return sum + price;
+        }, 0);
         
         const totalM2 = activeMeasurements.reduce((sum, m) => {
             const largura = parseFloat(String(m.largura).replace(',', '.')) || 0;

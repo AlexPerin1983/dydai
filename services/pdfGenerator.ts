@@ -3,7 +3,10 @@ import { Client, UserInfo, Measurement, Film } from '../types';
 declare const jspdf: any;
 
 const formatNumberBR = (number: number): string => {
-// ... (código anterior)
+    return new Intl.NumberFormat('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(number);
 };
 
 interface Totals {

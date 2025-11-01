@@ -126,6 +126,7 @@ const App: React.FC = () => {
     const [isAIClientModalOpenForClient, setIsAIClientModalOpenForClient] = useState(false);
     const [aiClientData, setAiClientData] = useState<Partial<Client> | null>(null);
     
+    const mainRef = useRef<HTMLElement>(null);
     const numpadRef = useRef<HTMLDivElement>(null);
     const [numpadConfig, setNumpadConfig] = useState<NumpadConfig>({
         isOpen: false,
@@ -538,7 +539,7 @@ const App: React.FC = () => {
         
         setIsClientModalOpen(false);
         setPostClientSaveAction(null);
-    }, [loadClients, postClientSaveAction, handleOpenAgendamentoModal, schedulingInfo]);
+    }, [clientModalMode, selectedClientId, postClientSaveAction, handleOpenAgendamentoModal, schedulingInfo, loadClients]);
 
     const handleDeleteClient = useCallback(() => {
         if (selectedClientId) {
@@ -591,7 +592,7 @@ const App: React.FC = () => {
         setFilmToEdit(film);
         setIsFilmModalOpen(true);
         setIsFilmSelectionModalOpen(false);
-    }, []);
+    }, [handleOpenFilmModal]);
 
     const handleSaveFilm = useCallback(async (newFilmData: Film, originalFilm: Film | null) => {
         await db.saveFilm(newFilmData);
@@ -616,7 +617,7 @@ const App: React.FC = () => {
     const handleDeleteFilm = useCallback(async (filmName: string) => {
         await db.deleteFilm(filmName);
         await loadFilms();
-        setIsFilmToDeleteName(null);
+        setFilmToDeleteName(null);
         await loadAllPdfs(); // Atualiza PDFs
         
         // Se o filme excluído estava sendo usado, remove das medidas
@@ -652,7 +653,7 @@ const App: React.FC = () => {
     
     const totals = useMemo(() => {
         const activeMeasurements = measurements.filter(m => m.active);
-        const subtotal = activeMeasurements.reduce((sum, m) => sum + (m.discountType === 'percentage' ? (m.discount > 0 ? (m.discount > 100 ? 0 : (m.discount < 0 ? 0 : (m.preco * (1 - m.discount / 100)))) : m.preco) : m.preco), 0);
+        const subtotal = activeMeasurements.reduce((sum, m) => sum + (m.discountType === 'percentage' ? (m.discount > 0 ? (m.discount > 100 ? 0 : (m.discount < 0 ? 0 : (m.preco * (1 - m.discount / 100)))) : m.preco), 0);
         
         const totalM2 = activeMeasurements.reduce((sum, m) => {
             const largura = parseFloat(String(m.largura).replace(',', '.')) || 0;
@@ -683,6 +684,7 @@ const App: React.FC = () => {
             priceAfterItemDiscounts += Math.max(0, price - itemDiscountAmount);
         });
         
+        const generalDiscount = proposalOptions.find(opt => opt.id === activeOptionId)?.generalDiscount || { value: '', type: 'percentage' };
         const finalGeneralDiscount = generalDiscount.value ? parseFloat(String(generalDiscount.value).replace(',', '.')) || 0 : 0;
         let generalDiscountAmount = 0;
         
@@ -702,7 +704,7 @@ const App: React.FC = () => {
             generalDiscountAmount,
             finalTotal
         };
-    }, [measurements, films, generalDiscount]);
+    }, [measurements, films, proposalOptions, activeOptionId]);
 
     const handleGeneratePdf = useCallback(async () => {
         if (!selectedClient || !userInfo || !activeOption || isDirty) return;
@@ -714,7 +716,7 @@ const App: React.FC = () => {
         setPdfGenerationStatus('generating');
         
         try {
-            const pdfBlob = await generatePDF(selectedClient, userInfo, measurements, films, generalDiscount, totals);
+            const pdfBlob = await generatePDF(selectedClient, userInfo, measurements, films, activeOption.generalDiscount, totals);
             
             const nomeArquivo = `Orcamento_${selectedClient.nome.replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
             
@@ -756,7 +758,7 @@ const App: React.FC = () => {
             setPdfGenerationStatus('success'); // Muda para sucesso para fechar o modal, mas mostra erro
             alert("Falha ao gerar PDF. Verifique o console.");
         }
-    }, [selectedClient, userInfo, activeOption, isDirty, handleSaveChanges, measurements, films, generalDiscount, totals, selectedClientId, downloadBlob]);
+    }, [selectedClient, userInfo, activeOption, isDirty, handleSaveChanges, measurements, films, totals, selectedClientId, downloadBlob]);
 
     const handleGoToHistoryFromPdf = useCallback(() => {
         setPdfGenerationStatus('idle');
@@ -1238,7 +1240,7 @@ const App: React.FC = () => {
 
     const handleCreateNewAgendamento = useCallback((date: Date) => {
         setSchedulingInfo({ agendamento: { clienteId: selectedClientId!, clienteNome: selectedClient!.nome, start: date.toISOString(), end: new Date(date.getTime() + 2 * 60 * 60 * 1000).toISOString() } });
-    }, [handleOpenAgendamentoModal, selectedClientId, selectedClient]);
+    }, [selectedClientId, selectedClient]);
 
     const handleOpenClientSelectionModal = useCallback(() => {
         setIsClientSelectionModalOpen(true);
@@ -1484,6 +1486,7 @@ const App: React.FC = () => {
     }
 
     const measurementToDelete = measurements.find(m => m.id === measurementToDeleteId);
+    const generalDiscount = proposalOptions.find(opt => opt.id === activeOptionId)?.generalDiscount || { value: '', type: 'percentage' };
 
     return (
         <div className="h-full font-roboto flex flex-col">

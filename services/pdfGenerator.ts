@@ -7,7 +7,11 @@ const formatNumberBR = (number: number): string => {
 };
 
 interface Totals {
-// ... (código anterior)
+    totalM2: number;
+    subtotal: number;
+    totalItemDiscount: number;
+    generalDiscountAmount: number;
+    finalTotal: number;
 }
 type GeneralDiscount = { value: string | number; type: 'percentage' | 'fixed' };
 
@@ -35,29 +39,75 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
         const margin = 15;
 
         const hexToRgb = (hex: string) => {
-// ... (código anterior)
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result
+                ? [
+                      parseInt(result[1], 16),
+                      parseInt(result[2], 16),
+                      parseInt(result[3], 16)
+                  ]
+                : [0, 0, 0];
         };
         
         const bodyText = [33, 37, 41];
 
-        const safeText = (text: any, x: number, y: number, options = {}) => {
-// ... (código anterior)
+        const safeText = (text: any, x: number, y: number, options: { align?: 'left' | 'center' | 'right' } = {}) => {
+            doc.text(String(text), x, y, { ...options, maxWidth: (options.align === 'right' ? pageWidth - margin - x : undefined) });
         };
 
         const addLogo = async (x: number, y: number, maxWidth: number, maxHeight: number) => {
-// ... (código anterior)
+            if (!userInfo.logo) return;
+            
+            const img = new Image();
+            img.src = userInfo.logo;
+            
+            await new Promise(resolve => {
+                img.onload = resolve;
+                img.onerror = resolve;
+            });
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            const ratio = img.width / img.height;
+            let finalWidth = maxWidth;
+            let finalHeight = maxHeight;
+
+            if (finalWidth > finalHeight * ratio) {
+                finalWidth = finalHeight * ratio;
+            } else {
+                finalHeight = finalWidth / ratio;
+            }
+
+            canvas.width = finalWidth;
+            canvas.height = finalHeight;
+            ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
+
+            doc.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, finalWidth, finalHeight);
         };
 
         const addFooter = () => {
-// ... (código anterior)
+            doc.setFont("helvetica", 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            safeText(`Página ${pageCounter}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
         };
 
         // This header will be used for content pages (page 2 onwards)
         const addPageHeader = async () => {
-// ... (código anterior)
+            doc.setDrawColor(150, 150, 150);
+            doc.setLineWidth(0.1);
+            doc.line(margin, 25, pageWidth - margin, 25);
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            safeText(userInfo.empresa, margin, 20);
+            safeText(`Orçamento: ${client.nome}`, pageWidth - margin, 20, { align: 'right' });
         };
         
         let pageCounter = 1;
+        let yPos = 35; // Variável de posição Y global para o conteúdo
+        
         const addNewPage = async () => {
             doc.addPage();
             pageCounter++;
@@ -67,7 +117,21 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
         };
 
         const addSectionTitle = async (title: string) => {
-// ... (código anterior)
+            if (yPos > pageHeight - 40) await addNewPage();
+            
+            doc.setFont("helvetica", 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(...bodyText);
+            doc.setDrawColor(bodyText[0], bodyText[1], bodyText[2]);
+            doc.setLineWidth(0.5);
+            
+            const titleWidth = doc.getTextWidth(title);
+            const xStart = margin;
+            
+            safeText(title, xStart, yPos);
+            doc.line(xStart + titleWidth + 5, yPos + 3, pageWidth - margin, yPos + 3);
+            
+            yPos += 10;
         };
 
         // --- COVER PAGE ---
@@ -342,13 +406,18 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
         // 1. Prepare all content for this section first to calculate its total height.
         const grandTotal = totals.finalTotal;
         const calculateParceladoSemJuros = (total: number, parcelas_max?: number | null) => {
-// ... (código anterior)
+            if (!parcelas_max || parcelas_max <= 0) return total;
+            return total / parcelas_max;
         };
         const calculateParceladoComJuros = (total: number, parcelas_max?: number | null, juros?: number | null) => {
-// ... (código anterior)
+            if (!parcelas_max || parcelas_max <= 0 || !juros || juros <= 0) return total;
+            const taxaMensal = juros / 100;
+            const valorParcela = total * (taxaMensal * Math.pow(1 + taxaMensal, parcelas_max)) / (Math.pow(1 + taxaMensal, parcelas_max) - 1);
+            return valorParcela;
         };
         const calculateAdiantamento = (total: number, porcentagem?: number | null) => {
-// ... (código anterior)
+            if (!porcentagem || porcentagem <= 0) return 0;
+            return total * (porcentagem / 100);
         };
 
         const paymentLines: string[] = [];

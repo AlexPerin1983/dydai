@@ -336,7 +336,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
     return (
         <>
             <div className={`relative my-2 rounded-lg ${!isModalMode ? 'sm:overflow-visible overflow-hidden' : ''}`}>
-                <div className={`absolute inset-y-0 right-0 flex rounded-r-lg overflow-hidden ${isModalMode ? 'hidden' : 'sm:hidden'}`}>
+                <div className={`absolute inset-y-0 right-0 flex rounded-r-lg overflow-hidden ${isModalMode ? 'hidden' : 'hidden sm:hidden'}`}>
                     <button
                         onClick={handleMenuClick}
                         className="w-20 h-full bg-slate-600 text-white flex flex-col items-center justify-center transition-colors hover:bg-slate-700"
@@ -374,7 +374,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                         onDragOver={(e) => e.preventDefault()}
                         className={`relative z-10 ${baseClasses} ${selectionClasses} ${isDragging ? 'shadow-2xl scale-[1.02]' : ''} ${isActive ? 'ring-2 ring-blue-500' : ''}`}
                     >
-                        {/* Top Row: Film selector and Price */}
+                        {/* Top Row: Film info and Price */}
                         <div className="flex items-start justify-between">
                             {/* Left Side: Film Info & Selector */}
                             <div className="flex-1 pr-2 min-w-0">
@@ -384,6 +384,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                                     onClick={() => measurement.active && !isSelectionMode && onOpenFilmSelectionModal(measurement.id)} 
                                     onKeyDown={(e) => {
                                         if (measurement.active && !isSelectionMode && (e.key === 'Enter' || e.key === ' ')) {
+                                            e.preventDefault();
                                             onOpenFilmSelectionModal(measurement.id);
                                         }
                                     }}

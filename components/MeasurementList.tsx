@@ -62,6 +62,31 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     const animationFrameRef = useRef<number | null>(null);
     const listContainerRef = useRef<HTMLDivElement>(null);
     const actionsMenuRef = useRef<HTMLDivElement>(null);
+    const firstNewMeasurementRef = useRef<number | null>(null);
+
+    // Efeito para focar no primeiro input da nova medida (largura)
+    useEffect(() => {
+        if (measurements.length > 0) {
+            const firstNew = measurements.find(m => m.isNew);
+            if (firstNew) {
+                firstNewMeasurementRef.current = firstNew.id;
+            }
+        }
+    }, [measurements]);
+
+    useEffect(() => {
+        if (firstNewMeasurementRef.current !== null) {
+            const element = listContainerRef.current?.querySelector(`[data-measurement-id='${firstNewMeasurementRef.current}'] [inputmode='decimal']`);
+            if (element) {
+                // Abre o numpad diretamente no campo de largura
+                onOpenNumpad(firstNewMeasurementRef.current, 'largura', '');
+                
+                // Limpa a flag isNew após focar
+                onMeasurementsChange(measurements.map(m => m.id === firstNewMeasurementRef.current ? {...m, isNew: false} : m));
+                firstNewMeasurementRef.current = null;
+            }
+        }
+    }, [measurements, onMeasurementsChange, onOpenNumpad]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -227,12 +252,14 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                 isNew: true 
             };
             
-            const updatedMeasurements = [
-                newMeasurement,
-                ...measurements.map(m => ({ ...m, isNew: false }))
-            ];
+            const index = measurements.findIndex(m => m.id === id);
+            const newMeasurements = [...measurements];
+            newMeasurements.splice(index + 1, 0, newMeasurement);
             
-            onMeasurementsChange(updatedMeasurements);
+            // Garante que apenas a nova medida seja marcada como nova
+            const finalMeasurements = newMeasurements.map(m => m.id === newMeasurement.id ? {...m, isNew: true} : {...m, isNew: false});
+            
+            onMeasurementsChange(finalMeasurements);
         }
     };
 

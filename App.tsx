@@ -224,13 +224,14 @@ const App: React.FC = () => {
             
             setActiveTab(initialTab);
             
-            await loadClients(); 
+            // Chamada inicial de loadClients, passando null para clientIdToSelect, para que ele use userInfo.lastSelectedClientId
+            await loadClients(null, true); 
             await loadFilms();
             
             setIsLoading(false);
         };
         init();
-    }, [loadClients, loadFilms]);
+    }, [loadClients, loadFilms]); // Dependências mantidas, mas a lógica interna de loadClients foi ajustada para ser mais robusta
 
     useEffect(() => {
         if (selectedClientId !== null && userInfo) {
@@ -1697,7 +1698,7 @@ const App: React.FC = () => {
 
                         {activeTab === 'client' && selectedClientId && (
                             <>
-                                <div className="hidden sm:block mt-6 pt-6 border-t border-slate-200">
+                                <div className="hidden sm:block mt-0 pt-0 border-t border-slate-200"> {/* REMOVIDO MARGIN SUPERIOR PARA ELIMINAR ESPAÇO EM BRANCO */}
                                    <SummaryBar 
                                         totals={totals}
                                         generalDiscount={generalDiscount}

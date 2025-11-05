@@ -21,7 +21,7 @@ const formatAddress = (client: Client): string => {
         client.uf,
     ];
     return parts.filter(Boolean).join(', ');
-}
+};
 
 const ClientBar: React.FC<ClientBarProps> = ({
     selectedClient,
@@ -56,22 +56,19 @@ const ClientBar: React.FC<ClientBarProps> = ({
     }, [isMenuOpen]);
     
     const handleTouchStart = (e: React.TouchEvent) => {
-        // Ignora se o menu de opções estiver aberto
         if (isMenuOpen) return;
         
-        // Ignora se o toque começar em um botão ou link
         const target = e.target as HTMLElement;
         if (target.closest('button') || target.closest('a')) return;
 
         isSwiping.current = true;
         touchStartX.current = e.touches[0].clientX;
-        touchStartY.current = e.touches[0].clientY; // Inicializado touchStartY
+        touchStartY.current = e.touches[0].clientY;
         touchStartTime.current = Date.now();
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
         if (!isSwiping.current) return;
-        // Não previne o default aqui para permitir o scroll vertical
     };
 
     const handleTouchEnd = (e: React.TouchEvent) => {
@@ -79,18 +76,15 @@ const ClientBar: React.FC<ClientBarProps> = ({
         isSwiping.current = false;
 
         const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-        const deltaY = e.changedTouches[0].clientY - touchStartY.current; // Usando touchStartY
+        const deltaY = e.changedTouches[0].clientY - touchStartY.current;
         const deltaTime = Date.now() - touchStartTime.current;
 
-        // Verifica se o movimento foi predominantemente horizontal (para evitar conflito com scroll vertical)
-        if (Math.abs(deltaY) > Math.abs(deltaX)) return; // Se for mais vertical, ignora
+        if (Math.abs(deltaY) > Math.abs(deltaX)) return;
 
         if (deltaTime < TIME_THRESHOLD && Math.abs(deltaX) > SWIPE_THRESHOLD) {
             if (deltaX > 0) {
-                // Swipe Right (Cliente Anterior)
                 onSwipeRight();
             } else {
-                // Swipe Left (Próximo Cliente)
                 onSwipeLeft();
             }
         }
@@ -120,8 +114,6 @@ const ClientBar: React.FC<ClientBarProps> = ({
         </Tooltip>
     );
 
-    const fullAddress = selectedClient ? formatAddress(selectedClient) : '';
-
     const MenuItem: React.FC<{
         onClick: () => void;
         icon: string;
@@ -149,6 +141,8 @@ const ClientBar: React.FC<ClientBarProps> = ({
         </button>
     );
 
+    const fullAddress = selectedClient ? formatAddress(selectedClient) : '';
+
     return (
         <div className="mb-4">
             {/* Mobile Layout */}
@@ -157,35 +151,31 @@ const ClientBar: React.FC<ClientBarProps> = ({
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                style={{ touchAction: 'pan-y' }} // Permite o scroll vertical, mas captura o horizontal
+                style={{ touchAction: 'pan-y' }}
             >
                 {selectedClient ? (
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 animate-fade-in-scale">
                         <div className="flex items-start gap-3">
-                            {/* Avatar - Agora clicável e com ícone de múltiplos clientes */}
-                            <div 
+                            {/* Avatar - Clicável */}
+                            <button 
                                 onClick={onSelectClientClick}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectClientClick() }}
-                                className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+                                className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 hover:opacity-90 transition-opacity"
                                 aria-label="Trocar de cliente"
+                                type="button"
                             >
                                 <i className="fas fa-users text-white text-sm"></i>
-                            </div>
+                            </button>
 
                             {/* Client Info - Clicável */}
-                            <div
+                            <button
                                 onClick={onSelectClientClick}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectClientClick() }}
-                                className="flex-1 min-w-0 cursor-pointer"
+                                className="flex-1 min-w-0 text-left"
                                 aria-label="Trocar de cliente"
+                                type="button"
                             >
-                                <h2 className="text-base font-bold text-slate-800 leading-tight truncate">
+                                <p className="text-base font-bold text-slate-800 leading-tight truncate">
                                     {selectedClient.nome}
-                                </h2>
+                                </p>
                                 
                                 {/* Info row */}
                                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 mt-1">
@@ -209,7 +199,7 @@ const ClientBar: React.FC<ClientBarProps> = ({
                                         </a>
                                     )}
                                 </div>
-                            </div>
+                            </button>
 
                             {/* Menu button */}
                             <div className="relative flex-shrink-0" ref={menuRef}>
@@ -251,13 +241,11 @@ const ClientBar: React.FC<ClientBarProps> = ({
                         </div>
                     </div>
                 ) : (
-                    <div 
+                    <button 
                         onClick={onSelectClientClick}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectClientClick() }}
-                        className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 cursor-pointer active:bg-slate-50 transition-colors animate-fade-in-scale"
+                        className="w-full bg-white rounded-xl border border-slate-200 shadow-sm p-4 active:bg-slate-50 transition-colors animate-fade-in-scale text-left"
                         aria-label="Selecionar cliente"
+                        type="button"
                     >
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -282,19 +270,17 @@ const ClientBar: React.FC<ClientBarProps> = ({
                                 <i className="fas fa-plus text-sm"></i>
                             </button>
                         </div>
-                    </div>
+                    </button>
                 )}
             </div>
 
-            {/* Desktop Layout - unchanged */}
+            {/* Desktop Layout */}
             <div className="hidden sm:flex items-center justify-between">
-                <div 
+                <button 
                     onClick={onSelectClientClick}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectClientClick() }}
-                    className="text-left flex-grow pr-4 py-2 rounded-lg hover:bg-slate-50 transition-colors min-w-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-300"
+                    className="text-left flex-grow pr-4 py-2 rounded-lg hover:bg-slate-50 transition-colors min-w-0 focus:outline-none focus:ring-2 focus:ring-slate-300"
                     aria-label="Trocar de cliente"
+                    type="button"
                 >
                     {selectedClient ? (
                         <>
@@ -306,9 +292,9 @@ const ClientBar: React.FC<ClientBarProps> = ({
                                     </span>
                                 )}
                             </div>
-                            <h2 className="text-xl font-bold text-slate-800 leading-tight truncate mt-0.5">
+                            <p className="text-xl font-bold text-slate-800 leading-tight truncate mt-0.5">
                                 {selectedClient.nome}
-                            </h2>
+                            </p>
                             {fullAddress && (
                                 <a
                                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`}
@@ -326,12 +312,12 @@ const ClientBar: React.FC<ClientBarProps> = ({
                     ) : (
                         <>
                             <span className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Cliente</span>
-                            <h2 className="text-xl font-bold text-slate-800 leading-tight truncate mt-1">
+                            <p className="text-xl font-bold text-slate-800 leading-tight truncate mt-1">
                                 Nenhum cliente selecionado
-                            </h2>
+                            </p>
                         </>
                     )}
-                </div>
+                </button>
 
                 <div className="flex items-center space-x-2 flex-shrink-0">
                     <ActionButton

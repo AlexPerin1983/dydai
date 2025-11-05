@@ -36,7 +36,6 @@ const AgendaView = lazy(() => import('./components/views/AgendaView'));
 
 
 type UIMeasurement = Measurement & { isNew?: boolean };
-// type ActiveTab = 'client' | 'films' | 'settings' | 'history' | 'agenda'; // Removido daqui, está em types.ts
 
 type NumpadConfig = {
     isOpen: boolean;
@@ -81,7 +80,7 @@ const App: React.FC = () => {
     const [films, setFilms] = useState<Film[]>([]);
     const [allSavedPdfs, setAllSavedPdfs] = useState<SavedPDF[]>([]);
     const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
-    const [activeTab, setActiveTab] = useState<ActiveTab>('client'); // Estado local inicializado
+    const [activeTab, setActiveTab] = useState<ActiveTab>('client');
     const [isDirty, setIsDirty] = useState(false);
     const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
     const [hasLoadedAgendamentos, setHasLoadedAgendamentos] = useState(false);
@@ -136,9 +135,6 @@ const App: React.FC = () => {
         shouldClearOnNextInput: false,
     });
 
-    // --- Hooks & Handlers ---
-
-    // Funções de Load (Declaradas aqui para serem usadas nos useEffects)
     const loadClients = useCallback(async (clientIdToSelect?: number, shouldReorder: boolean = true) => {
         const storedClients = await db.getAllClients();
         
@@ -208,7 +204,6 @@ const App: React.FC = () => {
     }, []);
 
 
-    // Efeitos de Inicialização e Persistência
     useEffect(() => {
         const init = async () => {
             setIsLoading(true);
@@ -224,8 +219,7 @@ const App: React.FC = () => {
             
             setActiveTab(initialTab);
             
-            // Chamada inicial de loadClients, passando null para clientIdToSelect, para que ele use userInfo.lastSelectedClientId
-            await loadClients(null, true); 
+            await loadClients(undefined, true); 
             await loadFilms();
             
             setIsLoading(false);
@@ -233,14 +227,16 @@ const App: React.FC = () => {
         init();
     }, [loadClients, loadFilms]);
 
+    // FIX: Separar a persistência do lastSelectedClientId para evitar loop
     useEffect(() => {
-        if (selectedClientId !== null && userInfo) {
+        if (selectedClientId !== null && userInfo && userInfo.lastSelectedClientId !== selectedClientId) {
             const updatedUserInfo = { ...userInfo, lastSelectedClientId: selectedClientId };
-            setUserInfo(updatedUserInfo);
-            db.saveUserInfo(updatedUserInfo);
+            db.saveUserInfo(updatedUserInfo).then(() => {
+                setUserInfo(updatedUserInfo);
+            });
         }
         setClientTransitionKey(prev => prev + 1);
-    }, [selectedClientId, userInfo]);
+    }, [selectedClientId]);
     
     const handleTabChange = useCallback((tab: ActiveTab) => {
         setActiveTab(tab);
@@ -249,8 +245,9 @@ const App: React.FC = () => {
     useEffect(() => {
         if (userInfo && userInfo.activeTab !== activeTab) {
             const updatedUserInfo = { ...userInfo, activeTab: activeTab };
-            setUserInfo(updatedUserInfo);
-            db.saveUserInfo(updatedUserInfo);
+            db.saveUserInfo(updatedUserInfo).then(() => {
+                setUserInfo(updatedUserInfo);
+            });
         }
     }, [activeTab, userInfo]);
 
@@ -273,8 +270,6 @@ const App: React.FC = () => {
         if (selectedClientId && proposalOptions.length > 0) {
             await db.saveProposalOptions(selectedClientId, proposalOptions);
             setIsDirty(false);
-            
-            // Removido o reload de clientes aqui para evitar loop
         }
     }, [selectedClientId, proposalOptions]);
 
@@ -384,10 +379,10 @@ const App: React.FC = () => {
     const handleSaveClient = useCallback(async (clientData: Omit<Client, 'id'> | Client) => {
         const newClient = await db.saveClient(clientData as Client);
         
-        // Atualiza a lista de clientes sem recarregar tudo
+        // FIX: Atualiza a lista de clientes de forma otimizada sem recarregar
         setClients(prevClients => {
-            // Se estiver editando, atualiza o cliente existente
             if ('id' in clientData && clientData.id) {
+                // Editando cliente existente
                 return prevClients.map(client => 
                     client.id === clientData.id ? { ...newClient, lastUpdated: new Date().toISOString() } : client
                 ).sort((a, b) => {
@@ -396,7 +391,7 @@ const App: React.FC = () => {
                     return dateB - dateA;
                 });
             } else {
-                // Se estiver adicionando, coloca o novo cliente no início
+                // Adicionando novo cliente
                 return [newClient, ...prevClients].sort((a, b) => {
                     const dateA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
                     const dateB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
@@ -405,33 +400,13 @@ const App: React.FC = () => {
             }
         });
         
-        // Define o cliente selecionado apenas se for um novo cliente
-        if (!('id' in clientData) || !clientData.id) {
-            setSelectedClientId(newClient.id!);
-        }
-        
-        if (postClientSaveAction) {
-            if (postClientSaveAction.type === 'select') {
-                setSelectedClientId(newClient.id!);
-            } else if (postClientSaveAction.type === 'add' && newClient.id) {
-                setSelectedClientId(newClient.id);
-            }
-            // Se for 'edit', o selectedClientId já está correto
-        }
-        
-        if (handleOpenAgendamentoModal && schedulingInfo) {
-            // Se o agendamento foi aberto antes de salvar o cliente, atualiza o cliente no agendamento
-            const updatedAgendamento: Agendamento = {
-                ...schedulingInfo.agendamento,
-                clienteId: newClient.id!,
-                clienteNome: newClient.nome,
-            };
-            setSchedulingInfo({ ...schedulingInfo, agendamento: updatedAgendamento });
-        }
+        // Define o cliente selecionado
+        setSelectedClientId(newClient.id!);
         
         setIsClientModalOpen(false);
         setPostClientSaveAction(null);
-    }, [clientModalMode, selectedClientId, postClientSaveAction, handleOpenAgendamentoModal, schedulingInfo]);
+        setAiClientData(null);
+    }, []);
 
     const handleDeleteClient = useCallback(() => {
         if (selectedClientId) {
@@ -452,13 +427,8 @@ const App: React.FC = () => {
             }
         }
         
-        // Remove agendamentos relacionados
         await db.deleteAgendamentosForClient(selectedClientId);
 
-        // Atualiza a lista de clientes sem recarregar tudo
-        setClients(prevClients => prevClients.filter(c => c.id !== selectedClientId));
-        
-        // Seleciona o próximo cliente ou null se não houver mais
         setClients(prevClients => {
             const remainingClients = prevClients.filter(c => c.id !== selectedClientId);
             if (remainingClients.length > 0) {
@@ -494,7 +464,7 @@ const App: React.FC = () => {
         setFilmToEdit(film);
         setIsFilmModalOpen(true);
         setIsFilmSelectionModalOpen(false);
-    }, [handleOpenFilmModal]);
+    }, []);
 
     const handleSaveFilm = useCallback(async (newFilmData: Film, originalFilm: Film | null) => {
         await db.saveFilm(newFilmData);
@@ -502,11 +472,9 @@ const App: React.FC = () => {
         setIsFilmModalOpen(false);
         setFilmToEdit(null);
         
-        // Se for edição, precisamos atualizar as medidas se o nome mudou
         if (originalFilm && originalFilm.nome !== newFilmData.nome) {
             await db.updateMeasurementFilmName(originalFilm.nome, newFilmData.nome);
-            await loadAllPdfs(); // Atualiza PDFs
-            // Não recarrega medidas, apenas garante que o nome do filme na proposta ativa seja atualizado
+            await loadAllPdfs();
             if (activeOption) {
                 const updatedMeasurements = activeOption.measurements.map(m => 
                     m.pelicula === originalFilm.nome ? { ...m, pelicula: newFilmData.nome } : m
@@ -514,15 +482,14 @@ const App: React.FC = () => {
                 handleMeasurementsChange(updatedMeasurements);
             }
         }
-    }, [loadFilms, handleMeasurementsChange, activeOption]);
+    }, [loadFilms, handleMeasurementsChange, activeOption, loadAllPdfs]);
 
     const handleDeleteFilm = useCallback(async (filmName: string) => {
         await db.deleteFilm(filmName);
         await loadFilms();
         setFilmToDeleteName(null);
-        await loadAllPdfs(); // Atualiza PDFs
+        await loadAllPdfs();
         
-        // Se o filme excluído estava sendo usado, remove das medidas
         if (activeOption) {
             const updatedMeasurements = activeOption.measurements
                 .filter(m => m.pelicula !== filmName)
@@ -548,27 +515,14 @@ const App: React.FC = () => {
         a.href = url;
         a.download = filename;
         document.body.appendChild(a);
+        a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }, []);
     
     const totals = useMemo(() => {
         const activeMeasurements = measurements.filter(m => m.active);
-        const subtotal = activeMeasurements.reduce((sum, m) => {
-            const price = (m.discountType === 'percentage' && m.discount > 0 && m.discount <= 100) 
-                ? (m.preco * (1 - m.discount / 100)) 
-                : (m.discountType === 'fixed' && m.discount > 0) 
-                ? (m.preco - m.discount)
-                : m.preco;
-            return sum + price;
-        }, 0);
         
-        const totalM2 = activeMeasurements.reduce((sum, m) => {
-            const largura = parseFloat(String(m.largura).replace(',', '.')) || 0;
-            const altura = parseFloat(String(m.altura).replace(',', '.')) || 0;
-            return sum + (largura * altura * m.quantidade);
-        }, 0);
-
         const pricePerM2Map = new Map<string, number>();
         films.forEach(f => {
             pricePerM2Map.set(f.nome, f.preco > 0 ? f.preco : (f.maoDeObra || 0));
@@ -576,9 +530,15 @@ const App: React.FC = () => {
 
         let priceAfterItemDiscounts = 0;
         let totalItemDiscount = 0;
+        let totalM2 = 0;
 
         activeMeasurements.forEach(m => {
-            const price = (pricePerM2Map.get(m.pelicula) || 0) * (m.largura ? parseFloat(String(m.largura).replace(',', '.')) || 0 : 0) * (m.altura ? parseFloat(String(m.altura).replace(',', '.')) || 0 : 0) * m.quantidade;
+            const largura = parseFloat(String(m.largura).replace(',', '.')) || 0;
+            const altura = parseFloat(String(m.altura).replace(',', '.')) || 0;
+            const m2 = largura * altura * m.quantidade;
+            totalM2 += m2;
+            
+            const price = (pricePerM2Map.get(m.pelicula) || 0) * m2;
             let itemDiscountAmount = 0;
             const discountValue = m.discount || 0;
             
@@ -606,7 +566,7 @@ const App: React.FC = () => {
 
         return {
             totalM2,
-            subtotal: priceAfterItemDiscounts + totalItemDiscount, // Subtotal antes do desconto geral
+            subtotal: priceAfterItemDiscounts + totalItemDiscount,
             totalItemDiscount,
             priceAfterItemDiscounts,
             generalDiscountAmount,
@@ -645,7 +605,6 @@ const App: React.FC = () => {
             
             setPdfGenerationStatus('success');
             
-            // Se houver um agendamento pendente vinculado a este orçamento (caso de edição), atualiza o PDF ID
             if (schedulingInfo && schedulingInfo.agendamento && !schedulingInfo.agendamento.pdfId) {
                 const savedPdfId = await db.getLatestPdfIdForClient(selectedClient.id!);
                 if (savedPdfId) {
@@ -663,10 +622,10 @@ const App: React.FC = () => {
 
         } catch (error) {
             console.error("Erro ao gerar PDF:", error);
-            setPdfGenerationStatus('success'); // Muda para sucesso para fechar o modal, mas mostra erro
+            setPdfGenerationStatus('success');
             alert("Falha ao gerar PDF. Verifique o console.");
         }
-    }, [selectedClient, userInfo, activeOption, isDirty, handleSaveChanges, measurements, films, totals, selectedClientId, downloadBlob]);
+    }, [selectedClient, userInfo, activeOption, isDirty, measurements, films, totals, downloadBlob, schedulingInfo]);
 
     const handleGoToHistoryFromPdf = useCallback(() => {
         setPdfGenerationStatus('idle');
@@ -733,8 +692,8 @@ const App: React.FC = () => {
         
         try {
             const apiKey = userInfo.aiConfig.apiKey;
-            const endpoint = input.type === 'text' ? 'https://api.openai.com/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
-            const modelName = 'gpt-4o-mini'; // Usando um modelo mais recente e barato
+            const endpoint = 'https://api.openai.com/v1/chat/completions';
+            const modelName = 'gpt-4o-mini';
             
             let prompt = "Analise o texto/imagem fornecido e extraia as seguintes informações de um cliente de instalação de películas. Retorne APENAS um objeto JSON válido com as propriedades: nome, telefone, email, cpfCnpj, cep, logradouro, numero, complemento, bairro, cidade, uf. Se uma informação não for encontrada, omita a chave ou use null. ";
             
@@ -815,7 +774,9 @@ const App: React.FC = () => {
             
             if (extractedData) {
                 setAiClientData(extractedData);
-                setIsAIClientModalOpenForClient(true); // Abre o modal de confirmação de cliente
+                setIsAIClientModalOpenForClient(false);
+                setIsClientModalOpen(true);
+                setClientModalMode('add');
             }
         } finally {
             setIsProcessingAI(false);
@@ -992,6 +953,7 @@ const App: React.FC = () => {
             }
         } finally {
             setIsProcessingAI(false);
+            setIsAIMeasurementModalOpen(false);
         }
     };
 
@@ -1004,7 +966,7 @@ const App: React.FC = () => {
         await db.deletePDF(pdfToDeleteId);
         setPdfToDeleteId(null);
         await loadAllPdfs();
-        await loadAgendamentos(); // Para atualizar o status na agenda se houver
+        await loadAgendamentos();
     }, [pdfToDeleteId, loadAllPdfs, loadAgendamentos]);
     
     const handleUpdatePdfStatus = useCallback(async (pdfId: number, status: SavedPDF['status']) => {
@@ -1056,8 +1018,7 @@ const App: React.FC = () => {
     }, [filmToApplyToAll, measurements, handleMeasurementsChange]);
 
     const handleAddNewFilmFromSelection = useCallback((filmName: string) => {
-        handleOpenFilmModal(null); // Abre o modal de filme
-        // O nome do filme será preenchido no modal de filme, mas aqui garantimos que a seleção feche
+        handleOpenFilmModal(null);
         setIsFilmSelectionModalOpen(false);
     }, [handleOpenFilmModal]);
 
@@ -1074,17 +1035,10 @@ const App: React.FC = () => {
         
         const updated = { ...editingMeasurement, ...updatedData };
         
-        // Se for largura/altura/quantidade, o numpad já salvou no estado global, então só atualizamos o objeto
         if (updatedData.largura !== undefined || updatedData.altura !== undefined || updatedData.quantidade !== undefined) {
-            // Se o numpad estava aberto, ele já salvou o valor final no estado global (measurements)
-            // Aqui apenas garantimos que o objeto no estado local reflita o que está no estado global, se necessário.
-            // Como estamos usando o numpad para salvar diretamente no handleNumpadDone, este callback é mais para campos não numéricos.
-            
-            // Para garantir consistência, vamos forçar a atualização no array principal
             const updatedMeasurements = measurements.map(m => m.id === editingMeasurement.id ? updated : m);
             handleMeasurementsChange(updatedMeasurements);
         } else {
-            // Para outros campos (ambiente, tipo, etc.)
             const updatedMeasurements = measurements.map(m => m.id === editingMeasurement.id ? updated : m);
             handleMeasurementsChange(updatedMeasurements);
         }
@@ -1122,7 +1076,7 @@ const App: React.FC = () => {
     const handleSaveAgendamento = useCallback(async (agendamentoData: Omit<Agendamento, 'id'> | Agendamento) => {
         const savedAgendamento = await db.saveAgendamento(agendamentoData as Agendamento);
         await loadAgendamentos();
-        await loadAllPdfs(); // Para atualizar o status do PDF se for o caso
+        await loadAllPdfs();
         handleCloseAgendamentoModal();
     }, [handleCloseAgendamentoModal, loadAgendamentos, loadAllPdfs]);
 
@@ -1140,7 +1094,7 @@ const App: React.FC = () => {
     
     const handleAddNewClientFromAgendamento = useCallback((clientName: string) => {
         setIsClientSelectionModalOpen(false);
-        setPostClientSaveAction({ type: 'select', id: undefined }); // Indica que deve selecionar o novo cliente
+        setPostClientSaveAction({ type: 'select', id: undefined });
         setIsClientModalOpen(true);
         setClientModalMode('add');
         handleCloseAgendamentoModal();
@@ -1263,8 +1217,7 @@ const App: React.FC = () => {
             ...measurements.map(m => ({ ...m, isNew: false }))
         ];
         handleMeasurementsChange(updatedMeasurements);
-        // Abre o numpad automaticamente para a nova medida
-        handleOpenNumpad(newMeasurement.id, 'largura', newMeasurement.largura);
+        handleNumpadOpen(newMeasurement.id, 'largura', newMeasurement.largura);
     }, [activeOption, films, measurements, handleMeasurementsChange]);
 
     const handleNumpadOpen = useCallback((measurementId: number, field: 'largura' | 'altura' | 'quantidade', currentValue: string | number) => {
@@ -1453,7 +1406,6 @@ const App: React.FC = () => {
             newMeasurements.splice(index + 1, 0, newMeasurement);
             handleMeasurementsChange(newMeasurements);
             
-            // Fecha o numpad atual e abre no novo item
             setNumpadConfig({
                 isOpen: true,
                 measurementId: newMeasurement.id,
@@ -1613,7 +1565,7 @@ const App: React.FC = () => {
                 <p>Use o menu acima para escolher um cliente e ver suas medidas.</p>
             </div>
         );
-    }
+    };
 
     const measurementToDelete = measurements.find(m => m.id === measurementToDeleteId);
     const generalDiscount = proposalOptions.find(opt => opt.id === activeOptionId)?.generalDiscount || { value: '', type: 'percentage' };
@@ -1733,12 +1685,15 @@ const App: React.FC = () => {
             {isClientModalOpen && (
                 <ClientModal
                     isOpen={isClientModalOpen}
-                    onClose={() => setIsClientModalOpen(false)}
+                    onClose={() => {
+                        setIsClientModalOpen(false);
+                        setAiClientData(null);
+                    }}
                     onSave={handleSaveClient}
                     mode={clientModalMode}
                     client={clientModalMode === 'edit' ? selectedClient : null}
                     initialName={postClientSaveAction?.type === 'add' ? (aiClientData?.nome || '') : undefined}
-                    aiData={aiClientData}
+                    aiData={aiClientData || undefined}
                     onOpenAIModal={() => { setIsAIClientModalOpenForClient(true); setIsClientModalOpen(false); }}
                 />
             )}
@@ -1812,7 +1767,7 @@ const App: React.FC = () => {
                     films={films}
                     onUpdate={handleUpdateEditingMeasurement}
                     onDelete={() => handleRequestDeleteMeasurement(editingMeasurement.id)}
-                    onDuplicate={() => { /* Duplicar via Numpad ou lista principal */ }}
+                    onDuplicate={() => { }}
                     onOpenFilmModal={handleOpenFilmModal}
                     onOpenFilmSelectionModal={(mid) => handleOpenFilmSelectionModal(mid)}
                     numpadConfig={numpadConfig}
@@ -1918,10 +1873,10 @@ const App: React.FC = () => {
                     provider={userInfo?.aiConfig?.provider || 'gemini'}
                 />
             )}
-            {isAIClientModalOpen && (
+            {isAIClientModalOpenForClient && (
                 <AIClientModal
-                    isOpen={isAIClientModalOpen}
-                    onClose={() => setIsAIClientModalOpen(false)}
+                    isOpen={isAIClientModalOpenForClient}
+                    onClose={() => setIsAIClientModalOpenForClient(false)}
                     onProcess={handleProcessAIClientInput}
                     isProcessing={isProcessingAI}
                     provider={userInfo?.aiConfig?.provider || 'gemini'}
@@ -1973,7 +1928,7 @@ const App: React.FC = () => {
                     onClose={() => setMeasurementToDeleteId(null)}
                     onConfirm={handleConfirmDeleteIndividualMeasurement}
                     title="Confirmar Exclusão de Medida"
-                    message={`Tem certeza que deseja excluir esta medida?`}
+                    message="Tem certeza que deseja excluir esta medida?"
                     confirmButtonText="Sim, Excluir"
                     confirmButtonVariant="danger"
                 />

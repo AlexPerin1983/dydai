@@ -19,4 +19,7 @@ export type SchedulingInfo = {
 };
 
 type AISuggestion = {
-// ... (rest of file unchanged)
+    nome: string;
+    telefone: string;
+    data: string; // Data/Hora sugerida
+}

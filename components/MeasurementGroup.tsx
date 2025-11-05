@@ -4,12 +4,15 @@ import DynamicSelector from './ui/DynamicSelector';
 import { AMBIENTES, TIPOS_APLICACAO } from '../constants';
 import Tooltip from './ui/Tooltip';
 import DiscountModal from './modals/DiscountModal';
-import { NumpadConfig } from './ui/CustomNumpad'; // Importando NumpadConfig
 
-// Definindo NumpadConfig localmente se não for exportada do CustomNumpad
-// Como ela foi importada em App.tsx, vamos redefinir aqui para garantir que o TS saiba o que é.
-// Nota: Em App.tsx, ela foi importada de './components/ui/CustomNumpad', mas não foi exportada lá.
-// Vou assumir a estrutura que usei no App.tsx para a correção.
+// Redefinindo NumpadConfig localmente para resolver erro de importação, pois não está sendo exportado de CustomNumpad.tsx
+interface NumpadConfig {
+    isOpen: boolean;
+    measurementId: number | null;
+    field: 'largura' | 'altura' | 'quantidade' | null;
+    currentValue: string;
+    shouldClearOnNextInput: boolean;
+}
 
 interface MeasurementGroupProps {
     measurement: Measurement & { isNew?: boolean };

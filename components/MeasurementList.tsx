@@ -2,27 +2,28 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { Measurement, Film } from '../types';
 import MeasurementGroup from './MeasurementGroup';
 import ConfirmationModal from './modals/ConfirmationModal';
-import CustomNumpad, { NumpadConfig } from './ui/CustomNumpad'; // Importando NumpadConfig e CustomNumpad
-
-type UIMeasurement = Measurement & { isNew?: boolean };
-
-// Removendo a definição local de NumpadConfig, pois ela deve ser importada ou definida no escopo correto.
-// Mantendo a definição local de NumpadConfig se ela for usada apenas aqui e não exportada do CustomNumpad, mas o erro sugere que ela está sendo redefinida.
-// Como NumpadConfig já está definida no hook useNumpad, vamos usar a importação de cima.
+// Corrigindo importação: NumpadConfig é exportado de useNumpad, mas vamos redefinir o tipo aqui para evitar erro de importação se não estiver exportado em CustomNumpad
+interface NumpadConfig {
+    isOpen: boolean;
+    measurementId: number | null;
+    field: 'largura' | 'altura' | 'quantidade' | null;
+    currentValue: string;
+    shouldClearOnNextInput: boolean;
+}
 
 interface MeasurementListProps {
-    measurements: UIMeasurement[];
+    measurements: (Measurement & { isNew?: boolean })[];
     films: Film[];
-    onMeasurementsChange: (measurements: UIMeasurement[]) => void;
+    onMeasurementsChange: (measurements: (Measurement & { isNew?: boolean })[]) => void;
     onOpenFilmModal: (film: Film | null) => void;
-    onOpenFilmSelectionModal: (measurementId: number) => void;
+    onOpenFilmSelectionModal: (measurementId: number | null) => void;
     onOpenClearAllModal: () => void;
     onOpenApplyFilmToAllModal: () => void;
     numpadConfig: NumpadConfig;
     onOpenNumpad: (measurementId: number, field: 'largura' | 'altura' | 'quantidade', currentValue: string | number) => void;
     activeMeasurementId: number | null;
-    onOpenEditModal: (measurement: UIMeasurement) => void;
-    onOpenDiscountModal: (measurement: UIMeasurement) => void;
+    onOpenEditModal: (measurement: Measurement & { isNew?: boolean }) => void;
+    onOpenDiscountModal: (measurement: Measurement) => void;
     onDeleteMeasurement: (measurementId: number) => void; // Prop que aciona o modal no App.tsx
     swipeDirection?: 'left' | 'right' | null;
     swipeDistance?: number;
@@ -111,43 +112,6 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
         mainContainer.addEventListener('scroll', handleScroll);
         return () => mainContainer.removeEventListener('scroll', handleScroll);
     }, [scrollLoop]);
-
-    useEffect(() => {
-        const mainContainer = document.querySelector('main');
-        if (!mainContainer) return;
-        
-        const handleDragOver = (e: Event) => {
-            const dragEvent = e as unknown as React.DragEvent;
-            if (draggedIndex === null) return;
-
-            const rect = mainContainer.getBoundingClientRect();
-            const y = dragEvent.clientY;
-            const scrollZone = rect.height * 0.15;
-            const maxSpeed = 15;
-
-            if (y < rect.top + scrollZone) {
-                const intensity = 1 - (y - rect.top) / scrollZone;
-                scrollVelocityRef.current = -maxSpeed * intensity;
-            } else if (y > rect.bottom - scrollZone) {
-                const intensity = 1 - (rect.bottom - y) / scrollZone;
-                scrollVelocityRef.current = maxSpeed * intensity;
-            } else {
-                scrollVelocityRef.current = 0;
-            }
-
-            if (scrollVelocityRef.current !== 0 && !animationFrameRef.current) {
-                animationFrameRef.current = requestAnimationFrame(scrollLoop);
-            }
-        };
-        
-        document.addEventListener('dragover', handleDragOver);
-        return () => {
-            document.removeEventListener('dragover', handleDragOver);
-            if (animationFrameRef.current) {
-                cancelAnimationFrame(animationFrameRef.current);
-            }
-        };
-    }, [draggedIndex, scrollLoop]);
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -258,15 +222,15 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     };
 
     const handleDragStart = (index: number) => {
-        if (isSelectionMode) return;
+        if (isSelectionMode || isSwipedItemActive(index)) return;
         setDraggedIndex(index);
     };
+    
+    const isSwipedItemActive = (index: number) => swipedItemId === measurements[index].id;
 
     const handleDragEnter = (index: number) => {
-        if (isSelectionMode) return;
-        if (draggedIndex !== null && draggedIndex !== index) {
-            setDragOverIdx(index);
-        }
+        if (isSelectionMode || draggedIndex === null || isSwipedItemActive(index)) return;
+        setDragOverIdx(index);
     };
 
     const updateMeasurement = (id: number, updatedMeasurement: Partial<Measurement>) => {
@@ -284,16 +248,16 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
         if (measurementToDuplicate) {
             const newMeasurement: UIMeasurement = { 
                 ...measurementToDuplicate, 
-                id: Date.now(), 
+                id: Date.now() + Math.random(), // ID único
                 isNew: true 
             };
             
-            const updatedMeasurements = [
-                newMeasurement,
-                ...measurements.map(m => ({ ...m, isNew: false }))
-            ];
+            const index = measurements.findIndex(m => m.id === id);
+            const newMeasurements = [...measurements.map(m => ({...m, isNew: false}))];
+            newMeasurements.splice(index + 1, 0, newMeasurement);
             
-            onMeasurementsChange(updatedMeasurements);
+            onMeasurementsChange(newMeasurements);
+            onSetMeasurementToFocusId(newMeasurement.id);
         }
     };
 
@@ -433,8 +397,8 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                             onOpenEditModal={onOpenEditModal}
                             index={index}
                             isDragging={draggedIndex === index}
-                            onDragStart={() => handleDragStart(index)}
-                            onDragEnter={() => handleDragEnter(index)}
+                            onDragStart={handleDragStart}
+                            onDragEnter={handleDragEnter}
                             onDragEnd={handleDragEnd}
                             isSelectionMode={isSelectionMode}
                             isSelected={selectedIds.has(measurement.id)}

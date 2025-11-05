@@ -4,48 +4,52 @@ export interface Client {
     telefone: string;
     email: string;
     cpfCnpj: string;
-    cep: string;
-    logradouro: string;
-    numero: string;
-    complemento: string;
-    bairro: string;
-    cidade: string;
-    uf: string;
-    lastUpdated?: string;
+    // Endereço foi reestruturado
+    cep?: string;
+    logradouro?: string;
+    numero?: string;
+    complemento?: string;
+    bairro?: string;
+    cidade?: string;
+    uf?: string;
+    lastUpdated?: string; // Novo campo para rastrear a última modificação
 }
 
 export interface Measurement {
     id: number;
-    largura: string | number;
-    altura: string | number;
+    largura: string;
+    altura: string;
     quantidade: number;
     ambiente: string;
     tipoAplicacao: string;
     pelicula: string;
     active: boolean;
-    discount: number;
-    discountType: 'percentage' | 'fixed';
+    discount?: number;
+    discountType?: 'percentage' | 'fixed';
 }
 
 export interface ProposalOption {
     id: number;
     name: string;
     measurements: Measurement[];
-    generalDiscount: { value: string | number; type: 'percentage' | 'fixed' };
+    generalDiscount: {
+        value: string;
+        type: 'percentage' | 'fixed';
+    };
 }
 
 export interface Film {
     nome: string;
     preco: number;
-    maoDeObra: number; // Novo campo
-    garantiaFabricante: number;
-    garantiaMaoDeObra: number; // Novo campo
-    uv: number;
-    ir: number;
-    vtl: number;
-    espessura: number;
-    tser: number;
-    imagens?: string[];
+    maoDeObra?: number; // NOVO CAMPO: Valor fixo de mão de obra por m²
+    garantiaFabricante?: number;
+    garantiaMaoDeObra?: number;
+    uv?: number;
+    ir?: number;
+    vtl?: number;
+    espessura?: number;
+    tser?: number;
+    imagens?: string[]; // Alterado para array de strings (Base64)
 }
 
 export type PaymentMethodType = 'pix' | 'boleto' | 'parcelado_sem_juros' | 'parcelado_com_juros' | 'adiantamento' | 'observacao';
@@ -53,17 +57,13 @@ export type PaymentMethodType = 'pix' | 'boleto' | 'parcelado_sem_juros' | 'parc
 export interface PaymentMethod {
     tipo: PaymentMethodType;
     ativo: boolean;
-    // Pix
-    chave_pix?: string;
-    tipo_chave_pix?: 'cpf' | 'cnpj' | 'telefone' | 'email' | 'aleatoria';
-    nome_responsavel_pix?: string;
-    // Parcelado
     parcelas_max?: number | null;
     juros?: number | null;
-    // Adiantamento
     porcentagem?: number | null;
-    // Observação
     texto?: string;
+    chave_pix?: string;
+    tipo_chave_pix?: 'cpf' | 'cnpj' | 'telefone' | 'email' | 'aleatoria' | null;
+    nome_responsavel_pix?: string;
 }
 
 export type PaymentMethods = PaymentMethod[];
@@ -72,8 +72,6 @@ export interface Employee {
     id: number;
     nome: string;
 }
-
-export type ActiveTab = 'client' | 'films' | 'settings' | 'history' | 'agenda';
 
 export interface UserInfo {
     id: 'info';
@@ -104,28 +102,35 @@ export interface UserInfo {
         apiKey: string;
     };
     lastSelectedClientId?: number | null; // Novo campo
-    activeTab?: ActiveTab; // Aba ativa persistida
 }
 
 export interface Agendamento {
     id?: number;
+    pdfId?: number;
     clienteId: number;
     clienteNome: string;
-    start: string; // ISO Date String
-    end: string;   // ISO Date String
+    start: string; // ISO string for date and time
+    end: string;   // ISO string for date and time
     notes?: string;
-    pdfId?: number | null;
 }
 
 export interface SavedPDF {
     id?: number;
     clienteId: number;
     date: string;
-    nomeArquivo: string;
-    totalM2: number;
-    totalPreco: number;
-    pdfBlob: Blob;
-    status?: 'pending' | 'approved' | 'revised';
     expirationDate?: string;
+    totalPreco: number; // Final total price
+    totalM2: number;
+    subtotal?: number;
+    generalDiscountAmount?: number;
+    generalDiscount?: {
+        value: number | string;
+        type: 'percentage' | 'fixed' | 'none';
+    };
+    pdfBlob: Blob;
+    nomeArquivo: string;
+    measurements?: Measurement[];
+    status?: 'pending' | 'approved' | 'revised';
+    agendamentoId?: number;
     proposalOptionName?: string;
 }

@@ -3,6 +3,7 @@ import { UserInfo } from '../../types';
 import Input from '../ui/Input';
 import ColorPicker from '../ui/ColorPicker';
 import SignatureModal from '../modals/SignatureModal';
+// import PwaQrCode from '../PwaQrCode'; // Removido
 
 interface UserSettingsViewProps {
     userInfo: UserInfo;
@@ -457,12 +458,23 @@ const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, o
             </div>
             
             <div className={sectionClass}>
-                <h3 className={sectionTitleClass}>Informações Legais</h3>
+                <h3 className={sectionTitleClass}>Aplicativo (PWA)</h3>
                 <p className="text-sm text-slate-500 mt-2">
-                    Acesse a política de privacidade do aplicativo.
+                    Instale o aplicativo no seu dispositivo para acesso rápido e uso offline.
                 </p>
                 
                 <div className="mt-4 space-y-3">
+                    {!isPwaInstalled && (
+                        <button
+                            type="button"
+                            onClick={onPromptPwaInstall}
+                            className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-md"
+                        >
+                            <i className="fas fa-download"></i>
+                            Instalar Aplicativo
+                        </button>
+                    )}
+                    
                     <a
                         href="/privacy-policy"
                         target="_blank"

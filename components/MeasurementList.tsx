@@ -2,15 +2,13 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { Measurement, Film } from '../types';
 import MeasurementGroup from './MeasurementGroup';
 import ConfirmationModal from './modals/ConfirmationModal';
+import CustomNumpad, { NumpadConfig } from './ui/CustomNumpad'; // Importando NumpadConfig e CustomNumpad
 
 type UIMeasurement = Measurement & { isNew?: boolean };
 
-type NumpadConfig = {
-    isOpen: boolean;
-    measurementId: number | null;
-    field: 'largura' | 'altura' | 'quantidade' | null;
-    currentValue: string;
-};
+// Removendo a definição local de NumpadConfig, pois ela deve ser importada ou definida no escopo correto.
+// Mantendo a definição local de NumpadConfig se ela for usada apenas aqui e não exportada do CustomNumpad, mas o erro sugere que ela está sendo redefinida.
+// Como NumpadConfig já está definida no hook useNumpad, vamos usar a importação de cima.
 
 interface MeasurementListProps {
     measurements: UIMeasurement[];
@@ -29,6 +27,8 @@ interface MeasurementListProps {
     swipeDirection?: 'left' | 'right' | null;
     swipeDistance?: number;
     totalM2: number; // NOVA PROP
+    measurementToFocusId: number | null; // NOVO PROP
+    onSetMeasurementToFocusId: (id: number | null) => void; // NOVO PROP
 }
 
 const MeasurementList: React.FC<MeasurementListProps> = ({ 
@@ -47,7 +47,9 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     onDeleteMeasurement, // Usando a prop
     swipeDirection = null,
     swipeDistance = 0,
-    totalM2 // Usando a nova prop
+    totalM2, // Usando a nova prop
+    measurementToFocusId, // Usando o novo prop
+    onSetMeasurementToFocusId // Usando o novo prop
 }) => {
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
@@ -63,19 +65,27 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     const listContainerRef = useRef<HTMLDivElement>(null);
     const actionsMenuRef = useRef<HTMLDivElement>(null);
 
+    // Efeito para focar no campo de Largura da medida recém-adicionada
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
-                setIsActionsMenuOpen(false);
+        if (measurementToFocusId !== null) {
+            // Procuramos pelo elemento que representa o campo de Largura (data-field='largura')
+            const element = listContainerRef.current?.querySelector(`[data-measurement-id='${measurementToFocusId}'] [data-field='largura']`);
+            
+            if (element) {
+                // Tentamos focar no input ou no botão que representa o campo
+                const focusableElement = element.querySelector('input, [role="button"]');
+                if (focusableElement instanceof HTMLElement) {
+                    focusableElement.focus();
+                }
             }
-        };
-        if (isActionsMenuOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
+            
+            // Limpa o ID de foco após um pequeno delay para garantir que o DOM foi atualizado
+            const timer = setTimeout(() => {
+                onSetMeasurementToFocusId(null);
+            }, 100);
+            return () => clearTimeout(timer);
         }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isActionsMenuOpen]);
+    }, [measurementToFocusId, onSetMeasurementToFocusId]);
 
     const scrollLoop = useCallback(() => {
         const mainContainer = document.querySelector('main');
@@ -87,6 +97,57 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
             animationFrameRef.current = null;
         }
     }, []);
+
+    useEffect(() => {
+        const mainContainer = document.querySelector('main');
+        if (!mainContainer) return;
+        
+        const handleScroll = () => {
+            if (scrollVelocityRef.current !== 0 && !animationFrameRef.current) {
+                animationFrameRef.current = requestAnimationFrame(scrollLoop);
+            }
+        };
+
+        mainContainer.addEventListener('scroll', handleScroll);
+        return () => mainContainer.removeEventListener('scroll', handleScroll);
+    }, [scrollLoop]);
+
+    useEffect(() => {
+        const mainContainer = document.querySelector('main');
+        if (!mainContainer) return;
+        
+        const handleDragOver = (e: Event) => {
+            const dragEvent = e as unknown as React.DragEvent;
+            if (draggedIndex === null) return;
+
+            const rect = mainContainer.getBoundingClientRect();
+            const y = dragEvent.clientY;
+            const scrollZone = rect.height * 0.15;
+            const maxSpeed = 15;
+
+            if (y < rect.top + scrollZone) {
+                const intensity = 1 - (y - rect.top) / scrollZone;
+                scrollVelocityRef.current = -maxSpeed * intensity;
+            } else if (y > rect.bottom - scrollZone) {
+                const intensity = 1 - (rect.bottom - y) / scrollZone;
+                scrollVelocityRef.current = maxSpeed * intensity;
+            } else {
+                scrollVelocityRef.current = 0;
+            }
+
+            if (scrollVelocityRef.current !== 0 && !animationFrameRef.current) {
+                animationFrameRef.current = requestAnimationFrame(scrollLoop);
+            }
+        };
+        
+        document.addEventListener('dragover', handleDragOver);
+        return () => {
+            document.removeEventListener('dragover', handleDragOver);
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+        };
+    }, [draggedIndex, scrollLoop]);
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -114,6 +175,25 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
             animationFrameRef.current = requestAnimationFrame(scrollLoop);
         }
     }, [draggedIndex, scrollLoop]);
+
+    const handleDragEnd = () => {
+        if (isSelectionMode) return;
+        
+        scrollVelocityRef.current = 0;
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+
+        if (draggedIndex !== null && dragOverIdx !== null && draggedIndex !== dragOverIdx) {
+            const newMeasurements = [...measurements];
+            const [draggedItem] = newMeasurements.splice(draggedIndex, 1);
+            newMeasurements.splice(dragOverIdx, 0, draggedItem);
+            onMeasurementsChange(newMeasurements);
+        }
+        setDraggedIndex(null);
+        setDragOverIdx(null);
+    };
 
     const handleEnterSelectionMode = () => {
         setIsSelectionMode(true);
@@ -189,25 +269,6 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
         }
     };
 
-    const handleDragEnd = () => {
-        if (isSelectionMode) return;
-        
-        scrollVelocityRef.current = 0;
-        if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-            animationFrameRef.current = null;
-        }
-
-        if (draggedIndex !== null && dragOverIdx !== null && draggedIndex !== dragOverIdx) {
-            const newMeasurements = [...measurements];
-            const [draggedItem] = newMeasurements.splice(draggedIndex, 1);
-            newMeasurements.splice(dragOverIdx, 0, draggedItem);
-            onMeasurementsChange(newMeasurements);
-        }
-        setDraggedIndex(null);
-        setDragOverIdx(null);
-    };
-
     const updateMeasurement = (id: number, updatedMeasurement: Partial<Measurement>) => {
         const newMeasurements = measurements.map(m => m.id === id ? { ...m, ...updatedMeasurement } : m);
         onMeasurementsChange(newMeasurements);
@@ -215,7 +276,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     
     // Função que o MeasurementGroup chama para iniciar a exclusão
     const requestDeleteMeasurement = (id: number) => {
-        onDeleteMeasurement(id); // Chama a função do App.tsx que abre o modal
+        onDeleteMeasurement(id); // Chama a função que irá abrir o modal de confirmação no App.tsx
     };
     
     const duplicateMeasurement = (id: number) => {
@@ -299,7 +360,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                             </button>
                             <button 
                                 onClick={handleDeleteSelected} 
-                                className="text-sm text-white bg-red-600 hover:bg-red-700 rounded-md px-3 py-1.5 transition-colors duration-200 flex items-center gap-2 disabled:bg-red-400 disabled:cursor-not-allowed"
+                                className="text-sm text-white bg-red-600 hover:bg-red-700 rounded-md px-3 py-1.5 transition-colors duration-200 flex items-center gap-2"
                                 disabled={selectedIds.size === 0}
                             >
                                 <i className="fas fa-trash-alt"></i>
@@ -328,7 +389,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                             </button>
 
                             {isActionsMenuOpen && (
-                                <div className="absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20 p-1">
+                                <div className="absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20 p-1">
                                     <ul className="space-y-1">
                                         <ActionMenuItem
                                             onClick={handleEnterSelectionMode}

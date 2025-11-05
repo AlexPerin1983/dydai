@@ -1,32 +1,29 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Measurement, Film } from '../types';
-import { AMBIENTES, TIPOS_APLICACAO } from '../constants';
 import DynamicSelector from './ui/DynamicSelector';
+import { AMBIENTES, TIPOS_APLICACAO } from '../constants';
 import Tooltip from './ui/Tooltip';
+import DiscountModal from './modals/DiscountModal';
+import { NumpadConfig } from './ui/CustomNumpad'; // Importando NumpadConfig
 
-type UIMeasurement = Measurement & { isNew?: boolean };
-
-type NumpadConfig = {
-    isOpen: boolean;
-    measurementId: number | null;
-    field: 'largura' | 'altura' | 'quantidade' | null;
-    currentValue: string;
-    shouldClearOnNextInput: boolean;
-};
+// Definindo NumpadConfig localmente se não for exportada do CustomNumpad
+// Como ela foi importada em App.tsx, vamos redefinir aqui para garantir que o TS saiba o que é.
+// Nota: Em App.tsx, ela foi importada de './components/ui/CustomNumpad', mas não foi exportada lá.
+// Vou assumir a estrutura que usei no App.tsx para a correção.
 
 interface MeasurementGroupProps {
-    measurement: UIMeasurement;
+    measurement: Measurement & { isNew?: boolean };
     films: Film[];
-    onUpdate: (updatedMeasurement: Partial<Measurement>) => void;
+    onUpdate: (updated: Partial<Measurement>) => void;
     onDelete: () => void;
     onDuplicate: () => void;
     onOpenFilmSelectionModal: (measurementId: number) => void;
-    onOpenEditModal: (measurement: UIMeasurement) => void;
-    onOpenDiscountModal: (measurement: UIMeasurement) => void;
+    onOpenEditModal: (measurement: Measurement & { isNew?: boolean }) => void;
+    onOpenDiscountModal: (measurement: Measurement) => void;
     index: number;
     isDragging: boolean;
-    onDragStart: () => void;
-    onDragEnter: () => void;
+    onDragStart: (index: number) => void;
+    onDragEnter: (index: number) => void;
     onDragEnd: () => void;
     isSelectionMode: boolean;
     isSelected: boolean;
@@ -38,7 +35,6 @@ interface MeasurementGroupProps {
     onSetSwipedItem: (id: number | null) => void;
     isModalMode?: boolean;
 }
-const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
 const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
     measurement,
@@ -64,153 +60,18 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
     onSetSwipedItem,
     isModalMode = false
 }) => {
-    const [additionalFieldsVisible, setAdditionalFieldsVisible] = useState(isModalMode);
-    
-    const groupRef = useRef<HTMLDivElement>(null);
-
+    const [isExpanded, setIsExpanded] = useState(false);
     const [translateX, setTranslateX] = useState(0);
+    const [showDiscountModal, setShowDiscountModal] = useState(false);
+    const swipeableRef = useRef<HTMLDivElement>(null);
     const touchStartX = useRef(0);
     const touchStartY = useRef(0);
     const isDraggingCard = useRef(false);
     const gestureDirection = useRef<'horizontal' | 'vertical' | null>(null);
     const currentTranslateX = useRef(0);
-    const swipeableRef = useRef<HTMLDivElement>(null);
-    const ACTIONS_WIDTH = 160; 
-
-    useEffect(() => {
-        if (swipedItemId !== measurement.id && swipeableRef.current) {
-            swipeableRef.current.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
-            swipeableRef.current.style.transform = `translateX(0px)`;
-            currentTranslateX.current = 0;
-            setTranslateX(0);
-        }
-    }, [swipedItemId, measurement.id]);
-
-    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-        if (isSelectionMode || isModalMode) return;
-        if (swipedItemId && swipedItemId !== measurement.id) {
-            onSetSwipedItem(null);
-        }
-        
-        isDraggingCard.current = true;
-        gestureDirection.current = null;
-        touchStartX.current = e.touches[0].clientX;
-        touchStartY.current = e.touches[0].clientY;
-        
-        if (swipeableRef.current) {
-            swipeableRef.current.style.transition = 'none';
-        }
-    };
-
-    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-        if (!isDraggingCard.current || isSelectionMode || isModalMode || !swipeableRef.current) return;
-
-        const deltaX = e.touches[0].clientX - touchStartX.current;
-        const deltaY = e.touches[0].clientY - touchStartY.current;
-
-        if (gestureDirection.current === null) {
-            if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-                gestureDirection.current = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical';
-            }
-        }
-        
-        if (gestureDirection.current === 'vertical') return;
-        
-        if (e.cancelable) e.preventDefault();
-        
-        const newTranslateX = currentTranslateX.current + deltaX;
-
-        let finalTranslateX = newTranslateX;
-        if (newTranslateX > 0) {
-            finalTranslateX = Math.pow(newTranslateX, 0.7);
-        } else if (newTranslateX < -ACTIONS_WIDTH) {
-            const overflow = -ACTIONS_WIDTH - newTranslateX;
-            finalTranslateX = -ACTIONS_WIDTH - Math.pow(overflow, 0.7);
-        }
-        
-        swipeableRef.current.style.transform = `translateX(${finalTranslateX}px)`;
-    };
-
-    const handleTouchEnd = () => {
-        if (!isDraggingCard.current || isSelectionMode || isModalMode || !swipeableRef.current) return;
-
-        isDraggingCard.current = false;
-        
-        if (gestureDirection.current === 'vertical') {
-            gestureDirection.current = null;
-            return;
-        }
-        gestureDirection.current = null;
-
-        const transformValue = swipeableRef.current.style.transform;
-        const matrix = new DOMMatrix(transformValue);
-        const currentX = matrix.m41;
-
-        swipeableRef.current.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
-        const threshold = -ACTIONS_WIDTH / 2;
-
-        if (currentX < threshold) {
-            swipeableRef.current.style.transform = `translateX(-${ACTIONS_WIDTH}px)`;
-            currentTranslateX.current = -ACTIONS_WIDTH;
-            setTranslateX(-ACTIONS_WIDTH);
-            onSetSwipedItem(measurement.id);
-        } else {
-            swipeableRef.current.style.transform = `translateX(0px)`;
-            currentTranslateX.current = 0;
-            setTranslateX(0);
-            if (swipedItemId === measurement.id) {
-                onSetSwipedItem(null);
-            }
-        }
-    };
-
-    const handleDeleteClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        onDelete();
-        onSetSwipedItem(null);
-    };
-
-    const handleMenuClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        onOpenEditModal(measurement);
-        if (swipeableRef.current) {
-            swipeableRef.current.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
-            swipeableRef.current.style.transform = `translateX(0px)`;
-        }
-        currentTranslateX.current = 0;
-        setTranslateX(0);
-        if (swipedItemId === measurement.id) {
-            onSetSwipedItem(null);
-        }
-    };
-
-    // REMOVIDO: useEffect que abria o numpad automaticamente ao carregar uma nova medida.
-    /*
-    useEffect(() => {
-        if (measurement.isNew) {
-            onOpenNumpad(measurement.id, 'largura', measurement.largura);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [measurement.isNew]);
-    */
-    
-    const handleInputChange = (field: keyof Measurement, value: any) => {
-        onUpdate({ [field]: value });
-    };
-    
-    const handleRowClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (isSelectionMode) {
-            const target = e.target as HTMLElement;
-            if (
-                target.tagName === 'INPUT' ||
-                target.tagName === 'SELECT' ||
-                target.closest('button')
-            ) {
-                return;
-            }
-            onToggleSelection(measurement.id, index, e.shiftKey);
-        }
-    };
+    const ACTIONS_WIDTH_LEFT = 100; // Delete
+    const ACTIONS_WIDTH_RIGHT = 100; // Approve/Revise (using generic swipe actions here)
+    const SWIPE_THRESHOLD = 50;
 
     const isEditingThisMeasurement = numpadConfig.isOpen && numpadConfig.measurementId === measurement.id;
 
@@ -229,44 +90,181 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
     const m2 = larguraNum * alturaNum * quantidadeNum;
     
     const selectedFilm = films.find(f => f.nome === measurement.pelicula);
-    
-    const { basePrice, finalPrice, priceLabel } = useMemo(() => {
-        let pricePerM2 = 0;
-        let label = 'Preço';
-
+    const pricePerM2 = useMemo(() => {
         if (selectedFilm) {
-            if (selectedFilm.preco > 0) {
-                pricePerM2 = selectedFilm.preco;
-                label = 'Preço';
-            } else if (selectedFilm.maoDeObra && selectedFilm.maoDeObra > 0) {
-                pricePerM2 = selectedFilm.maoDeObra;
-                label = 'Mão de Obra';
+            if (selectedFilm.preco > 0) return selectedFilm.preco;
+            if (selectedFilm.maoDeObra && selectedFilm.maoDeObra > 0) return selectedFilm.maoDeObra;
+        }
+        return 0;
+    }, [selectedFilm]);
+
+    const basePrice = pricePerM2 * m2;
+    let finalPrice = basePrice;
+    const discountValue = measurement.discount || 0;
+    if (discountValue > 0) {
+        if (measurement.discountType === 'percentage') {
+            finalPrice = basePrice * (1 - discountValue / 100);
+        } else { // fixed
+            finalPrice = basePrice - discountValue;
+        }
+    }
+    finalPrice = Math.max(0, finalPrice);
+
+    const handleToggleExpand = useCallback(() => {
+        setIsExpanded(prev => !prev);
+    }, []);
+    
+    const handleSwipeStart = (e: React.TouchEvent) => {
+        if (isSelectionMode || isModalMode) return;
+        
+        if (swipedItemId && swipedItemId !== measurement.id) {
+            onSetSwipedItem(null);
+        }
+        
+        isDraggingCard.current = true;
+        gestureDirection.current = null;
+        touchStartX.current = e.touches[0].clientX;
+        touchStartY.current = e.touches[0].clientY;
+        if (swipeableRef.current) {
+            swipeableRef.current.style.transition = 'none';
+        }
+    };
+
+    const handleSwipeMove = (e: React.TouchEvent) => {
+        if (!isDraggingCard.current || !swipeableRef.current) return;
+
+        const deltaX = e.touches[0].clientX - touchStartX.current;
+        const deltaY = e.touches[0].clientY - touchStartY.current;
+
+        if (gestureDirection.current === null) {
+            if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                gestureDirection.current = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical';
             }
         }
+        
+        if (gestureDirection.current === 'vertical') return;
+        if (e.cancelable) e.preventDefault();
+        
+        const newTranslateX = currentTranslateX.current + deltaX;
+        let finalTranslateX = newTranslateX;
+        
+        if (newTranslateX > 0) { // Swipe right (Edit/Actions)
+            finalTranslateX = Math.pow(newTranslateX, 0.7);
+        } else if (newTranslateX < -ACTIONS_WIDTH_LEFT) { // Swipe left (Delete)
+            const overflow = -ACTIONS_WIDTH_LEFT - newTranslateX;
+            finalTranslateX = -ACTIONS_WIDTH_LEFT - Math.pow(overflow, 0.7);
+        }
+        swipeableRef.current.style.transform = `translateX(${finalTranslateX}px)`;
+    };
 
-        const price = pricePerM2 * m2;
-        let final = price;
-        const discountValue = measurement.discount || 0;
-        if (discountValue > 0) {
-            if (measurement.discountType === 'percentage') {
-                final = price * (1 - discountValue / 100);
-            } else { // fixed
-                final = price - discountValue;
+    const handleSwipeEnd = () => {
+        if (!isDraggingCard.current || !swipeableRef.current) return;
+        isDraggingCard.current = false;
+        if (gestureDirection.current === 'vertical') {
+            gestureDirection.current = null;
+            return;
+        }
+        gestureDirection.current = null;
+
+        const transformValue = swipeableRef.current.style.transform;
+        const matrix = new DOMMatrix(transformValue);
+        const currentX = matrix.m41;
+
+        swipeableRef.current.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        
+        if (currentX > ACTIONS_WIDTH_RIGHT / 2) {
+            // Swipe right action (e.g., Edit/Actions menu) - Not implemented here, just reset
+            swipeableRef.current.style.transform = `translateX(0px)`;
+            currentTranslateX.current = 0;
+            setTranslateX(0);
+        } else if (currentX < -ACTIONS_WIDTH_LEFT / 2) {
+            // Swipe left action (Delete) - Not implemented here, just reset
+            swipeableRef.current.style.transform = `translateX(0px)`;
+            currentTranslateX.current = 0;
+            setTranslateX(0);
+        } else {
+            swipeableRef.current.style.transform = `translateX(0px)`;
+            currentTranslateX.current = 0;
+            setTranslateX(0);
+        }
+    };
+    
+    const handleActionClick = (action: 'edit' | 'delete' | 'discount') => {
+        if (action === 'edit') onOpenEditModal(measurement);
+        if (action === 'delete') onDelete();
+        if (action === 'discount') setShowDiscountModal(true);
+    };
+    
+    const handleDiscountSave = (discount: number, discountType: 'percentage' | 'fixed') => {
+        onOpenDiscountModal({ ...measurement, discount, discountType });
+        setShowDiscountModal(false);
+    };
+
+    const handleMainClick = () => {
+        if (isSelectionMode) {
+            onToggleSelection(measurement.id, index, false);
+        } else if (!isDraggingCard.current && !isModalMode) {
+            // If not dragging and not in modal mode, toggle expansion
+            if (measurement.active) {
+                handleToggleExpand();
             }
         }
-        return { basePrice: price, finalPrice: Math.max(0, final), priceLabel: label };
-    }, [m2, selectedFilm, measurement.discount, measurement.discountType]);
+    };
     
-    const hasDiscount = (measurement.discount || 0) > 0;
+    const handleMainKeyDown = (e: React.KeyboardEvent) => {
+        if (isSelectionMode) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onToggleSelection(measurement.id, index, e.shiftKey);
+            }
+        } else if (!isDraggingCard.current && !isModalMode) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (measurement.active) handleToggleExpand();
+            }
+        }
+    };
 
-    // Mantendo o padding principal e espaçamento interno compactos
-    // Removendo p-2 e substituindo por py-2 e px-3 para manter o espaçamento interno mínimo
-    const baseClasses = `border rounded-lg py-2 px-3 space-y-1.5 bg-white transition-shadow, transform`;
-    const selectionClasses = isSelectionMode
-        ? `cursor-pointer ${isSelected ? 'border-blue-500 bg-blue-50/70 ring-1 ring-blue-500' : 'border-slate-200 hover:bg-slate-50/80'}`
-        : 'border-slate-200';
+    const handleDragStartWrapper = (e: React.DragEvent) => {
+        if (isSelectionMode || isModalMode) return;
+        onDragStart(index);
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", String(measurement.id));
+    };
     
-    // Inputs numéricos: text-sm e py-2
+    const handleDragEnterWrapper = (e: React.DragEvent) => {
+        if (isSelectionMode || isModalMode) return;
+        onDragEnter(index);
+    };
+
+    const handleDragEndWrapper = () => {
+        if (isSelectionMode || isModalMode) return;
+        onDragEnd();
+    };
+
+    const getContainerClasses = () => {
+        const base = "relative rounded-xl border transition-all duration-200 mb-2 shadow-sm";
+        let classes = `${base} bg-white border-slate-200`;
+
+        if (isDragging) {
+            classes += ' opacity-50 border-blue-500 shadow-xl ring-4 ring-blue-200';
+        } else if (isSelectionMode) {
+            classes += isSelected ? ' bg-blue-50 border-blue-400' : ' bg-white border-slate-200 hover:bg-slate-50';
+        } else if (isActive) {
+            classes += ' border-2 border-indigo-500 shadow-md';
+        } else if (measurement.isNew) {
+            classes += ' border-2 border-green-400 shadow-lg';
+        } else if (swipedItemId === measurement.id) {
+            classes += ' shadow-lg';
+        } else {
+            classes += ' hover:bg-slate-50';
+        }
+        
+        if (isModalMode) classes = classes.replace('mb-2', 'mb-0');
+
+        return classes;
+    };
+    
     const inputBaseClasses = "w-full text-center py-2 px-1.5 rounded-lg border text-sm transition-colors duration-200";
     
     const isDraggable = !isSelectionMode && translateX === 0 && !isModalMode;
@@ -312,7 +310,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                 );
             }
             
-            return displayValue !== '' ? displayValue : <span className="text-slate-400">{placeholder}</span>;
+            return value !== '' ? String(value).replace('.', ',') : <span className="text-slate-400">{placeholder}</span>;
         };
     
         return (
@@ -326,6 +324,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                         onOpenNumpad(measurement.id, field, value);
                     }
                 }}
+                data-field={field} // ADICIONADO: data-field para foco
                 className={getButtonClasses()}
             >
                 {renderContent()}
@@ -334,163 +333,151 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
     };
 
     return (
-        <>
-            <div className={`relative my-2 rounded-lg ${!isModalMode ? 'sm:overflow-visible overflow-hidden' : ''}`}>
-                <div className={`absolute inset-y-0 right-0 flex rounded-r-lg overflow-hidden ${isModalMode ? 'hidden' : 'sm:hidden'}`}>
+        <div 
+            className={getContainerClasses()}
+            data-measurement-id={measurement.id} // ADICIONADO: data-measurement-id para foco
+            draggable={isDraggable}
+            onDragStart={isDraggable ? handleDragStartWrapper : undefined}
+            onDragEnter={isDraggable ? handleDragEnterWrapper : undefined}
+            onDragEnd={isDraggable ? handleDragEndWrapper : undefined}
+            onDragOver={isDraggable ? (e) => e.preventDefault() : undefined} // Necessário para permitir drop
+            onTouchStart={handleSwipeStart}
+            onTouchMove={handleSwipeMove}
+            onTouchEnd={handleSwipeEnd}
+            style={{ touchAction: 'pan-y', transform: translateX !== 0 ? `translateX(${translateX}px)` : undefined }}
+            role={isSelectionMode ? "option" : "button"}
+            aria-selected={isSelectionMode ? isSelected : undefined}
+            tabIndex={isSelectionMode || measurement.active ? 0 : -1}
+            onClick={!isSelectionMode && measurement.active ? handleMainClick : undefined}
+            onKeyDown={!isSelectionMode && measurement.active ? handleMainKeyDown : undefined}
+        >
+            {/* Background Actions (Swipe Left/Right) */}
+            <div className="absolute inset-0 flex justify-between items-stretch">
+                {/* Ações à Direita (Edit/Discount) */}
+                <div className="flex items-center justify-start">
                     <button
-                        onClick={handleMenuClick}
-                        className="w-20 h-full bg-slate-600 text-white flex flex-col items-center justify-center transition-colors hover:bg-slate-700"
-                        aria-label="Editar"
+                        onClick={(e) => { e.stopPropagation(); handleActionClick('discount'); }}
+                        className="bg-indigo-500 text-white h-full w-20 flex flex-col items-center justify-center transition-colors hover:bg-indigo-600 text-xs font-semibold"
+                        aria-label="Aplicar Desconto"
                     >
-                        <i className="fas fa-expand-arrows-alt text-xl"></i>
-                        <span className="text-xs mt-1">Editar</span>
+                        <i className="fas fa-percent text-lg"></i>
+                        Desconto
                     </button>
                     <button
-                        onClick={handleDeleteClick}
-                        className="w-20 h-full bg-red-600 text-white flex flex-col items-center justify-center transition-colors hover:bg-red-700"
-                        aria-label="Excluir medida"
+                        onClick={(e) => { e.stopPropagation(); handleActionClick('edit'); }}
+                        className="bg-slate-500 text-white h-full w-20 flex flex-col items-center justify-center transition-colors hover:bg-slate-600 text-xs font-semibold"
+                        aria-label="Editar Medida"
                     >
-                        <i className="fas fa-trash-alt text-xl"></i>
-                        <span className="text-xs mt-1">Excluir</span>
+                        <i className="fas fa-pen text-lg"></i>
+                        Editar
                     </button>
                 </div>
-
-                <div
-                    ref={swipeableRef}
-                    style={{ touchAction: 'pan-y' }}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    className="relative z-10 w-full"
-                >
-                    <div
-                        ref={groupRef}
-                        data-measurement-id={measurement.id}
-                        onClick={handleRowClick}
-                        draggable={isDraggable}
-                        onDragStart={onDragStart}
-                        onDragEnter={onDragEnter}
-                        onDragEnd={onDragEnd}
-                        onDragOver={(e) => e.preventDefault()}
-                        className={`relative z-10 ${baseClasses} ${selectionClasses} ${isDragging ? 'shadow-2xl scale-[1.02]' : ''} ${isActive ? 'ring-2 ring-blue-500' : ''}`}
+                
+                {/* Ações à Esquerda (Delete) */}
+                <div className="flex items-center justify-end">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); handleActionClick('delete'); }}
+                        className="bg-red-600 text-white h-full w-20 flex flex-col items-center justify-center transition-colors hover:bg-red-700 text-xs font-semibold"
+                        aria-label="Excluir Medida"
                     >
-                        {/* Top Row: Film selector and Price */}
-                        <div className="flex items-start justify-between">
-                            {/* Left Side: Film Info & Selector */}
-                            <div className="flex-1 pr-2 min-w-0">
-                                <div 
-                                    role="button"
-                                    tabIndex={(!measurement.active || isSelectionMode) ? -1 : 0}
-                                    onClick={() => measurement.active && !isSelectionMode && onOpenFilmSelectionModal(measurement.id)} 
-                                    onKeyDown={(e) => {
-                                        if (measurement.active && !isSelectionMode && (e.key === 'Enter' || e.key === ' ')) {
-                                            onOpenFilmSelectionModal(measurement.id);
-                                        }
-                                    }}
-                                    className={`text-left w-full rounded-lg transition-colors`}
-                                    aria-label={`Película atual: ${measurement.pelicula || 'Nenhuma'}. Clique para alterar.`}
-                                >
-                                    <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Película</div>
-                                    <div className="text-sm font-bold text-slate-800 truncate leading-tight">{measurement.pelicula || 'Nenhuma'}</div>
-                                </div>
-                            </div>
+                        <i className="fas fa-trash-alt text-lg"></i>
+                        Excluir
+                    </button>
+                </div>
+            </div>
 
-                            {/* Right Side: Price & Options Menu */}
-                            <div className="flex items-center">
-                                <Tooltip text={hasDiscount ? 'Editar Desconto' : 'Aplicar Desconto'}>
-                                    <div
-                                        role="button"
-                                        tabIndex={isSelectionMode ? -1 : 0}
-                                        onClick={() => !isSelectionMode && onOpenDiscountModal(measurement)}
-                                        onKeyDown={(e) => !isSelectionMode && (e.key === 'Enter' || e.key === ' ') && onOpenDiscountModal(measurement)}
-                                        className={`text-right rounded-lg transition-colors ${isSelectionMode ? 'cursor-default' : 'hover:bg-slate-100 cursor-pointer'}`}
-                                        aria-label="Preço, clique para aplicar ou editar desconto"
-                                    >
-                                        <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">{priceLabel}</div>
-                                        {basePrice > 0 ? (
-                                            finalPrice < basePrice ? (
-                                                <div className="flex flex-col items-end leading-tight">
-                                                    <s className="text-red-500/80 text-[10px] font-normal">{formatCurrency(basePrice)}</s>
-                                                    <span className="text-sm font-bold text-slate-800 leading-tight">{formatCurrency(finalPrice)}</span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-sm font-bold text-slate-800 leading-tight">{formatCurrency(basePrice)}</span>
-                                            )
-                                        ) : (
-                                        <span className="text-sm font-bold text-slate-800 leading-tight">-</span>
-                                        )}
-                                    </div>
-                                </Tooltip>
-                                <div className="relative">
-                                    <div className={isModalMode ? 'hidden' : 'hidden sm:block'}>
-                                        <Tooltip text="Editar Detalhes">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) onOpenEditModal(measurement); }}
-                                                disabled={isSelectionMode}
-                                                className="w-8 h-10 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
-                                                aria-label="Editar detalhes da medida"
-                                            >
-                                                <i className="fas fa-expand-arrows-alt"></i>
-                                            </button>
-                                        </Tooltip>
-                                    </div>
-                                </div>
-                            </div>
+            {/* Foreground Content */}
+            <div
+                ref={swipeableRef}
+                style={{ touchAction: 'pan-y', transform: translateX !== 0 ? `translateX(${translateX}px)` : undefined }}
+                className="relative z-10 w-full"
+            >
+                <div className="p-3 flex flex-col gap-2">
+                    {/* Checkbox for selection mode */}
+                    {isSelectionMode && (
+                        <div className="absolute left-1 top-1 z-20">
+                            <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => { e.stopPropagation(); onToggleSelection(measurement.id, index, e.nativeEvent.shiftKey); }}
+                                className="h-5 w-5 text-blue-600 rounded-md border-slate-400 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                                aria-label={`Selecionar medida ${index + 1}`}
+                            />
                         </div>
+                    )}
 
-                        {/* Checkbox and Inputs Row */}
-                        <div className="flex items-center space-x-2 pt-1.5 border-t border-slate-200">
-                            {isSelectionMode ? (
-                                <input 
-                                    type="checkbox" 
-                                    checked={isSelected} 
-                                    onChange={(e) => onToggleSelection(measurement.id, index, e.shiftKey)}
-                                    className="form-checkbox h-4 w-4 text-blue-600 rounded-md border-slate-400 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                                    aria-label={`Selecionar medida ${measurement.id}`}
-                                />
-                            ) : (
-                                <Tooltip text="Ativar/Desativar cálculo">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={measurement.active} 
-                                        onChange={(e) => handleInputChange('active', e.target.checked)} 
-                                        className="form-checkbox h-4 w-4 text-blue-600 rounded-md border-slate-400 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                                        aria-label="Ativar ou desativar esta medida do cálculo"
-                                    />
-                                </Tooltip>
+                    <div className={`flex items-center justify-between gap-2 ${isSelectionMode ? 'ml-6' : ''}`}>
+                        <div className="flex items-center gap-2 flex-grow min-w-0">
+                            <span className={`text-xs font-bold ${isActive ? 'text-indigo-600' : 'text-slate-500'} flex-shrink-0`}>
+                                {index + 1}
+                            </span>
+                            <span className="text-xs font-medium text-slate-500 truncate flex-grow min-w-0">
+                                {measurement.pelicula}
+                            </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                            {measurement.discount > 0 && (
+                                <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${measurement.discountType === 'percentage' ? 'bg-red-100 text-red-700' : 'bg-red-100 text-red-700'}`}>
+                                    {measurement.discountType === 'percentage' ? `${measurement.discount.toFixed(1).replace('.0', '')}%` : `R$ ${measurement.discount.toFixed(2).replace('.', ',')}`}
+                                </div>
                             )}
+                            {m2 > 0 && (
+                                <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">
+                                    {m2.toFixed(2).replace('.', ',')} m²
+                                </span>
+                            )}
+                            <button onClick={() => onOpenEditModal(measurement)} className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition-colors" aria-label="Abrir edição detalhada">
+                                <i className="fas fa-ellipsis-h text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
 
-                            <div className="grid grid-cols-4 gap-2 flex-grow">
-                                <NumberInputButton field="largura" placeholder="L" value={measurement.largura} />
-                                <NumberInputButton field="altura" placeholder="A" value={measurement.altura} />
-                                <NumberInputButton field="quantidade" placeholder="Qtd" value={measurement.quantidade} />
-                                <div className={`${inputBaseClasses} bg-white text-slate-800 font-medium border-slate-300 cursor-default flex items-center justify-center`}>
-                                    {m2 > 0 ? m2.toFixed(2).replace('.', ',') : ''}
-                                </div>
-                            </div>
+                    {/* Input Fields */}
+                    <div className="grid grid-cols-4 gap-2 mt-1">
+                        <NumberInputButton field="largura" placeholder="L (m)" value={measurement.largura} />
+                        <NumberInputButton field="altura" placeholder="A (m)" value={measurement.altura} />
+                        <NumberInputButton field="quantidade" placeholder="Qtd" value={measurement.quantidade} />
+                        
+                        {/* Price Display / Film Selection */}
+                        <div 
+                            role="button"
+                            tabIndex={measurement.active ? 0 : -1}
+                            onClick={() => measurement.active && !isSelectionMode && onOpenFilmSelectionModal(measurement.id)}
+                            onKeyDown={(e) => {
+                                if (measurement.active && !isSelectionMode && (e.key === 'Enter' || e.key === ' ')) {
+                                    e.preventDefault();
+                                    onOpenFilmSelectionModal(measurement.id);
+                                }
+                            }}
+                            className={`w-full text-center py-2 px-1.5 rounded-lg border text-xs transition-colors duration-200 ${inputBaseClasses} ${!measurement.active ? 'bg-slate-200 text-slate-500 border-slate-300 cursor-not-allowed' : 'bg-white border-slate-300 hover:bg-slate-50'}`}
+                        >
+                            <span className="text-slate-500 block leading-none">Preço</span>
+                            <span className="font-bold text-slate-800 leading-tight mt-0.5 block">
+                                {pricePerM2 > 0 ? `R$ ${pricePerM2.toFixed(2).replace('.', ',')}` : 'Selecione'}
+                            </span>
                         </div>
-                        <div className={`additional-fields-content ${additionalFieldsVisible ? 'visible' : ''}`}>
-                            <div className="space-y-3 pt-3 mt-2 border-t border-slate-200">
-                                <DynamicSelector
-                                    label="Ambiente"
-                                    options={AMBIENTES}
-                                    value={measurement.ambiente}
-                                    onChange={(value) => onUpdate({ ambiente: value })}
-                                    disabled={!measurement.active}
-                                />
-                                <DynamicSelector
-                                    label="Tipo de Aplicação"
-                                    options={TIPOS_APLICACAO}
-                                    value={measurement.tipoAplicacao}
-                                    onChange={(value) => onUpdate({ tipoAplicacao: value })}
-                                    disabled={!measurement.active}
-                                />
-                            </div>
-                        </div>
+                    </div>
+                    
+                    {/* Total Price */}
+                    <div className="flex justify-end mt-2">
+                        <span className="text-sm font-bold text-slate-800">
+                            R$ {finalPrice.toFixed(2).replace('.', ',')}
+                        </span>
                     </div>
                 </div>
             </div>
-        </>
+            
+            {showDiscountModal && (
+                <DiscountModal
+                    isOpen={showDiscountModal}
+                    onClose={() => setShowDiscountModal(false)}
+                    onSave={handleDiscountSave}
+                    initialValue={measurement.discount}
+                    initialType={measurement.discountType}
+                />
+            )}
+        </div>
     );
 };
 

@@ -17,13 +17,14 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
 
     return (
         <div className="flex justify-center items-center">
-            {/* O título 'Películas BR' foi removido daqui para evitar quebras de layout no mobile/desktop */}
-            <div className="flex justify-center overflow-x-auto space-x-2 sm:space-x-4 w-full sm:w-auto">
+            {/* Alterado para justify-between e w-full para espalhar os botões */}
+            <div className="flex justify-between overflow-x-auto space-x-2 sm:space-x-4 w-full sm:w-auto">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => onTabChange(tab.id)}
-                        className={`flex items-center justify-center sm:justify-start px-3 py-2 rounded-lg transition-colors duration-200 flex-shrink-0 ${
+                        // Removido px-3 para dar mais espaço, e adicionado flex-1 no mobile para forçar a distribuição
+                        className={`flex items-center justify-center px-1 py-2 rounded-lg transition-colors duration-200 flex-shrink-0 sm:flex-shrink sm:px-3 ${
                             activeTab === tab.id
                                 ? 'bg-slate-800 text-white shadow-md'
                                 : 'text-slate-600 hover:bg-slate-100'

@@ -241,6 +241,10 @@ const App: React.FC = () => {
         setClientTransitionKey(prev => prev + 1);
     }, [selectedClientId, userInfo]);
     
+    const handleTabChange = useCallback((tab: ActiveTab) => {
+        setActiveTab(tab);
+    }, []);
+
     useEffect(() => {
         if (userInfo && userInfo.activeTab !== activeTab) {
             const updatedUserInfo = { ...userInfo, activeTab: activeTab };
@@ -508,7 +512,6 @@ const App: React.FC = () => {
         a.href = url;
         a.download = filename;
         document.body.appendChild(a);
-        a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }, []);
@@ -989,7 +992,7 @@ const App: React.FC = () => {
     const handleOpenFilmSelectionModal = useCallback((measurementId: number) => {
         setEditingMeasurementIdForFilm(measurementId);
         setIsFilmSelectionModalOpen(true);
-    }, [numpadConfig.isOpen, handleNumpadClose]);
+    }, []);
 
     const handleSelectFilmForMeasurement = useCallback((filmName: string) => {
         if (editingMeasurementIdForFilm === null) return;
@@ -1024,7 +1027,7 @@ const App: React.FC = () => {
 
     const handleOpenEditMeasurementModal = useCallback((measurement: UIMeasurement) => {
         setEditingMeasurement(measurement);
-    }, [numpadConfig.isOpen, handleNumpadClose]);
+    }, []);
 
     const handleCloseEditMeasurementModal = useCallback(() => {
         setEditingMeasurement(null);
@@ -1089,7 +1092,7 @@ const App: React.FC = () => {
 
     const handleRequestDeleteAgendamento = useCallback((agendamento: Agendamento) => {
         setAgendamentoToDelete(agendamento);
-    }, [handleCloseAgendamentoModal]);
+    }, []);
 
     const handleConfirmDeleteAgendamento = useCallback(async () => {
         if (!agendamentoToDelete || !agendamentoToDelete.id) return;
@@ -1113,11 +1116,11 @@ const App: React.FC = () => {
 
     const handleOpenClientSelectionModal = useCallback(() => {
         setIsClientSelectionModalOpen(true);
-    }, [numpadConfig.isOpen, handleNumpadClose]);
+    }, []);
 
     const handleOpenDiscountModal = useCallback((measurement: UIMeasurement) => {
         setEditingMeasurementForDiscount(measurement);
-    }, [numpadConfig.isOpen, handleNumpadClose]);
+    }, []);
 
     const handleCloseDiscountModal = useCallback(() => {
         setEditingMeasurementForDiscount(null);
@@ -1204,12 +1207,234 @@ const App: React.FC = () => {
         setIsClientSelectionModalOpen(false);
     }, []);
 
-    const handleAddNewClientFromAgendamento = useCallback((clientName: string) => {
-        setPostClientSaveAction({ type: 'add' });
-        setClientModalMode('add');
-        setIsClientModalOpen(true);
-        setIsClientSelectionModalOpen(false);
+    const addMeasurement = useCallback(() => {
+        if (!activeOption) return;
+        const newMeasurement: UIMeasurement = {
+            id: Date.now(),
+            largura: '',
+            altura: '',
+            quantidade: 1,
+            ambiente: 'Desconhecido',
+            tipoAplicacao: 'Desconhecido',
+            pelicula: films[0]?.nome || 'Nenhuma',
+            active: true,
+            discount: 0,
+            discountType: 'percentage',
+            isNew: true,
+        };
+        const updatedMeasurements = [
+            newMeasurement, 
+            ...measurements.map(m => ({ ...m, isNew: false }))
+        ];
+        handleMeasurementsChange(updatedMeasurements);
+        // Abre o numpad automaticamente para a nova medida
+        handleOpenNumpad(newMeasurement.id, 'largura', newMeasurement.largura);
+    }, [activeOption, films, measurements, handleMeasurementsChange]);
+
+    const handleNumpadOpen = useCallback((measurementId: number, field: 'largura' | 'altura' | 'quantidade', currentValue: string | number) => {
+        const { isOpen, measurementId: prevId, field: prevField, currentValue: prevValue } = numpadConfig;
+
+        if (isOpen && (prevId !== measurementId || prevField !== field)) {
+            let finalValue: string | number;
+            if (prevField === 'quantidade') {
+                finalValue = parseInt(String(prevValue), 10) || 1;
+            } else {
+                finalValue = (prevValue === ',' || prevValue === '' || prevValue === '.') ? '0' : prevValue.replace('.', ',');
+            }
+
+            const updatedMeasurements = measurements.map(m =>
+                m.id === prevId ? { ...m, [prevField!]: finalValue } : m
+            );
+            handleMeasurementsChange(updatedMeasurements);
+        }
+
+        setNumpadConfig(prev => {
+            const isSameButton = prev.isOpen && prev.measurementId === measurementId && prev.field === field;
+            
+            if (isSameButton) {
+                return {
+                    ...prev,
+                    shouldClearOnNextInput: false,
+                };
+            }
+
+            return {
+                isOpen: true,
+                measurementId,
+                field,
+                currentValue: String(currentValue).replace(',', '.'),
+                shouldClearOnNextInput: true,
+            };
+        });
+    }, [numpadConfig, measurements, handleMeasurementsChange]);
+
+    const handleNumpadClose = useCallback(() => {
+        const { measurementId, field, currentValue } = numpadConfig;
+        if (measurementId === null || field === null) {
+            setNumpadConfig({ isOpen: false, measurementId: null, field: null, currentValue: '', shouldClearOnNextInput: false });
+            return;
+        }
+
+        let finalValue: string | number;
+        if (field === 'quantidade') {
+            finalValue = parseInt(String(currentValue), 10) || 1;
+        } else {
+            finalValue = (currentValue === '' || currentValue === '.') ? '0' : currentValue.replace('.', ',');
+        }
+
+        const updatedMeasurements = measurements.map(m =>
+            m.id === measurementId ? { ...m, [field]: finalValue } : m
+        );
+        handleMeasurementsChange(updatedMeasurements);
+        
+        setNumpadConfig({ isOpen: false, measurementId: null, field: null, currentValue: '', shouldClearOnNextInput: false });
+    }, [numpadConfig, measurements, handleMeasurementsChange]);
+
+    const handleNumpadInput = useCallback((value: string) => {
+        setNumpadConfig(prev => {
+            const shouldClear = prev.shouldClearOnNextInput;
+            let newValue = prev.currentValue;
+
+            const char = value === ',' ? '.' : value;
+
+            if (char === '.') {
+                if (prev.field !== 'quantidade') {
+                    newValue = shouldClear ? '0.' : (newValue.includes('.') ? newValue : newValue + '.');
+                }
+            } else {
+                newValue = shouldClear ? char : newValue + char;
+            }
+
+            const isWidthOrHeight = prev.field === 'largura' || prev.field === 'altura';
+            const matchesPattern = /^\d\.\d{2}$/.test(newValue);
+
+            if (isWidthOrHeight && matchesPattern) {
+                const finalValue = newValue.replace('.', ',');
+                const measurementsWithSavedValue = measurements.map(m =>
+                    m.id === prev.measurementId ? { ...m, [prev.field!]: finalValue } : m
+                );
+                handleMeasurementsChange(measurementsWithSavedValue);
+
+                const fieldSequence: Array<'largura' | 'altura' | 'quantidade'> = ['largura', 'altura', 'quantidade'];
+                const currentIndex = fieldSequence.indexOf(prev.field!);
+                const nextIndex = currentIndex + 1;
+
+                if (nextIndex < fieldSequence.length) {
+                    const nextField = fieldSequence[nextIndex];
+                    const currentMeasurement = measurementsWithSavedValue.find(m => m.id === prev.measurementId);
+                    const nextValueForField = currentMeasurement ? currentMeasurement[nextField] : '';
+                    
+                    return {
+                        isOpen: true,
+                        measurementId: prev.measurementId,
+                        field: nextField,
+                        currentValue: String(nextValueForField).replace(',', '.'),
+                        shouldClearOnNextInput: true,
+                    };
+                } else {
+                    return { isOpen: false, measurementId: null, field: null, currentValue: '', shouldClearOnNextInput: false };
+                }
+            }
+
+            return { ...prev, currentValue: newValue, shouldClearOnNextInput: false };
+        });
+    }, [measurements, handleMeasurementsChange]);
+
+    const handleNumpadDelete = useCallback(() => {
+        setNumpadConfig(prev => ({ 
+            ...prev, 
+            currentValue: prev.currentValue.slice(0, -1),
+            shouldClearOnNextInput: false 
+        }));
     }, []);
+
+    const handleNumpadDone = useCallback(() => {
+        const { measurementId, field, currentValue } = numpadConfig;
+        if (measurementId === null || field === null) return;
+
+        let finalValue: string | number;
+        if (field === 'quantidade') {
+            finalValue = parseInt(String(currentValue), 10) || 1;
+        } else {
+            finalValue = (currentValue === '' || currentValue === '.') ? '0' : currentValue.replace('.', ',');
+        }
+
+        const updatedMeasurements = measurements.map(m =>
+            m.id === measurementId ? { ...m, [field]: finalValue } : m
+        );
+        handleMeasurementsChange(updatedMeasurements);
+
+        const fieldSequence: Array<'largura' | 'altura' | 'quantidade'> = ['largura', 'altura', 'quantidade'];
+        const currentIndex = fieldSequence.indexOf(field);
+        const nextIndex = currentIndex + 1;
+
+        if (nextIndex < fieldSequence.length) {
+            const nextField = fieldSequence[nextIndex];
+            const currentMeasurement = updatedMeasurements.find(m => m.id === measurementId);
+            const nextValue = currentMeasurement ? currentMeasurement[nextField] : '';
+
+            setNumpadConfig({
+                isOpen: true,
+                measurementId,
+                field: nextField,
+                currentValue: String(nextValue).replace(',', '.'),
+                shouldClearOnNextInput: true,
+            });
+        } else {
+            setNumpadConfig({ isOpen: false, measurementId: null, field: null, currentValue: '', shouldClearOnNextInput: false });
+        }
+    }, [numpadConfig, measurements, handleMeasurementsChange]);
+
+    const handleNumpadClear = useCallback(() => {
+        const { measurementId, field } = numpadConfig;
+        if (measurementId === null) return;
+
+        const updatedMeasurements = measurements.map(m =>
+            m.id === measurementId ? { ...m, largura: '', altura: '', quantidade: 1 } : m
+        );
+        handleMeasurementsChange(updatedMeasurements);
+
+        setNumpadConfig(prev => ({
+            ...prev,
+            currentValue: field === 'quantidade' ? '1' : '',
+            shouldClearOnNextInput: true,
+        }));
+    }, [numpadConfig, measurements, handleMeasurementsChange]);
+
+    const handleNumpadDuplicate = useCallback(() => {
+        const { measurementId } = numpadConfig;
+        if (measurementId === null) return;
+
+        const measurementToDuplicate = measurements.find(m => m.id === measurementId);
+        if (measurementToDuplicate) {
+            const newMeasurement: UIMeasurement = { 
+                ...measurementToDuplicate, 
+                id: Date.now(), 
+                isNew: true
+            };
+            const index = measurements.findIndex(m => m.id === measurementId);
+            const newMeasurements = [...measurements];
+            newMeasurements.splice(index + 1, 0, newMeasurement);
+            handleMeasurementsChange(newMeasurements);
+            
+            // Fecha o numpad atual e abre no novo item
+            setNumpadConfig({
+                isOpen: true,
+                measurementId: newMeasurement.id,
+                field: 'largura',
+                currentValue: String(newMeasurement.largura).replace(',', '.'),
+                shouldClearOnNextInput: true,
+            });
+        }
+    }, [numpadConfig, measurements, handleMeasurementsChange]);
+
+    const handleNumpadAddGroup = useCallback(() => {
+        addMeasurement();
+    }, [addMeasurement]);
+
+    const handleOpenNumpad = useCallback((measurementId: number, field: 'largura' | 'altura' | 'quantidade', currentValue: string | number) => {
+        handleNumpadOpen(measurementId, field, currentValue);
+    }, [handleNumpadOpen]);
 
 
     const renderContent = () => {

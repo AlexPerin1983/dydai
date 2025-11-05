@@ -90,7 +90,16 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
     const quantidadeNum = Number(localMeasurement.quantidade) || 0;
     const m2 = larguraNum * alturaNum * quantidadeNum;
     const selectedFilm = films.find(f => f.nome === localMeasurement.pelicula);
-    const basePrice = selectedFilm ? m2 * selectedFilm.preco : 0;
+    
+    const pricePerM2 = useMemo(() => {
+        if (selectedFilm) {
+            if (selectedFilm.preco > 0) return selectedFilm.preco;
+            if (selectedFilm.maoDeObra && selectedFilm.maoDeObra > 0) return selectedFilm.maoDeObra;
+        }
+        return 0;
+    }, [selectedFilm]);
+
+    const basePrice = pricePerM2 * m2;
     let finalPrice = basePrice;
     const discountValue = localMeasurement.discount || 0;
     if (discountValue > 0) {
@@ -184,7 +193,9 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
                             <div className="flex justify-between items-center">
                                 <div>
                                     <p className="font-semibold text-slate-800">{localMeasurement.pelicula || 'Selecione uma película'}</p>
-                                    <p className="text-sm text-slate-500">{selectedFilm ? `${formatCurrency(selectedFilm.preco)} / m²` : 'Nenhum preço definido'}</p>
+                                    <p className="text-sm text-slate-500">
+                                        {pricePerM2 > 0 ? `${formatCurrency(pricePerM2)} / m²` : 'Nenhum preço definido'}
+                                    </p>
                                      {selectedFilm && (
                                         <p className="text-xs text-slate-500 mt-1">
                                             Garantia: {selectedFilm.garantiaFabricante || 'N/A'}a Fab. / {selectedFilm.garantiaMaoDeObra || 'N/A'}d M.O.

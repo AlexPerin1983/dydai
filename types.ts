@@ -41,6 +41,7 @@ export interface ProposalOption {
 export interface Film {
     nome: string;
     preco: number;
+    maoDeObra?: number; // NOVO CAMPO: Valor fixo de mão de obra por m²
     garantiaFabricante?: number;
     garantiaMaoDeObra?: number;
     uv?: number;

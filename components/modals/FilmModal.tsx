@@ -17,6 +17,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
     const [formData, setFormData] = useState<Film>({
         nome: '',
         preco: 0,
+        maoDeObra: 0, // Inicializando o novo campo
         garantiaFabricante: 0,
         garantiaMaoDeObra: 30,
         uv: 0,
@@ -32,6 +33,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
             setFormData({
                 nome: film.nome || '',
                 preco: film.preco || 0,
+                maoDeObra: film.maoDeObra || 0, // Carregando o novo campo
                 garantiaFabricante: film.garantiaFabricante || 0,
                 garantiaMaoDeObra: film.garantiaMaoDeObra || 30,
                 uv: film.uv || 0,
@@ -45,6 +47,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
             setFormData({
                 nome: '',
                 preco: 0,
+                maoDeObra: 0, // Inicializando para novo filme
                 garantiaFabricante: 0,
                 garantiaMaoDeObra: 30,
                 uv: 0,
@@ -165,16 +168,28 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             required
                         />
                     </div>
-                    <Input
-                        id="preco"
-                        label="Preço por m² (R$)"
-                        type="number"
-                        value={formData.preco}
-                        onChange={handleChange}
-                        min="0"
-                        step="0.01"
-                        required
-                    />
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input
+                            id="preco"
+                            label="Preço por m² (R$)"
+                            type="number"
+                            value={formData.preco}
+                            onChange={handleChange}
+                            min="0"
+                            step="0.01"
+                            required
+                        />
+                        <Input
+                            id="maoDeObra"
+                            label="Valor Mão de Obra (R$)"
+                            type="number"
+                            value={formData.maoDeObra}
+                            onChange={handleChange}
+                            min="0"
+                            step="0.01"
+                            placeholder="Opcional"
+                        />
+                    </div>
                 </div>
                 
                 <div className="pt-4 mt-4 border-t border-slate-200">

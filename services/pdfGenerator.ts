@@ -1,5 +1,3 @@
-
-
 import { Client, UserInfo, Measurement, Film } from '../types';
 
 declare const jspdf: any;
@@ -299,7 +297,17 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
                 const largura = parseFloat(String(m.largura).replace(',', '.')) || 0;
                 const altura = parseFloat(String(m.altura).replace(',', '.')) || 0;
                 const m2 = largura * altura * m.quantidade;
-                const basePrice = film ? m2 * film.preco : 0;
+                
+                let pricePerM2 = 0;
+                if (film) {
+                    if (film.preco > 0) {
+                        pricePerM2 = film.preco;
+                    } else if (film.maoDeObra && film.maoDeObra > 0) {
+                        pricePerM2 = film.maoDeObra;
+                    }
+                }
+                
+                const basePrice = pricePerM2 * m2;
                 
                 let itemDiscountAmount = 0;
                 let discountDisplay = '-';
@@ -578,6 +586,13 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
                 doc.setFontSize(10);
                 doc.setTextColor(...bodyText);
                 safeText(userInfo.nome, pageWidth / 2, nameY, { align: 'center' });
+                
+                // Add CPF/CNPJ below name
+                const cpfCnpjY = nameY + 5;
+                doc.setFontSize(8);
+                doc.setTextColor(100, 100, 100);
+                safeText(userInfo.cpfCnpj, pageWidth / 2, cpfCnpjY, { align: 'center' });
+
             } catch (error) {
                 console.error("Erro ao adicionar assinatura:", error);
             }

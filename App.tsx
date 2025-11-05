@@ -629,7 +629,17 @@ const App: React.FC = () => {
                 const quantidade = parseInt(String(m.quantidade), 10) || 0;
                 const m2 = largura * altura * quantidade;
                 const film = films.find(f => f.nome === m.pelicula);
-                const basePrice = film ? m2 * film.preco : 0;
+                
+                let pricePerM2 = 0;
+                if (film) {
+                    if (film.preco > 0) {
+                        pricePerM2 = film.preco;
+                    } else if (film.maoDeObra && film.maoDeObra > 0) {
+                        pricePerM2 = film.maoDeObra;
+                    }
+                }
+                
+                const basePrice = pricePerM2 * m2;
 
                 let itemDiscountAmount = 0;
                 const discountValue = m.discount || 0;
@@ -1377,6 +1387,7 @@ const App: React.FC = () => {
         const newFilmTemplate: Film = {
             nome: filmName,
             preco: 0,
+            maoDeObra: 0, // Adicionado
             garantiaFabricante: 0,
             garantiaMaoDeObra: 30,
             uv: 0,

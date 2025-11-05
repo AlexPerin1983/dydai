@@ -230,8 +230,21 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
     
     const selectedFilm = films.find(f => f.nome === measurement.pelicula);
     
-    const { basePrice, finalPrice } = useMemo(() => {
-        const price = selectedFilm ? m2 * selectedFilm.preco : 0;
+    const { basePrice, finalPrice, priceLabel } = useMemo(() => {
+        let pricePerM2 = 0;
+        let label = 'Preço';
+
+        if (selectedFilm) {
+            if (selectedFilm.preco > 0) {
+                pricePerM2 = selectedFilm.preco;
+                label = 'Preço';
+            } else if (selectedFilm.maoDeObra && selectedFilm.maoDeObra > 0) {
+                pricePerM2 = selectedFilm.maoDeObra;
+                label = 'Mão de Obra';
+            }
+        }
+
+        const price = pricePerM2 * m2;
         let final = price;
         const discountValue = measurement.discount || 0;
         if (discountValue > 0) {
@@ -241,7 +254,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                 final = price - discountValue;
             }
         }
-        return { basePrice: price, finalPrice: Math.max(0, final) };
+        return { basePrice: price, finalPrice: Math.max(0, final), priceLabel: label };
     }, [m2, selectedFilm, measurement.discount, measurement.discountType]);
     
     const hasDiscount = (measurement.discount || 0) > 0;
@@ -306,9 +319,9 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
             <div
                 role="button"
                 tabIndex={measurement.active ? 0 : -1}
-                onClick={() => measurement.active && onOpenNumpad(measurement.id, field, value)}
+                onClick={() => measurement.active && !isSelectionMode && onOpenNumpad(measurement.id, field, value)}
                 onKeyDown={(e) => {
-                    if (measurement.active && (e.key === 'Enter' || e.key === ' ')) {
+                    if (measurement.active && !isSelectionMode && (e.key === 'Enter' || e.key === ' ')) {
                         e.preventDefault();
                         onOpenNumpad(measurement.id, field, value);
                     }
@@ -393,7 +406,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                                         className={`text-right rounded-lg transition-colors ${isSelectionMode ? 'cursor-default' : 'hover:bg-slate-100 cursor-pointer'}`}
                                         aria-label="Preço, clique para aplicar ou editar desconto"
                                     >
-                                        <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Preço</div>
+                                        <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">{priceLabel}</div>
                                         {basePrice > 0 ? (
                                             finalPrice < basePrice ? (
                                                 <div className="flex flex-col items-end leading-tight">

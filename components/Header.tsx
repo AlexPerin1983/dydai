@@ -22,7 +22,8 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
                     <button
                         key={tab.id}
                         onClick={() => onTabChange(tab.id)}
-                        className={`flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl transition-colors duration-200 flex-shrink-0 flex-1 sm:flex-shrink-0 ${
+                        // Aumentando o padding e usando flex-1 para esticar o botão em mobile
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-xl transition-colors duration-200 flex-shrink-0 flex-1 sm:flex-shrink-0 sm:px-4 ${
                             activeTab === tab.id
                                 ? 'bg-slate-800 text-white shadow-md'
                                 : 'text-slate-600 hover:bg-slate-100'

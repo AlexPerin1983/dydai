@@ -17,7 +17,6 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
     const [formData, setFormData] = useState<Film>({
         nome: '',
         preco: 0,
-        maoDeObra: 0, // Inicializando o novo campo
         garantiaFabricante: 0,
         garantiaMaoDeObra: 30,
         uv: 0,
@@ -33,7 +32,6 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
             setFormData({
                 nome: film.nome || '',
                 preco: film.preco || 0,
-                maoDeObra: film.maoDeObra || 0, // Carregando o novo campo
                 garantiaFabricante: film.garantiaFabricante || 0,
                 garantiaMaoDeObra: film.garantiaMaoDeObra || 30,
                 uv: film.uv || 0,
@@ -47,7 +45,6 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
             setFormData({
                 nome: '',
                 preco: 0,
-                maoDeObra: 0, // Inicializando para novo filme
                 garantiaFabricante: 0,
                 garantiaMaoDeObra: 30,
                 uv: 0,
@@ -168,35 +165,23 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             required
                         />
                     </div>
-                    <div className="grid grid-cols-2 gap-4 items-start">
-                        <Input
-                            id="preco"
-                            label="Preço por m² (R$)"
-                            type="number"
-                            value={formData.preco}
-                            onChange={handleChange}
-                            min="0"
-                            step="0.01"
-                            required
-                        />
-                        <Input
-                            id="maoDeObra"
-                            label="Mão de Obra (R$)"
-                            type="number"
-                            value={formData.maoDeObra}
-                            onChange={handleChange}
-                            min="0"
-                            step="0.01"
-                            placeholder="Opcional"
-                        />
-                    </div>
+                    <Input
+                        id="preco"
+                        label="Preço por m² (R$)"
+                        type="number"
+                        value={formData.preco}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                        required
+                    />
                 </div>
                 
                 <div className="pt-4 mt-4 border-t border-slate-200">
                     <h3 className="text-base font-semibold leading-6 text-slate-800 mb-2">
                         Garantias
                     </h3>
-                    <div className="grid grid-cols-2 gap-4 items-start">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Input
                             as="select"
                             id="garantiaFabricante"
@@ -225,7 +210,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                         Dados Técnicos
                     </h3>
                     {/* Grid de Dados Técnicos - 2 colunas em mobile, 3 em desktop */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 items-start">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         <Input
                             id="uv"
                             label="UV (%)"

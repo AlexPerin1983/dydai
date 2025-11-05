@@ -27,9 +27,6 @@ const FilmListItem: React.FC<{
     const swipeableRef = useRef<HTMLDivElement>(null);
     const currentTranslateX = useRef(0);
     const ACTIONS_WIDTH = 160;
-    
-    const pricePerM2 = film.preco || film.maoDeObra || 0;
-    const priceLabel = film.preco > 0 ? 'Preço' : (film.maoDeObra > 0 ? 'Mão de Obra' : 'Preço');
 
     useEffect(() => {
         if (swipedItemName !== film.nome && swipeableRef.current) {
@@ -180,9 +177,9 @@ const FilmListItem: React.FC<{
                     </div>
                     <div className="flex-shrink-0 text-right">
                         <p className="font-bold text-slate-800">
-                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pricePerM2)}
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(film.preco)}
                         </p>
-                        <p className="text-sm text-slate-500">/ m² ({priceLabel})</p>
+                        <p className="text-sm text-slate-500">/ m²</p>
                     </div>
                 </div>
             </div>

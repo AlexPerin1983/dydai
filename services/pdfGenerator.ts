@@ -1,11 +1,13 @@
+
+
 import { Client, UserInfo, Measurement, Film } from '../types';
 
 declare const jspdf: any;
 
 const formatNumberBR = (number: number): string => {
-    return new Intl.NumberFormat('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+    return new Intl.NumberFormat('pt-BR', { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2 
     }).format(number);
 };
 
@@ -13,6 +15,7 @@ interface Totals {
     totalM2: number;
     subtotal: number;
     totalItemDiscount: number;
+    priceAfterItemDiscounts: number;
     generalDiscountAmount: number;
     finalTotal: number;
 }
@@ -43,74 +46,110 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
 
         const hexToRgb = (hex: string) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result
-                ? [
-                      parseInt(result[1], 16),
-                      parseInt(result[2], 16),
-                      parseInt(result[3], 16)
-                  ]
-                : [0, 0, 0];
+            return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [0, 0, 0];
         };
         
         const bodyText = [33, 37, 41];
 
-        const safeText = (text: any, x: number, y: number, options: { align?: 'left' | 'center' | 'right' } = {}) => {
-            doc.text(String(text), x, y, { ...options, maxWidth: (options.align === 'right' ? pageWidth - margin - x : undefined) });
+        const safeText = (text: any, x: number, y: number, options = {}) => {
+            if (typeof text !== 'string') text = String(text || '');
+            doc.text(text, x, y, options);
         };
 
         const addLogo = async (x: number, y: number, maxWidth: number, maxHeight: number) => {
-            if (!userInfo.logo) return;
-            
-            const img = new Image();
-            img.src = userInfo.logo;
-            
-            await new Promise(resolve => {
-                img.onload = resolve;
-                img.onerror = resolve;
-            });
+            if (userInfo.logo) {
+                try {
+                    const img = new Image();
+                    img.src = userInfo.logo;
+                    await new Promise(resolve => {
+                        img.onload = resolve;
+                        img.onerror = resolve; // Continue even if logo fails
+                    });
+                    
+                    let imgWidth = img.width;
+                    let imgHeight = img.height;
+                    let ratio = imgWidth / imgHeight;
 
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
-
-            const ratio = img.width / img.height;
-            let finalWidth = maxWidth;
-            let finalHeight = maxHeight;
-
-            if (finalWidth > finalHeight * ratio) {
-                finalWidth = finalHeight * ratio;
-            } else {
-                finalHeight = finalWidth / ratio;
+                    if (imgWidth > maxWidth) {
+                        imgWidth = maxWidth;
+                        imgHeight = imgWidth / ratio;
+                    }
+                    if (imgHeight > maxHeight) {
+                        imgHeight = maxHeight;
+                        imgWidth = imgHeight * ratio;
+                    }
+                    
+                    doc.addImage(userInfo.logo, 'PNG', x, y, imgWidth, imgHeight);
+                } catch (error) {
+                    console.error("Erro ao adicionar logo:", error);
+                }
             }
-
-            canvas.width = finalWidth;
-            canvas.height = finalHeight;
-            ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
-
-            doc.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, finalWidth, finalHeight);
         };
 
+        let pageCounter = 1;
         const addFooter = () => {
-            doc.setFont("helvetica", 'normal');
+            const footerY = pageHeight - 15;
+            doc.setDrawColor(...hexToRgb('#dddddd'));
+            doc.setLineWidth(0.2);
+            doc.line(margin, footerY, pageWidth - margin, footerY);
+            
+            doc.setTextColor(...bodyText);
             doc.setFontSize(8);
-            doc.setTextColor(100, 100, 100);
-            safeText(`Página ${pageCounter}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+            
+            safeText(userInfo.empresa || '', margin, footerY + 7);
+            safeText(`Página ${pageCounter}`, pageWidth - margin, footerY + 7, { align: 'right' });
         };
 
         // This header will be used for content pages (page 2 onwards)
         const addPageHeader = async () => {
-            doc.setDrawColor(150, 150, 150);
-            doc.setLineWidth(0.1);
-            doc.line(margin, 25, pageWidth - margin, 25);
+            const headerStartY = 12;
+            const userPrimaryColor = hexToRgb(userInfo.cores?.primaria || '#333333');
+
+            // Logo and Name
+            let logoBottomY = 0;
+            if (userInfo.logo) {
+                try {
+                    const img = new Image();
+                    img.src = userInfo.logo;
+                    await new Promise(resolve => {
+                        img.onload = resolve;
+                        img.onerror = resolve;
+                    });
+                    const logoHeight = 8;
+                    const ratio = img.width / img.height;
+                    const logoWidth = logoHeight * ratio;
+                    doc.addImage(userInfo.logo, 'PNG', margin, headerStartY, logoWidth, logoHeight);
+                    doc.setFont("helvetica", 'bold');
+                    doc.setFontSize(10);
+                    doc.setTextColor(...bodyText);
+                    safeText(userInfo.nome, margin + logoWidth + 4, headerStartY + logoHeight / 2 + 2);
+                    logoBottomY = headerStartY + logoHeight;
+                } catch (e) {
+                    logoBottomY = headerStartY + 8;
+                }
+            } else {
+                 doc.setFont("helvetica", 'bold');
+                 doc.setFontSize(10);
+                 doc.setTextColor(...bodyText);
+                 safeText(userInfo.nome, margin, headerStartY + 4);
+                 logoBottomY = headerStartY + 8;
+            }
+
+            // Right-aligned contact info
+            doc.setFont("helvetica", 'normal');
             doc.setFontSize(8);
-            doc.setTextColor(100, 100, 100);
-            safeText(userInfo.empresa, margin, 20);
-            safeText(`Orçamento: ${client.nome}`, pageWidth - margin, 20, { align: 'right' });
+            const rightAlignX = pageWidth - margin;
+            safeText(`Tel: ${userInfo.telefone || 'N/A'}`, rightAlignX, headerStartY + 1, { align: 'right' });
+            safeText(`Email: ${userInfo.email || 'N/A'}`, rightAlignX, headerStartY + 5, { align: 'right' });
+            safeText(`Site: ${userInfo.site || 'N/A'}`, rightAlignX, headerStartY + 9, { align: 'right' });
+            
+            const lineY = Math.max(logoBottomY, headerStartY + 12) + 2;
+            doc.setDrawColor(...userPrimaryColor);
+            doc.setLineWidth(0.5);
+            doc.line(margin, lineY, pageWidth - margin, lineY);
         };
         
-        let pageCounter = 1;
-        let yPos = 35; // Variável de posição Y global para o conteúdo
-        
+        let yPos = 0;
         const addNewPage = async () => {
             doc.addPage();
             pageCounter++;
@@ -121,24 +160,23 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
 
         const addSectionTitle = async (title: string) => {
             if (yPos > pageHeight - 40) await addNewPage();
-            
-            doc.setFont("helvetica", 'bold');
-            doc.setFontSize(11);
-            doc.setTextColor(...bodyText);
-            doc.setDrawColor(bodyText[0], bodyText[1], bodyText[2]);
+            const userSecondaryColor = hexToRgb(userInfo.cores?.secundaria || '#937e44');
+            doc.setDrawColor(...userSecondaryColor);
             doc.setLineWidth(0.5);
-            
-            const titleWidth = doc.getTextWidth(title);
-            const xStart = margin;
-            
-            safeText(title, xStart, yPos);
-            doc.line(xStart + titleWidth + 5, yPos + 3, pageWidth - margin, yPos + 3);
-            
+            doc.line(margin, yPos, pageWidth - margin, yPos);
             yPos += 10;
+            doc.setTextColor(...userSecondaryColor);
+            doc.setFont("helvetica", 'bold');
+            doc.setFontSize(14);
+            safeText(title, margin, yPos);
+            yPos += 15;
+            doc.setTextColor(...bodyText);
+            doc.setFont("helvetica", 'normal');
+            doc.setFontSize(10);
         };
 
         // --- COVER PAGE ---
-        const primaryColor = hexToRgb(userInfo.cores?.primaria || '#0056b3');
+        const primaryColor = hexToRgb(userInfo.cores?.primaria || '#0052FF');
         const secondaryColor = hexToRgb(userInfo.cores?.secundaria || '#2D3748');
         const textWhite = [255, 255, 255];
         const textDark = [50, 50, 50];
@@ -178,8 +216,8 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
         // Date & Proposal Number (top-right)
         const proposalId = `ORC-${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${client.id || '00'}`;
         doc.setFontSize(9);
-        doc.setFont("helvetica", 'normal');
         doc.setTextColor(...textDark);
+        doc.setFont("helvetica", 'normal');
         safeText(`Data: ${new Date().toLocaleDateString('pt-BR')}`, pageWidth - margin, margin + 5, { align: 'right' });
         safeText(`Orçamento Nº: ${proposalId}`, pageWidth - margin, margin + 10, { align: 'right' });
 
@@ -261,17 +299,7 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
                 const largura = parseFloat(String(m.largura).replace(',', '.')) || 0;
                 const altura = parseFloat(String(m.altura).replace(',', '.')) || 0;
                 const m2 = largura * altura * m.quantidade;
-                
-                let pricePerM2 = 0;
-                if (film) {
-                    if (film.preco > 0) {
-                        pricePerM2 = film.preco;
-                    } else if (film.maoDeObra && film.maoDeObra > 0) {
-                        pricePerM2 = film.maoDeObra;
-                    }
-                }
-                
-                const basePrice = pricePerM2 * m2;
+                const basePrice = film ? m2 * film.preco : 0;
                 
                 let itemDiscountAmount = 0;
                 let discountDisplay = '-';
@@ -409,18 +437,19 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
         // 1. Prepare all content for this section first to calculate its total height.
         const grandTotal = totals.finalTotal;
         const calculateParceladoSemJuros = (total: number, parcelas_max?: number | null) => {
-            if (!parcelas_max || parcelas_max <= 0) return total;
+            if (!parcelas_max || parcelas_max === 0) return 0;
             return total / parcelas_max;
         };
         const calculateParceladoComJuros = (total: number, parcelas_max?: number | null, juros?: number | null) => {
-            if (!parcelas_max || parcelas_max <= 0 || !juros || juros <= 0) return total;
-            const taxaMensal = juros / 100;
-            const valorParcela = total * (taxaMensal * Math.pow(1 + taxaMensal, parcelas_max)) / (Math.pow(1 + taxaMensal, parcelas_max) - 1);
-            return valorParcela;
+            if (!parcelas_max || parcelas_max === 0 || !juros) return 0;
+            const i = juros / 100;
+            if (i === 0) return total / parcelas_max;
+            const parcela = total * (i * Math.pow(1 + i, parcelas_max)) / (Math.pow(1 + i, parcelas_max) - 1);
+            return parcela;
         };
         const calculateAdiantamento = (total: number, porcentagem?: number | null) => {
-            if (!porcentagem || porcentagem <= 0) return 0;
-            return total * (porcentagem / 100);
+            if (!porcentagem) return 0;
+            return (total * porcentagem) / 100;
         };
 
         const paymentLines: string[] = [];
@@ -543,19 +572,12 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
                 doc.setLineWidth(0.2);
                 doc.line(lineXStart, lineY, lineXStart + 80, lineY);
                 
-                // Add name below line
+                // Add user name below line
                 const nameY = lineY + 5;
                 doc.setFont("helvetica", 'normal');
                 doc.setFontSize(10);
                 doc.setTextColor(...bodyText);
                 safeText(userInfo.nome, pageWidth / 2, nameY, { align: 'center' });
-                
-                // Add CPF/CNPJ below name
-                const cpfCnpjY = nameY + 5;
-                doc.setFontSize(8);
-                doc.setTextColor(100, 100, 100);
-                safeText(userInfo.cpfCnpj, pageWidth / 2, cpfCnpjY, { align: 'center' });
-
             } catch (error) {
                 console.error("Erro ao adicionar assinatura:", error);
             }

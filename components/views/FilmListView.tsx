@@ -145,9 +145,6 @@ const FilmCard: React.FC<{
             </div>
         );
     };
-    
-    const pricePerM2 = film.preco || film.maoDeObra || 0;
-    const priceLabel = film.preco > 0 ? 'Preço' : (film.maoDeObra > 0 ? 'Mão de Obra' : 'Preço');
 
     return (
         <div className="relative rounded-lg sm:overflow-visible overflow-hidden bg-white border border-slate-200 shadow-sm">
@@ -187,8 +184,8 @@ const FilmCard: React.FC<{
                     <div className="flex justify-between items-start">
                         <p className="font-bold text-slate-800 text-lg pr-4">{film.nome}</p>
                         <div className="text-right flex-shrink-0">
-                            <p className="font-bold text-slate-800 text-lg">{formatCurrency(pricePerM2)}</p>
-                            <p className="text-sm text-slate-500">/ m² ({priceLabel})</p>
+                            <p className="font-bold text-slate-800 text-lg">{formatCurrency(film.preco)}</p>
+                            <p className="text-sm text-slate-500">/ m²</p>
                         </div>
                     </div>
 

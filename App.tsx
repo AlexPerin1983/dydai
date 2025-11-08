@@ -768,6 +768,10 @@ const App: React.FC = () => {
     };
 
     const processClientDataWithGemini = async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }): Promise<ExtractedClientData | null> => {
+        if (!userInfo?.aiConfig?.apiKey) {
+            throw new Error("Chave de API do Gemini não configurada.");
+        }
+        
         try {
             const genAI = new GoogleGenerativeAI(userInfo!.aiConfig!.apiKey);
             const model = genAI.getGenerativeModel({ 
@@ -818,14 +822,20 @@ const App: React.FC = () => {
     
             const result = await model.generateContent(parts);
             const response = await result.response;
-            const extractedData = JSON.parse(response.text());
             
-            return extractedData as ExtractedClientData;
+            // Tenta fazer o parse do JSON
+            try {
+                const extractedData = JSON.parse(response.text());
+                return extractedData as ExtractedClientData;
+            } catch (e) {
+                console.error("Erro de JSON.parse:", e);
+                // Se o parse falhar, lança um erro específico
+                throw new Error(`A resposta da IA não é um JSON válido. Erro: ${e instanceof Error ? e.message : 'JSON malformado'}`);
+            }
 
         } catch (error) {
             console.error("Erro ao processar dados do cliente com Gemini:", error);
-            alert(`Ocorreu um erro com Gemini: ${error instanceof Error ? error.message : String(error)}`);
-            return null;
+            throw error; // Re-throw para ser capturado pelo handleProcessAIClientInput
         }
     };
 
@@ -835,8 +845,8 @@ const App: React.FC = () => {
     };
 
     const handleProcessAIClientInput = useCallback(async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
-        if (!userInfo?.aiConfig?.apiKey || !userInfo?.aiConfig?.provider) {
-            alert("Por favor, configure seu provedor e chave de API na aba 'Empresa' para usar esta funcionalidade.");
+        if (!userInfo?.aiConfig?.apiKey) {
+            alert("Por favor, configure sua chave de API na aba 'Empresa' para usar esta funcionalidade.");
             return;
         }
     
@@ -860,6 +870,9 @@ const App: React.FC = () => {
                 setIsClientModalOpen(true);
             }
 
+        } catch (error) {
+            console.error("Erro ao processar dados do cliente com IA:", error);
+            alert(`Ocorreu um erro com a IA: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsProcessingAI(false);
         }
@@ -925,35 +938,41 @@ const App: React.FC = () => {
     
             const result = await model.generateContent(parts);
             const response = await result.response;
-            const extractedData = JSON.parse(response.text());
+            
+            try {
+                const extractedData = JSON.parse(response.text());
     
-            if (Array.isArray(extractedData)) {
-                const newMeasurements: UIMeasurement[] = extractedData.map((item: any, index: number) => ({
-                    id: Date.now() + index,
-                    largura: item.largura || '',
-                    altura: item.altura || '',
-                    quantidade: item.quantidade || 1,
-                    ambiente: item.ambiente || 'Desconhecido',
-                    tipoAplicacao: 'Desconhecido',
-                    pelicula: films[0]?.nome || 'Nenhuma',
-                    active: true,
-                    isNew: index === 0,
-                    discount: 0,
-                    discountType: 'percentage',
-                }));
-    
-                if (newMeasurements.length > 0) {
-                    handleMeasurementsChange([...measurements.map(m => ({...m, isNew: false})), ...newMeasurements]);
-                    setIsAIMeasurementModalOpen(false);
+                if (Array.isArray(extractedData)) {
+                    const newMeasurements: UIMeasurement[] = extractedData.map((item: any, index: number) => ({
+                        id: Date.now() + index,
+                        largura: item.largura || '',
+                        altura: item.altura || '',
+                        quantidade: item.quantidade || 1,
+                        ambiente: item.ambiente || 'Desconhecido',
+                        tipoAplicacao: 'Desconhecido',
+                        pelicula: films[0]?.nome || 'Nenhuma',
+                        active: true,
+                        isNew: index === 0,
+                        discount: 0,
+                        discountType: 'percentage',
+                    }));
+        
+                    if (newMeasurements.length > 0) {
+                        handleMeasurementsChange([...measurements.map(m => ({...m, isNew: false})), ...newMeasurements]);
+                        setIsAIMeasurementModalOpen(false);
+                    } else {
+                        alert("Nenhuma medida foi extraída. Tente novamente com mais detalhes.");
+                    }
                 } else {
-                    alert("Nenhuma medida foi extraída. Tente novamente com mais detalhes.");
+                    throw new Error("A resposta da IA não está no formato de array esperado.");
                 }
-            } else {
-                throw new Error("A resposta da IA não está no formato esperado.");
+            } catch (e) {
+                console.error("Erro de JSON.parse:", e);
+                throw new Error(`A resposta da IA não é um JSON válido. Erro: ${e instanceof Error ? e.message : 'JSON malformado'}`);
             }
         } catch (error) {
             console.error("Erro ao processar com Gemini:", error);
-            alert(`Ocorreu um erro com Gemini: ${error instanceof Error ? error.message : String(error)}`);
+            throw error;
         }
     };
 
@@ -1049,13 +1068,13 @@ const App: React.FC = () => {
 
         } catch (error) {
             console.error("Erro ao processar com OpenAI:", error);
-            alert(`Ocorreu um erro com OpenAI: ${error instanceof Error ? error.message : String(error)}`);
+            throw error;
         }
     }
 
     const handleProcessAIInput = async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
-        if (!userInfo?.aiConfig?.apiKey || !userInfo?.aiConfig?.provider) {
-            alert("Por favor, configure seu provedor e chave de API na aba 'Empresa' para usar esta funcionalidade.");
+        if (!userInfo?.aiConfig?.apiKey) {
+            alert("Por favor, configure sua chave de API na aba 'Empresa' para usar esta funcionalidade.");
             return;
         }
     
@@ -1071,6 +1090,9 @@ const App: React.FC = () => {
                 }
                 await processWithOpenAI(input as { type: 'text' | 'image'; data: string | File[] });
             }
+        } catch (error) {
+            console.error("Erro ao processar com IA:", error);
+            alert(`Ocorreu um erro com a IA: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsProcessingAI(false);
         }

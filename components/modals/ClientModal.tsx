@@ -75,7 +75,6 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
     const [error, setError] = useState<string | null>(null);
     const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null);
     const numberInputRef = useRef<HTMLInputElement>(null);
-    const isInitialLoadRef = useRef(true); // Para controlar o primeiro useEffect
 
     const handleCepBlur = async (cepValue?: string) => {
         const cep = cepValue || formData.cep?.replace(/\D/g, '');
@@ -189,6 +188,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
         if (isOpen) {
             setError(null);
             setEmailSuggestion(null);
+            
             let baseData: Omit<Client, 'id'> = initialFormData;
             
             if (mode === 'edit' && client) {
@@ -197,30 +197,46 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
                 baseData = { ...initialFormData, nome: initialName || '' };
             }
             
+            // 1. Aplica dados base e máscaras
+            const initialFormState = {
+                ...baseData,
+                cpfCnpj: applyCpfCnpjMask(baseData.cpfCnpj || ''),
+                telefone: applyPhoneMask(baseData.telefone || ''),
+                cep: applyCepMask(baseData.cep || ''),
+            };
+            
+            // 2. Aplica dados da IA (que já devem estar limpos/mascarados no App.tsx)
+            let finalFormState = initialFormState;
             let cepToSearch: string | undefined;
 
-            // Apply AI data if available
             if (aiData) {
-                baseData = {
-                    ...baseData,
+                // Aplica os dados da IA, garantindo que os campos de endereço sejam strings vazias se nulos
+                finalFormState = {
+                    ...initialFormState,
                     ...aiData,
-                    // Apply masks to AI data fields
+                    // Reaplicar máscaras nos dados da IA, pois a IA retorna apenas dígitos
                     telefone: applyPhoneMask(aiData.telefone || ''),
                     cpfCnpj: applyCpfCnpjMask(aiData.cpfCnpj || ''),
                     cep: applyCepMask(aiData.cep || ''),
+                    logradouro: aiData.logradouro || '',
+                    numero: aiData.numero || '',
+                    complemento: aiData.complemento || '',
+                    bairro: aiData.bairro || '',
+                    cidade: aiData.cidade || '',
+                    uf: aiData.uf || '',
                 };
                 cepToSearch = aiData.cep;
             }
             
-            setFormData(prev => ({
-                ...baseData,
-                cpfCnpj: applyCpfCnpjMask(baseData.cpfCnpj || ''), // Aplica máscara ao carregar
-            }));
+            setFormData(finalFormState);
             
-            // Se houver CEP da IA, aciona a busca do ViaCEP para validar e preencher o endereço
-            if (cepToSearch) {
-                // Usamos setTimeout para garantir que o estado inicial do formData seja aplicado antes de buscar
-                setTimeout(() => handleCepBlur(cepToSearch), 0);
+            // 3. Se houver CEP (do cliente existente ou da IA), aciona a busca do ViaCEP
+            if (cepToSearch || (mode === 'edit' && client?.cep)) {
+                const cep = cepToSearch || client?.cep;
+                if (cep) {
+                    // Usamos setTimeout para garantir que o estado inicial do formData seja aplicado antes de buscar
+                    setTimeout(() => handleCepBlur(cep.replace(/\D/g, '')), 0);
+                }
             }
         }
     }, [mode, client, isOpen, initialName, aiData]);

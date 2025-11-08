@@ -829,7 +829,23 @@ const App: React.FC = () => {
                 return extractedData as ExtractedClientData;
             } catch (e) {
                 console.error("Erro de JSON.parse:", e);
-                // Se o parse falhar, lança um erro específico
+                // Se o parse falhar, tenta limpar a string (removendo caracteres extras antes/depois do JSON)
+                const jsonText = response.text().trim();
+                const start = jsonText.indexOf('{');
+                const end = jsonText.lastIndexOf('}');
+                
+                if (start !== -1 && end !== -1 && end > start) {
+                    const cleanedJson = jsonText.substring(start, end + 1);
+                    try {
+                        const extractedData = JSON.parse(cleanedJson);
+                        console.log("JSON corrigido com sucesso.");
+                        return extractedData as ExtractedClientData;
+                    } catch (e2) {
+                        // Se a correção falhar, lança o erro original
+                        throw new Error(`A resposta da IA não é um JSON válido. Erro: ${e instanceof Error ? e.message : 'JSON malformado'}`);
+                    }
+                }
+                
                 throw new Error(`A resposta da IA não é um JSON válido. Erro: ${e instanceof Error ? e.message : 'JSON malformado'}`);
             }
 
@@ -845,8 +861,8 @@ const App: React.FC = () => {
     };
 
     const handleProcessAIClientInput = useCallback(async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
-        if (!userInfo?.aiConfig?.apiKey) {
-            alert("Por favor, configure sua chave de API na aba 'Empresa' para usar esta funcionalidade.");
+        if (!userInfo?.aiConfig?.apiKey || !userInfo?.aiConfig?.provider) {
+            alert("Por favor, configure seu provedor e chave de API na aba 'Empresa' para usar esta funcionalidade.");
             return;
         }
     

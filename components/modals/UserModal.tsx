@@ -455,6 +455,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, userInfo
                 </div>
             </div>
             
+            {/* Bloco PWA Removido */}
             <div className={sectionClass}>
                 <div className="flex justify-between items-center">
                     <h3 className={sectionTitleClass}>Aplicativo (PWA)</h3>

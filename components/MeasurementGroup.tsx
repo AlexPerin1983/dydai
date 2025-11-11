@@ -184,15 +184,6 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         }
     };
 
-    // REMOVIDO: useEffect que abria o numpad automaticamente ao carregar uma nova medida.
-    /*
-    useEffect(() => {
-        if (measurement.isNew) {
-            onOpenNumpad(measurement.id, 'largura', measurement.largura);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [measurement.isNew]);
-    */
     
     const handleInputChange = (field: keyof Measurement, value: any) => {
         onUpdate({ [field]: value });
@@ -334,164 +325,165 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
     };
 
     return (
-        <>
-            <div className={`relative my-2 rounded-lg ${!isModalMode ? 'sm:overflow-visible overflow-hidden' : ''}`}>
-                <div className={`absolute inset-y-0 right-0 flex rounded-r-lg overflow-hidden ${isModalMode ? 'hidden' : 'hidden sm:hidden'}`}>
-                    <button
-                        onClick={handleMenuClick}
-                        className="w-20 h-full bg-slate-600 text-white flex flex-col items-center justify-center transition-colors hover:bg-slate-700"
-                        aria-label="Editar"
-                    >
-                        <i className="fas fa-expand-arrows-alt text-xl"></i>
-                        <span className="text-xs mt-1">Editar</span>
-                    </button>
-                    <button
-                        onClick={handleDeleteClick}
-                        className="w-20 h-full bg-red-600 text-white flex flex-col items-center justify-center transition-colors hover:bg-red-700"
-                        aria-label="Excluir medida"
-                    >
-                        <i className="fas fa-trash-alt text-xl"></i>
-                        <span className="text-xs mt-1">Excluir</span>
-                    </button>
-                </div>
-
-                <div
-                    ref={swipeableRef}
-                    style={{ touchAction: 'pan-y' }}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    className="relative z-10 w-full"
+        <div className={`relative my-2 rounded-lg ${!isModalMode ? 'sm:overflow-visible overflow-hidden' : ''}`}>
+            {/* Background Actions (Swipe) */}
+            <div className="absolute inset-y-0 right-0 flex rounded-r-lg overflow-hidden">
+                <button
+                    onClick={handleMenuClick}
+                    className="w-20 h-full bg-slate-600 text-white flex flex-col items-center justify-center transition-colors hover:bg-slate-700"
+                    aria-label="Editar"
                 >
-                    <div
-                        ref={groupRef}
-                        data-measurement-id={measurement.id}
-                        onClick={handleRowClick}
-                        draggable={isDraggable}
-                        onDragStart={onDragStart}
-                        onDragEnter={onDragEnter}
-                        onDragEnd={onDragEnd}
-                        onDragOver={(e) => e.preventDefault()}
-                        className={`relative z-10 ${baseClasses} ${selectionClasses} ${isDragging ? 'shadow-2xl scale-[1.02]' : ''} ${isActive ? 'ring-2 ring-blue-500' : ''}`}
-                    >
-                        {/* Top Row: Film info and Price */}
-                        <div className="flex items-start justify-between">
-                            {/* Left Side: Film Info & Selector */}
-                            <div className="flex-1 pr-2 min-w-0">
-                                <div 
-                                    role="button"
-                                    tabIndex={(!measurement.active || isSelectionMode) ? -1 : 0}
-                                    onClick={() => measurement.active && !isSelectionMode && onOpenFilmSelectionModal(measurement.id)} 
-                                    onKeyDown={(e) => {
-                                        if (measurement.active && !isSelectionMode && (e.key === 'Enter' || e.key === ' ')) {
-                                            e.preventDefault();
-                                            onOpenFilmSelectionModal(measurement.id);
-                                        }
-                                    }}
-                                    className={`text-left w-full rounded-lg transition-colors`}
-                                    aria-label={`Película atual: ${measurement.pelicula || 'Nenhuma'}. Clique para alterar.`}
-                                >
-                                    <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Película</div>
-                                    <div className="text-sm font-bold text-slate-800 truncate leading-tight">{measurement.pelicula || 'Nenhuma'}</div>
-                                </div>
-                            </div>
+                    <i className="fas fa-expand-arrows-alt text-xl"></i>
+                    <span className="text-xs mt-1">Editar</span>
+                </button>
+                <button
+                    onClick={handleDeleteClick}
+                    className="w-20 h-full bg-red-600 text-white flex flex-col items-center justify-center transition-colors hover:bg-red-700"
+                    aria-label="Excluir medida"
+                >
+                    <i className="fas fa-trash-alt text-xl"></i>
+                    <span className="text-xs mt-1">Excluir</span>
+                </button>
+            </div>
 
-                            {/* Right Side: Price & Options Menu */}
-                            <div className="flex items-center">
-                                <Tooltip text={hasDiscount ? 'Editar Desconto' : 'Aplicar Desconto'}>
-                                    <div
-                                        role="button"
-                                        tabIndex={isSelectionMode ? -1 : 0}
-                                        onClick={() => !isSelectionMode && onOpenDiscountModal(measurement)}
-                                        onKeyDown={(e) => !isSelectionMode && (e.key === 'Enter' || e.key === ' ') && onOpenDiscountModal(measurement)}
-                                        className={`text-right rounded-lg transition-colors ${isSelectionMode ? 'cursor-default' : 'hover:bg-slate-100 cursor-pointer'}`}
-                                        aria-label="Preço, clique para aplicar ou editar desconto"
-                                    >
-                                        <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">{priceLabel}</div>
-                                        {basePrice > 0 ? (
-                                            finalPrice < basePrice ? (
-                                                <div className="flex flex-col items-end leading-tight">
-                                                    <s className="text-red-500/80 text-[10px] font-normal">{formatCurrency(basePrice)}</s>
-                                                    <span className="text-sm font-bold text-slate-800 leading-tight">{formatCurrency(finalPrice)}</span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-sm font-bold text-slate-800 leading-tight">{formatCurrency(basePrice)}</span>
-                                            )
-                                        ) : (
-                                        <span className="text-sm font-bold text-slate-800 leading-tight">-</span>
-                                        )}
-                                    </div>
-                                </Tooltip>
-                                <div className="relative">
-                                    <div className={isModalMode ? 'hidden' : 'hidden sm:block'}>
-                                        <Tooltip text="Editar Detalhes">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) onOpenEditModal(measurement); }}
-                                                disabled={isSelectionMode}
-                                                className="w-8 h-10 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
-                                                aria-label="Editar detalhes da medida"
-                                            >
-                                                <i className="fas fa-expand-arrows-alt"></i>
-                                            </button>
-                                        </Tooltip>
-                                    </div>
-                                </div>
+            {/* Foreground Content (Swipeable) */}
+            <div
+                ref={swipeableRef}
+                style={{ touchAction: 'pan-y' }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                className="relative z-10 w-full"
+            >
+                <div
+                    ref={groupRef}
+                    data-measurement-id={measurement.id}
+                    onClick={handleRowClick}
+                    draggable={isDraggable}
+                    onDragStart={onDragStart}
+                    onDragEnter={onDragEnter}
+                    onDragEnd={onDragEnd}
+                    onDragOver={(e) => e.preventDefault()}
+                    className={`relative z-10 ${baseClasses} ${selectionClasses} ${isDragging ? 'shadow-2xl scale-[1.02]' : ''} ${isActive ? 'ring-2 ring-blue-500' : ''}`}
+                >
+                    {/* Top Row: Film info and Price */}
+                    <div className="flex items-start justify-between">
+                        {/* Left Side: Film Info & Selector */}
+                        <div className="flex-1 pr-2 min-w-0">
+                            <div 
+                                role="button"
+                                tabIndex={(!measurement.active || isSelectionMode) ? -1 : 0}
+                                onClick={() => measurement.active && !isSelectionMode && onOpenFilmSelectionModal(measurement.id)} 
+                                onKeyDown={(e) => {
+                                    if (measurement.active && !isSelectionMode && (e.key === 'Enter' || e.key === ' ')) {
+                                        e.preventDefault();
+                                        onOpenFilmSelectionModal(measurement.id);
+                                    }
+                                }}
+                                className={`text-left w-full rounded-lg transition-colors`}
+                                aria-label={`Película atual: ${measurement.pelicula || 'Nenhuma'}. Clique para alterar.`}
+                            >
+                                <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Película</div>
+                                <div className="text-sm font-bold text-slate-800 truncate leading-tight">{measurement.pelicula || 'Nenhuma'}</div>
                             </div>
                         </div>
 
-                        {/* Checkbox and Inputs Row */}
-                        <div className="flex items-center space-x-2 pt-1.5 border-t border-slate-200">
-                            {isSelectionMode ? (
+                        {/* Right Side: Price & Options Menu */}
+                        <div className="flex items-center">
+                            <Tooltip text={hasDiscount ? 'Editar Desconto' : 'Aplicar Desconto'}>
+                                <div
+                                    role="button"
+                                    tabIndex={isSelectionMode ? -1 : 0}
+                                    onClick={() => !isSelectionMode && onOpenDiscountModal(measurement)}
+                                    onKeyDown={(e) => !isSelectionMode && (e.key === 'Enter' || e.key === ' ') && onOpenDiscountModal(measurement)}
+                                    className={`text-right rounded-lg transition-colors ${isSelectionMode ? 'cursor-default' : 'hover:bg-slate-100 cursor-pointer'}`}
+                                    aria-label="Preço, clique para aplicar ou editar desconto"
+                                >
+                                    <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">{priceLabel}</div>
+                                    {basePrice > 0 ? (
+                                        finalPrice < basePrice ? (
+                                            <div className="flex flex-col items-end leading-tight">
+                                                <s className="text-red-500/80 text-[10px] font-normal">{formatCurrency(basePrice)}</s>
+                                                <span className="text-sm font-bold text-slate-800 leading-tight">{formatCurrency(finalPrice)}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-sm font-bold text-slate-800 leading-tight">{formatCurrency(basePrice)}</span>
+                                        )
+                                    ) : (
+                                    <span className="text-sm font-bold text-slate-800 leading-tight">-</span>
+                                    )}
+                                </div>
+                            </Tooltip>
+                            <div className="relative">
+                                {/* Botão de menu para desktop/tablet */}
+                                <div className={isModalMode ? 'hidden' : 'hidden sm:block'}>
+                                    <Tooltip text="Editar Detalhes">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) onOpenEditModal(measurement); }}
+                                            disabled={isSelectionMode}
+                                            className="w-8 h-10 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
+                                            aria-label="Editar detalhes da medida"
+                                        >
+                                            <i className="fas fa-ellipsis-v"></i>
+                                        </button>
+                                    </Tooltip>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Checkbox and Inputs Row */}
+                    <div className="flex items-center space-x-2 pt-1.5 border-t border-slate-200">
+                        {isSelectionMode ? (
+                            <input 
+                                type="checkbox" 
+                                checked={isSelected} 
+                                onChange={(e) => onToggleSelection(measurement.id, index, e.shiftKey)}
+                                className="form-checkbox h-4 w-4 text-blue-600 rounded-md border-slate-400 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                                aria-label={`Selecionar medida ${measurement.id}`}
+                            />
+                        ) : (
+                            <Tooltip text="Ativar/Desativar cálculo">
                                 <input 
                                     type="checkbox" 
-                                    checked={isSelected} 
-                                    onChange={(e) => onToggleSelection(measurement.id, index, e.shiftKey)}
+                                    checked={measurement.active} 
+                                    onChange={(e) => handleInputChange('active', e.target.checked)} 
                                     className="form-checkbox h-4 w-4 text-blue-600 rounded-md border-slate-400 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                                    aria-label={`Selecionar medida ${measurement.id}`}
+                                    aria-label="Ativar ou desativar esta medida do cálculo"
                                 />
-                            ) : (
-                                <Tooltip text="Ativar/Desativar cálculo">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={measurement.active} 
-                                        onChange={(e) => handleInputChange('active', e.target.checked)} 
-                                        className="form-checkbox h-4 w-4 text-blue-600 rounded-md border-slate-400 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                                        aria-label="Ativar ou desativar esta medida do cálculo"
-                                    />
-                                </Tooltip>
-                            )}
+                            </Tooltip>
+                        )}
 
-                            <div className="grid grid-cols-4 gap-2 flex-grow">
-                                <NumberInputButton field="largura" placeholder="L" value={measurement.largura} />
-                                <NumberInputButton field="altura" placeholder="A" value={measurement.altura} />
-                                <NumberInputButton field="quantidade" placeholder="Qtd" value={measurement.quantidade} />
-                                <div className={`${inputBaseClasses} bg-white text-slate-800 font-medium border-slate-300 cursor-default flex items-center justify-center`}>
-                                    {m2 > 0 ? m2.toFixed(2).replace('.', ',') : ''}
-                                </div>
+                        <div className="grid grid-cols-4 gap-2 flex-grow">
+                            <NumberInputButton field="largura" placeholder="L" value={measurement.largura} />
+                            <NumberInputButton field="altura" placeholder="A" value={measurement.altura} />
+                            <NumberInputButton field="quantidade" placeholder="Qtd" value={measurement.quantidade} />
+                            <div className={`${inputBaseClasses} bg-white text-slate-800 font-medium border-slate-300 cursor-default flex items-center justify-center`}>
+                                {m2 > 0 ? m2.toFixed(2).replace('.', ',') : ''}
                             </div>
                         </div>
-                        <div className={`additional-fields-content ${additionalFieldsVisible ? 'visible' : ''}`}>
-                            <div className="space-y-3 pt-3 mt-2 border-t border-slate-200">
-                                <DynamicSelector
-                                    label="Ambiente"
-                                    options={AMBIENTES}
-                                    value={measurement.ambiente}
-                                    onChange={(value) => onUpdate({ ambiente: value })}
-                                    disabled={!measurement.active}
-                                />
-                                <DynamicSelector
-                                    label="Tipo de Aplicação"
-                                    options={TIPOS_APLICACAO}
-                                    value={measurement.tipoAplicacao}
-                                    onChange={(value) => onUpdate({ tipoAplicacao: value })}
-                                    disabled={!measurement.active}
-                                />
-                            </div>
+                    </div>
+                    <div className={`additional-fields-content ${additionalFieldsVisible ? 'visible' : ''}`}>
+                        <div className="space-y-3 pt-3 mt-2 border-t border-slate-200">
+                            <DynamicSelector
+                                label="Ambiente"
+                                options={AMBIENTES}
+                                value={measurement.ambiente}
+                                onChange={(value) => onUpdate({ ambiente: value })}
+                                disabled={!measurement.active}
+                            />
+                            <DynamicSelector
+                                label="Tipo de Aplicação"
+                                options={TIPOS_APLICACAO}
+                                value={measurement.tipoAplicacao}
+                                onChange={(value) => onUpdate({ tipoAplicacao: value })}
+                                disabled={!measurement.active}
+                            />
                         </div>
                     </div>
                 </div>
             </div>
-        </>
+        </div>
     );
 };
 

@@ -250,6 +250,23 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
     
     const hasDiscount = (measurement.discount || 0) > 0;
 
+    // --- Lógica para exibir o ambiente ---
+    const displayFilmName = measurement.pelicula || 'Nenhuma';
+    
+    const displayAmbiente = useMemo(() => {
+        const ambiente = measurement.ambiente;
+        if (ambiente && ambiente !== 'Desconhecido') {
+            // Trunca para 15 caracteres e adiciona reticências se for maior
+            const truncatedAmbiente = ambiente.length > 15 ? `${ambiente.substring(0, 15)}...` : ambiente;
+            return ` (${truncatedAmbiente})`;
+        }
+        return '';
+    }, [measurement.ambiente]);
+    
+    const combinedDisplay = `${displayFilmName}${displayAmbiente}`;
+    // --- Fim da Lógica para exibir o ambiente ---
+
+
     // Mantendo o padding principal e espaçamento interno compactos
     // Removendo p-2 e substituindo por py-2 e px-3 para manter o espaçamento interno mínimo
     const baseClasses = `border rounded-lg py-2 px-3 space-y-1.5 bg-white transition-shadow, transform`;
@@ -381,10 +398,10 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                                     }
                                 }}
                                 className={`text-left w-full rounded-lg transition-colors`}
-                                aria-label={`Película atual: ${measurement.pelicula || 'Nenhuma'}. Clique para alterar.`}
+                                aria-label={`Película atual: ${combinedDisplay || 'Nenhuma'}. Clique para alterar.`}
                             >
                                 <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Película</div>
-                                <div className="text-sm font-bold text-slate-800 truncate leading-tight">{measurement.pelicula || 'Nenhuma'}</div>
+                                <div className="text-sm font-bold text-slate-800 truncate leading-tight">{combinedDisplay}</div>
                             </div>
                         </div>
 

@@ -250,14 +250,15 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
     
     const hasDiscount = (measurement.discount || 0) > 0;
 
-    // --- Lógica para exibir o ambiente ---
+    // --- Lógica para exibir o ambiente (AJUSTADA) ---
     const displayFilmName = measurement.pelicula || 'Nenhuma';
     
     const displayAmbiente = useMemo(() => {
         const ambiente = measurement.ambiente;
-        if (ambiente && ambiente !== 'Desconhecido') {
+        if (ambiente && ambiente !== 'Desconhecido' && ambiente.trim() !== '') {
             // Trunca para 15 caracteres e adiciona reticências se for maior
-            const truncatedAmbiente = ambiente.length > 15 ? `${ambiente.substring(0, 15)}...` : ambiente;
+            const MAX_CHARS = 15;
+            const truncatedAmbiente = ambiente.length > MAX_CHARS ? `${ambiente.substring(0, MAX_CHARS)}...` : ambiente;
             return ` (${truncatedAmbiente})`;
         }
         return '';

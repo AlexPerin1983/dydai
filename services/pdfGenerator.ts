@@ -1,4 +1,4 @@
-import { Client, UserInfo, Measurement, Film } from '../types';
+import { Client, UserInfo, Measurement, Film, ProposalOption } from '../types';
 
 declare const jspdf: any;
 
@@ -29,7 +29,7 @@ const formatAddressForPdf = (client: Client): string => {
     return parts.filter(Boolean).join(', ');
 };
 
-export const generatePDF = async (client: Client, userInfo: UserInfo, measurements: Measurement[], allFilms: Film[], generalDiscount: GeneralDiscount, totals: Totals): Promise<Blob> => {
+export const generatePDF = async (client: Client, userInfo: UserInfo, measurements: Measurement[], allFilms: Film[], generalDiscount: GeneralDiscount, totals: Totals, proposalOptionName: string): Promise<Blob> => {
     try {
         const { jsPDF } = jspdf;
         const doc = new jsPDF({
@@ -289,14 +289,16 @@ export const generatePDF = async (client: Client, userInfo: UserInfo, measuremen
             doc.setTextColor(...colors.secondary);
             doc.setFont("helvetica", 'bold');
             doc.setFontSize(12);
-            safeText(filmName, margin, yPos);
+            // ALTERAÇÃO AQUI: Incluindo o nome da opção de proposta
+            safeText(`${proposalOptionName} - ${filmName}`, margin, yPos);
             yPos += 8;
 
             const head = [['Item', 'Ambiente', 'Dimensões', 'Qtd', 'M²', 'Preço Unit.', 'Desconto', 'Preço Final']];
             const body = filmMeasurements.map((m, i) => {
                 const largura = parseFloat(String(m.largura).replace(',', '.')) || 0;
                 const altura = parseFloat(String(m.altura).replace(',', '.')) || 0;
-                const m2 = largura * altura * m.quantidade;
+                const quantidade = parseInt(String(m.quantidade), 10) || 0;
+                const m2 = largura * altura * quantidade;
                 
                 let pricePerM2 = 0;
                 if (film) {

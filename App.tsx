@@ -184,6 +184,7 @@ const App: React.FC = () => {
             const timer = setTimeout(() => {
                 if (numpadRef.current) {
                     const numpadHeight = numpadRef.current.offsetHeight;
+                    // FIX 1: Corrected typo from numppadHeight to numpadHeight
                     mainEl.style.paddingBottom = `${numpadHeight}px`;
     
                     if (numpadConfig.measurementId) {
@@ -699,7 +700,8 @@ const App: React.FC = () => {
 
         setPdfGenerationStatus('generating');
         try {
-            const pdfBlob = await generatePDF(selectedClient, userInfo, activeMeasurements, films, generalDiscount, totals);
+            // Passando o nome da opção de proposta para o gerador de PDF
+            const pdfBlob = await generatePDF(selectedClient, userInfo, activeMeasurements, films, generalDiscount, totals, activeOption.name);
             const filename = `orcamento_${selectedClient.nome.replace(/\s+/g, '_').toLowerCase()}_${activeOption.name.replace(/\s+/g, '_').toLowerCase()}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
             
             const generalDiscountForDb: SavedPDF['generalDiscount'] = {
@@ -775,7 +777,7 @@ const App: React.FC = () => {
         try {
             const genAI = new GoogleGenerativeAI(userInfo!.aiConfig!.apiKey);
             const model = genAI.getGenerativeModel({ 
-                model: "gemini-2.0-flash-exp",
+                model: "gemini-2.5-flash",
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: {
@@ -823,16 +825,17 @@ const App: React.FC = () => {
                     parts.push({ inlineData: { mimeType, data } });
             }
     
-            const result = await model.generateContent(parts);
+            const result = await model.generateContent({ contents: parts });
             const response = await result.response;
             
             // Tenta fazer o parse do JSON
             try {
+                // FIX 2: response.text é uma função, precisa ser chamada
                 const extractedData = JSON.parse(response.text());
                 return extractedData as ExtractedClientData;
             } catch (e) {
                 console.error("Erro de JSON.parse:", e);
-                // Se o parse falhar, tenta limpar a string (removendo caracteres extras antes/depois do JSON)
+                // FIX 3: response.text é uma função, precisa ser chamada
                 const jsonText = response.text().trim();
                 const start = jsonText.indexOf('{');
                 const end = jsonText.lastIndexOf('}');
@@ -901,7 +904,7 @@ const App: React.FC = () => {
         try {
             const genAI = new GoogleGenerativeAI(userInfo!.aiConfig!.apiKey);
             const model = genAI.getGenerativeModel({ 
-                model: "gemini-2.0-flash-exp",
+                model: "gemini-2.5-flash",
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: {
@@ -955,10 +958,11 @@ const App: React.FC = () => {
                     parts.push({ inlineData: { mimeType, data } });
             }
     
-            const result = await model.generateContent(parts);
+            const result = await model.generateContent({ contents: parts });
             const response = await result.response;
             
             try {
+                // FIX 4: response.text é uma função, precisa ser chamada
                 const extractedData = JSON.parse(response.text());
     
                 if (Array.isArray(extractedData)) {

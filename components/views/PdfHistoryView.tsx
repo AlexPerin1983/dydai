@@ -9,6 +9,7 @@ interface PdfHistoryViewProps {
     onDownload: (blob: Blob, filename: string) => void;
     onUpdateStatus: (pdfId: number, status: SavedPDF['status']) => void;
     onSchedule: (info: { pdf: SavedPDF; agendamento?: Agendamento } | { agendamento: Agendamento; pdf?: SavedPDF }) => void;
+    onGenerateCombinedPdf: (pdfs: SavedPDF[]) => void; // Nova prop
 }
 
 const formatNumberBR = (number: number) => {
@@ -28,7 +29,9 @@ const PdfHistoryItem: React.FC<{
     onSchedule: (info: { pdf: SavedPDF; agendamento?: Agendamento } | { agendamento: Agendamento; pdf?: SavedPDF }) => void;
     swipedItemId: number | null;
     onSetSwipedItem: (id: number | null) => void;
-}> = React.memo(({ pdf, clientName, agendamento, onDownload, onDelete, onUpdateStatus, onSchedule, swipedItemId, onSetSwipedItem }) => {
+    isSelected: boolean; // Nova prop
+    onToggleSelect: (id: number) => void; // Nova prop
+}> = React.memo(({ pdf, clientName, agendamento, onDownload, onDelete, onUpdateStatus, onSchedule, swipedItemId, onSetSwipedItem, isSelected, onToggleSelect }) => {
     const [translateX, setTranslateX] = useState(0);
     const touchStartX = useRef(0);
     const touchStartY = useRef(0);
@@ -180,8 +183,17 @@ const PdfHistoryItem: React.FC<{
             >
                 <div className="relative z-10 w-full p-4 bg-white rounded-lg border border-slate-200/80 shadow-md">
                     <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center flex-shrink-0 mr-3">
+                            <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => onToggleSelect(pdf.id!)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-5 w-5 text-slate-800 border-slate-300 rounded focus:ring-slate-500 cursor-pointer"
+                                aria-label="Selecionar para PDF combinado"
+                            />
+                        </div>
                         <div className="flex-grow min-w-0">
-                            {/* Removed clientName here, as it's now displayed in the group header */}
                             {pdf.proposalOptionName && (
                                 <p className="font-bold text-slate-900 text-lg truncate">
                                     {pdf.proposalOptionName}
@@ -252,9 +264,10 @@ const PdfHistoryItem: React.FC<{
 });
 
 
-const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendamentos, onDelete, onDownload, onUpdateStatus, onSchedule }) => {
+const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendamentos, onDelete, onDownload, onUpdateStatus, onSchedule, onGenerateCombinedPdf }) => {
     const [swipedItemId, setSwipedItemId] = useState<number | null>(null);
     const [expandedClientId, setExpandedClientId] = useState<number | null>(null); 
+    const [selectedPdfIds, setSelectedPdfIds] = useState<Set<number>>(new Set());
 
     const clientsById = useMemo(() => {
         return new Map(clients.map(c => [c.id, c]));
@@ -297,12 +310,53 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
         setExpandedClientId(prev => prev === clientId ? null : clientId);
         setSwipedItemId(null); // Fecha qualquer item que esteja swiped ao expandir/recolher
     };
+    
+    const handleToggleSelect = (pdfId: number) => {
+        setSelectedPdfIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(pdfId)) {
+                newSet.delete(pdfId);
+            } else {
+                // Se for o primeiro item selecionado, expande o grupo do cliente
+                const pdf = pdfs.find(p => p.id === pdfId);
+                if (pdf && newSet.size === 0) {
+                    setExpandedClientId(pdf.clienteId);
+                }
+                newSet.add(pdfId);
+            }
+            return newSet;
+        });
+    };
+    
+    const handleGenerateCombined = () => {
+        if (selectedPdfIds.size < 2) {
+            alert("Selecione pelo menos dois orçamentos para gerar um PDF combinado.");
+            return;
+        }
+        
+        const selectedPdfs = pdfs.filter(p => selectedPdfIds.has(p.id!));
+        
+        // Verifica se todos os PDFs selecionados são do mesmo cliente
+        const firstClientId = selectedPdfs[0].clienteId;
+        const allSameClient = selectedPdfs.every(p => p.clienteId === firstClientId);
+        
+        if (!allSameClient) {
+            alert("Apenas orçamentos do mesmo cliente podem ser combinados em um único PDF.");
+            return;
+        }
+        
+        onGenerateCombinedPdf(selectedPdfs);
+        setSelectedPdfIds(new Set()); // Limpa a seleção após a ação
+    };
 
     const ClientHistoryGroup: React.FC<{
         group: typeof groupedHistory[0];
     }> = React.memo(({ group }) => {
         const { client, pdfs } = group;
         const isExpanded = expandedClientId === client.id;
+        
+        // Verifica se há algum PDF selecionado neste grupo
+        const hasSelectedInGroup = pdfs.some(p => selectedPdfIds.has(p.id!));
 
         // Calculate summary data for the header
         const totalPdfs = pdfs.length;
@@ -320,7 +374,7 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
         }
 
         return (
-            <div className="rounded-lg border border-slate-200 shadow-md bg-white overflow-hidden">
+            <div className={`rounded-lg border shadow-md bg-white overflow-hidden transition-all duration-300 ${hasSelectedInGroup ? 'border-slate-800 ring-1 ring-slate-800' : 'border-slate-200'}`}>
                 {/* Header Row (Clickable) */}
                 <button
                     onClick={() => handleToggleExpand(client.id!)}
@@ -347,7 +401,7 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
                             <PdfHistoryItem
                                 key={pdf.id}
                                 pdf={pdf}
-                                clientName={client.nome} // Mantido para compatibilidade, mas não é mais exibido no item
+                                clientName={client.nome}
                                 agendamento={agendamentosByPdfId[pdf.id!]}
                                 onDownload={onDownload}
                                 onDelete={onDelete}
@@ -355,6 +409,8 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
                                 onSchedule={onSchedule}
                                 swipedItemId={swipedItemId}
                                 onSetSwipedItem={setSwipedItemId}
+                                isSelected={selectedPdfIds.has(pdf.id!)}
+                                onToggleSelect={handleToggleSelect}
                             />
                         ))}
                     </div>
@@ -366,6 +422,21 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
 
     return (
         <div>
+            {selectedPdfIds.size > 0 && (
+                <div className="sticky top-16 sm:top-20 z-10 mb-4 p-3 bg-slate-800 rounded-lg shadow-xl flex justify-between items-center">
+                    <p className="text-white text-sm font-semibold">
+                        {selectedPdfIds.size} orçamento{selectedPdfIds.size > 1 ? 's' : ''} selecionado{selectedPdfIds.size > 1 ? 's' : ''}
+                    </p>
+                    <button
+                        onClick={handleGenerateCombined}
+                        disabled={selectedPdfIds.size < 2}
+                        className="px-4 py-2 bg-green-500 text-white text-sm font-semibold rounded-md hover:bg-green-600 transition-colors disabled:bg-green-700/50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        <i className="fas fa-file-pdf"></i>
+                        Gerar PDF Combinado
+                    </button>
+                </div>
+            )}
             <div className="space-y-4">
                 {groupedHistory.length > 0 ? (
                     groupedHistory.map(group => (

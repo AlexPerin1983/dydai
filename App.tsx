@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from 'react';
 import { Client, Measurement, UserInfo, Film, PaymentMethods, SavedPDF, Agendamento, ProposalOption } from './types';
 import * as db from './services/db';
-import { generatePDF } from './services/pdfGenerator';
+import { generatePDF, generateCombinedPDF } from './services/pdfGenerator';
 import Header from './components/Header';
 import ClientBar from './components/ClientBar';
 import MeasurementList from './components/MeasurementList';
@@ -184,7 +184,6 @@ const App: React.FC = () => {
             const timer = setTimeout(() => {
                 if (numpadRef.current) {
                     const numpadHeight = numpadRef.current.offsetHeight;
-                    // FIX 1: Corrected typo from numppadHeight to numpadHeight
                     mainEl.style.paddingBottom = `${numpadHeight}px`;
     
                     if (numpadConfig.measurementId) {
@@ -746,6 +745,29 @@ const App: React.FC = () => {
         }
     }, [selectedClient, userInfo, activeOption, isDirty, handleSaveChanges, measurements, films, generalDiscount, totals, selectedClientId, downloadBlob, hasLoadedHistory, loadAllPdfs]);
 
+    const handleGenerateCombinedPdf = useCallback(async (selectedPdfs: SavedPDF[]) => {
+        if (!userInfo || selectedPdfs.length === 0) return;
+
+        setPdfGenerationStatus('generating');
+        try {
+            const client = clients.find(c => c.id === selectedPdfs[0].clienteId);
+            if (!client) throw new Error("Cliente não encontrado para os orçamentos selecionados.");
+
+            const pdfBlob = await generateCombinedPDF(client, userInfo, selectedPdfs, films);
+            
+            const firstOptionName = selectedPdfs[0].proposalOptionName || 'Opcao';
+            const filename = `orcamento_combinado_${client.nome.replace(/\s+/g, '_').toLowerCase()}_${firstOptionName.replace(/\s+/g, '_').toLowerCase()}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
+            
+            downloadBlob(pdfBlob, filename);
+            
+            setPdfGenerationStatus('success');
+        } catch (error) {
+            console.error("Erro ao gerar PDF combinado:", error);
+            alert(`Ocorreu um erro ao gerar o PDF combinado: ${error instanceof Error ? error.message : String(error)}`);
+            setPdfGenerationStatus('idle');
+        }
+    }, [userInfo, clients, films, downloadBlob]);
+
     const handleGoToHistoryFromPdf = useCallback(() => {
         setPdfGenerationStatus('idle');
         setActiveTab('history');
@@ -830,12 +852,11 @@ const App: React.FC = () => {
             
             // Tenta fazer o parse do JSON
             try {
-                // FIX 2: response.text é uma função, precisa ser chamada
                 const extractedData = JSON.parse(response.text());
                 return extractedData as ExtractedClientData;
             } catch (e) {
                 console.error("Erro de JSON.parse:", e);
-                // FIX 3: response.text é uma função, precisa ser chamada
+                // Se o parse falhar, tenta limpar a string (removendo caracteres extras antes/depois do JSON)
                 const jsonText = response.text().trim();
                 const start = jsonText.indexOf('{');
                 const end = jsonText.lastIndexOf('}');
@@ -962,7 +983,6 @@ const App: React.FC = () => {
             const response = await result.response;
             
             try {
-                // FIX 4: response.text é uma função, precisa ser chamada
                 const extractedData = JSON.parse(response.text());
     
                 if (Array.isArray(extractedData)) {
@@ -1711,6 +1731,7 @@ const App: React.FC = () => {
                         onDownload={downloadBlob}
                         onUpdateStatus={handleUpdatePdfStatus}
                         onSchedule={handleOpenAgendamentoModal}
+                        onGenerateCombinedPdf={handleGenerateCombinedPdf}
                     />
                 </Suspense>
             );

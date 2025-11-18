@@ -31,18 +31,23 @@ const formatAddressForPdf = (client: Client): string => {
 
 // Função auxiliar para calcular totais de um único PDF salvo
 const calculateTotalsFromSavedPDF = (pdf: SavedPDF): Totals => {
+    // Acessando as propriedades diretamente do objeto SavedPDF
     const totalM2 = pdf.totalM2 || 0;
-    const subtotal = pdf.subtotal || pdf.totalPreco + (pdf.generalDiscountAmount || 0) + (pdf.totalItemDiscount || 0);
-    const totalItemDiscount = pdf.totalItemDiscount || 0;
+    const subtotal = pdf.subtotal || 0;
+    // Corrigindo o acesso à propriedade totalItemDiscount
+    const totalItemDiscount = (pdf as any).totalItemDiscount || 0;
     const generalDiscountAmount = pdf.generalDiscountAmount || 0;
     const finalTotal = pdf.totalPreco;
     
+    // Se subtotal não estiver disponível, calcula a partir do finalTotal e descontos
+    const calculatedSubtotal = subtotal || (finalTotal + generalDiscountAmount + totalItemDiscount);
+    
     // Recalcula priceAfterItemDiscounts para garantir consistência
-    const priceAfterItemDiscounts = subtotal - totalItemDiscount;
+    const priceAfterItemDiscounts = calculatedSubtotal - totalItemDiscount;
 
     return {
         totalM2,
-        subtotal,
+        subtotal: calculatedSubtotal,
         totalItemDiscount,
         priceAfterItemDiscounts,
         generalDiscountAmount,

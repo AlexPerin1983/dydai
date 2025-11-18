@@ -454,27 +454,32 @@ const App: React.FC = () => {
         return clients.find(c => c.id === selectedClientId) || null;
     }, [clients, selectedClientId]);
     
-    const handleNumpadClose = useCallback(() => {
-        const { measurementId, field, currentValue } = numpadConfig;
-        if (measurementId === null || field === null) {
-            setNumpadConfig({ isOpen: false, measurementId: null, field: null, currentValue: '', shouldClearOnNextInput: false });
-            return;
-        }
+    // Função auxiliar para salvar o valor atual do Numpad no Measurement
+    const saveCurrentNumpadValue = useCallback((config: NumpadConfig, currentMeasurements: UIMeasurement[]) => {
+        const { measurementId, field, currentValue } = config;
+        if (measurementId === null || field === null) return currentMeasurements;
 
         let finalValue: string | number;
         if (field === 'quantidade') {
             finalValue = parseInt(String(currentValue), 10) || 1;
         } else {
+            // Garante que o valor seja salvo com vírgula, se for numérico
             finalValue = (String(currentValue) === '' || String(currentValue) === '.') ? '0' : String(currentValue).replace('.', ',');
         }
 
-        const updatedMeasurements = measurements.map(m =>
+        return currentMeasurements.map(m =>
             m.id === measurementId ? { ...m, [field]: finalValue } : m
         );
-        handleMeasurementsChange(updatedMeasurements);
-        
-        setNumpadConfig({ isOpen: false, measurementId: null, field: null, currentValue: '', shouldClearOnNextInput: false });
-    }, [numpadConfig, measurements, handleMeasurementsChange]);
+    }, []);
+
+    const handleNumpadClose = useCallback(() => {
+        setNumpadConfig(prev => {
+            const updatedMeasurements = saveCurrentNumpadValue(prev, measurements);
+            handleMeasurementsChange(updatedMeasurements);
+            
+            return { isOpen: false, measurementId: null, field: null, currentValue: '', shouldClearOnNextInput: false };
+        });
+    }, [measurements, handleMeasurementsChange, saveCurrentNumpadValue]);
 
     const handleOpenClientModal = useCallback((mode: 'add' | 'edit') => {
         if (numpadConfig.isOpen) {
@@ -1185,24 +1190,14 @@ const App: React.FC = () => {
     }, []);
 
     const handleOpenNumpad = useCallback((measurementId: number, field: 'largura' | 'altura' | 'quantidade', currentValue: string | number) => {
-        const { isOpen, measurementId: prevId, field: prevField, currentValue: prevValue } = numpadConfig;
-
-        if (isOpen && (prevId !== measurementId || prevField !== field)) {
-            let finalValue: string | number;
-            if (prevField === 'quantidade') {
-                finalValue = parseInt(String(currentValue), 10) || 1;
-            } else {
-                finalValue = (String(prevValue) === '' || String(prevValue) === '.') ? '0' : String(prevValue).replace('.', ',');
-            }
-
-            const updatedMeasurements = measurements.map(m =>
-                m.id === prevId ? { ...m, [prevField!]: finalValue } : m
-            );
-            handleMeasurementsChange(updatedMeasurements);
-        }
-
         setNumpadConfig(prev => {
             const isSameButton = prev.isOpen && prev.measurementId === measurementId && prev.field === field;
+            
+            // 1. Se o Numpad já estava aberto em um campo diferente, salve o valor anterior.
+            if (prev.isOpen && (prev.measurementId !== measurementId || prev.field !== field)) {
+                const updatedMeasurements = saveCurrentNumpadValue(prev, measurements);
+                handleMeasurementsChange(updatedMeasurements);
+            }
             
             if (isSameButton) {
                 return {
@@ -1211,6 +1206,7 @@ const App: React.FC = () => {
                 };
             }
 
+            // 2. Abre o Numpad no novo campo
             return {
                 isOpen: true,
                 measurementId,
@@ -1219,7 +1215,7 @@ const App: React.FC = () => {
                 shouldClearOnNextInput: true,
             };
         });
-    }, [numpadConfig, measurements, handleMeasurementsChange]);
+    }, [measurements, handleMeasurementsChange, saveCurrentNumpadValue]);
 
     const handleNumpadDone = useCallback(() => {
         const { measurementId, field, currentValue } = numpadConfig;
@@ -1300,6 +1296,7 @@ const App: React.FC = () => {
                         shouldClearOnNextInput: true,
                     };
                 } else {
+                    // Se for o último campo, salva e fecha
                     return { isOpen: false, measurementId: null, field: null, currentValue: '', shouldClearOnNextInput: false };
                 }
             }

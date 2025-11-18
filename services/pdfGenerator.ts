@@ -328,7 +328,7 @@ const renderPdfContent = async (
 
 
         // --- CONTENT PAGES ---
-        await addSectionTitle(isCombined ? "Orçamentos Combinados" : "Orçamento Detalhado");
+        await addSectionTitle(isCombined ? "Opções de Proposta" : "Orçamento Detalhado");
 
         const colors = {
             primary: hexToRgb(userInfo.cores?.primaria || '#0056b3'),
@@ -466,7 +466,7 @@ const renderPdfContent = async (
             yPos = summaryYStart + 35;
             doc.setTextColor(...bodyText);
             
-            // 4. Acumular totais combinados
+            // 4. Acumular totais combinados (Ainda precisamos disso para o cálculo de pagamento, mas não para o display)
             grandTotalCombined += optionTotals.finalTotal;
             totalM2Combined += optionTotals.totalM2;
             totalItemDiscountCombined += optionTotals.totalItemDiscount;
@@ -479,41 +479,27 @@ const renderPdfContent = async (
                 doc.setFont("helvetica", 'bold');
                 doc.setFontSize(14);
                 doc.setTextColor(...colors.secondary);
-                safeText("Continuação do Orçamento Combinado", margin, yPos);
+                safeText("Continuação das Opções de Proposta", margin, yPos);
                 yPos += 15;
             }
         }
         
-        // --- Total Geral Combinado (Apenas se for combinado) ---
+        // --- Total Geral Combinado (REMOVIDO/MODIFICADO) ---
         if (isCombined) {
-            await addSectionTitle("Total Geral Combinado");
-            
-            const summaryYStart = yPos;
-            const summaryXAlign = pageWidth - margin;
-            
-            doc.setFont("helvetica", 'normal');
-            doc.setFontSize(10);
-            safeText(`Subtotal:`, margin, summaryYStart);
-            safeText(`R$ ${formatNumberBR(subtotalCombined)}`, summaryXAlign, summaryYStart, { align: 'right' });
-            
-            safeText(`Descontos nos Itens:`, margin, summaryYStart + 7);
-            safeText(`- R$ ${formatNumberBR(totalItemDiscountCombined)}`, summaryXAlign, summaryYStart + 7, { align: 'right' });
-
-            safeText(`Desconto Geral:`, margin, summaryYStart + 14);
-            safeText(`- R$ ${formatNumberBR(totalGeneralDiscountCombined)}`, summaryXAlign, summaryYStart + 14, { align: 'right' });
-
-            doc.setDrawColor(...colors.primary);
-            doc.setLineWidth(0.2);
-            doc.line(margin, summaryYStart + 18, pageWidth - margin, summaryYStart + 18);
+            // Substituindo o bloco de soma por uma nota de esclarecimento
+            if (yPos > pageHeight - 60) await addNewPage();
             
             doc.setFont("helvetica", 'bold');
             doc.setFontSize(12);
             doc.setTextColor(...colors.primary);
-            safeText(`Valor Total Combinado (${totalM2Combined.toFixed(2).replace('.', ',')} m²):`, margin, summaryYStart + 25);
-            safeText(`R$ ${formatNumberBR(grandTotalCombined)}`, summaryXAlign, summaryYStart + 25, { align: 'right' });
+            safeText("Opções de Proposta para Avaliação", margin, yPos);
+            yPos += 6;
             
-            yPos = summaryYStart + 40;
+            doc.setFont("helvetica", 'normal');
+            doc.setFontSize(10);
             doc.setTextColor(...bodyText);
+            safeText("Os valores acima representam opções separadas para sua escolha, e não um total somado.", margin, yPos);
+            yPos += 15;
         }
         
         // --- Garantias e Especificações (Baseado em todas as opções) ---
@@ -604,7 +590,9 @@ const renderPdfContent = async (
             return (total * porcentagem) / 100;
         };
 
-        const finalTotalForPayment = isCombined ? grandTotalCombined : optionsData[0].totals.finalTotal;
+        // Se for combinado, usamos o total da primeira opção para calcular as parcelas,
+        // pois o cliente deve escolher apenas uma opção. Se for uma única proposta, usa o total dela.
+        const finalTotalForPayment = isCombined ? optionsData[0].totals.finalTotal : optionsData[0].totals.finalTotal;
 
         const paymentLines: string[] = [];
         userInfo.payment_methods?.filter(m => m.ativo).forEach(method => {

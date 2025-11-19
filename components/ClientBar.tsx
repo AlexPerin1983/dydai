@@ -96,6 +96,24 @@ const ClientBar: React.FC<ClientBarProps> = ({
         }
     };
 
+    const handleOpenWhatsApp = () => {
+        if (!selectedClient || !selectedClient.telefone) return;
+        
+        // Remove todos os caracteres não numéricos, exceto o '+' se for o primeiro caractere
+        let phoneNumber = selectedClient.telefone.replace(/\D/g, '');
+        
+        // Se o número não começar com 55 (código do Brasil), adicionamos
+        if (!phoneNumber.startsWith('55')) {
+            // Assumimos que o número já tem o DDD, então adicionamos '55'
+            phoneNumber = '55' + phoneNumber;
+        }
+        
+        const message = `Olá ${selectedClient.nome}, estou entrando em contato sobre o orçamento de películas.`;
+        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+        
+        window.open(whatsappUrl, '_blank');
+    };
+
     const ActionButton: React.FC<{
         onClick: () => void;
         icon: string;
@@ -127,7 +145,8 @@ const ClientBar: React.FC<ClientBarProps> = ({
         label: string;
         isDestructive?: boolean;
         disabled?: boolean;
-    }> = ({ onClick, icon, label, isDestructive = false, disabled = false }) => (
+        isWhatsApp?: boolean;
+    }> = ({ onClick, icon, label, isDestructive = false, disabled = false, isWhatsApp = false }) => (
         <button
             onClick={() => {
                 onClick();
@@ -139,6 +158,8 @@ const ClientBar: React.FC<ClientBarProps> = ({
                     ? 'text-slate-400 cursor-not-allowed'
                     : isDestructive
                     ? 'text-red-600 hover:bg-red-50'
+                    : isWhatsApp
+                    ? 'text-green-600 hover:bg-green-50'
                     : 'text-slate-700 hover:bg-slate-100'
             }`}
         >
@@ -225,6 +246,14 @@ const ClientBar: React.FC<ClientBarProps> = ({
                                 {/* Dropdown menu */}
                                 {isMenuOpen && (
                                     <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
+                                        <MenuItem
+                                            onClick={handleOpenWhatsApp}
+                                            icon="fab fa-whatsapp"
+                                            label="WhatsApp"
+                                            isWhatsApp
+                                            disabled={!selectedClient.telefone}
+                                        />
+                                        <div className="border-t border-slate-200 my-1"></div>
                                         <MenuItem
                                             onClick={onAddClient}
                                             icon="fas fa-plus"
@@ -330,6 +359,14 @@ const ClientBar: React.FC<ClientBarProps> = ({
                 </div>
 
                 <div className="flex items-center space-x-2 flex-shrink-0">
+                    {selectedClient && selectedClient.telefone && (
+                        <ActionButton
+                            onClick={handleOpenWhatsApp}
+                            icon="fab fa-whatsapp"
+                            tooltip="Abrir WhatsApp"
+                            className="text-green-600 hover:bg-green-100"
+                        />
+                    )}
                     <ActionButton
                         onClick={onAddClient}
                         icon="fas fa-plus"

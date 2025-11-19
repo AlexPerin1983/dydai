@@ -1875,16 +1875,18 @@ const App: React.FC = () => {
                            <>
                                {clients.length > 0 ? (
                                    <div className="bg-slate-100 p-2 px-2 rounded-xl">
-                                       <ClientBar
-                                           key={clientTransitionKey}
-                                           selectedClient={selectedClient}
-                                           onSelectClientClick={handleOpenClientSelectionModal}
-                                           onAddClient={() => handleOpenClientModal('add')}
-                                           onEditClient={() => handleOpenClientModal('edit')}
-                                           onDeleteClient={handleDeleteClient}
-                                           onSwipeLeft={goToNextClient}
-                                           onSwipeRight={goToPrevClient}
-                                       />
+                                       <div className="relative z-20">
+                                            <ClientBar
+                                                key={clientTransitionKey}
+                                                selectedClient={selectedClient}
+                                                onSelectClientClick={handleOpenClientSelectionModal}
+                                                onAddClient={() => handleOpenClientModal('add')}
+                                                onEditClient={() => handleOpenClientModal('edit')}
+                                                onDeleteClient={handleDeleteClient}
+                                                onSwipeLeft={goToNextClient}
+                                                onSwipeRight={goToPrevClient}
+                                            />
+                                       </div>
                                        
                                        {proposalOptions.length > 0 && activeOptionId && (
                                            <ProposalOptionsCarousel

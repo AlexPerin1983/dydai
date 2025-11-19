@@ -28,7 +28,8 @@ interface MeasurementListProps {
     onDeleteMeasurement: (measurementId: number) => void; // Prop que aciona o modal no App.tsx
     swipeDirection?: 'left' | 'right' | null;
     swipeDistance?: number;
-    totalM2: number; // NOVA PROP
+    totalM2: number;
+    totalQuantity: number; // NOVA PROP
 }
 
 const MeasurementList: React.FC<MeasurementListProps> = ({ 
@@ -47,7 +48,8 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     onDeleteMeasurement, // Usando a prop
     swipeDirection = null,
     swipeDistance = 0,
-    totalM2 // Usando a nova prop
+    totalM2,
+    totalQuantity // Usando a nova prop
 }) => {
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
@@ -249,7 +251,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
             const newMeasurement: UIMeasurement = { 
                 ...measurementToDuplicate, 
                 id: Date.now(), 
-                isNew: true 
+                isNew: false
             };
             
             const index = measurements.findIndex(m => m.id === id);
@@ -337,8 +339,8 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                 ) : (
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-4">
-                            <span title="Quantidade de Medidas" className="text-sm font-semibold text-slate-600 bg-slate-100 px-3 py-2 rounded-lg">
-                                QM: {measurements.length}
+                            <span title="Quantidade de Medidas (Grupos e Total de Vidros)" className="text-sm font-semibold text-slate-600 bg-slate-100 px-3 py-2 rounded-lg">
+                                QM: {measurements.length} ({totalQuantity})
                             </span>
                             <span title="Total de Metros Quadrados" className="text-sm font-semibold text-slate-600 bg-slate-100 px-3 py-2 rounded-lg">
                                 M²: {totalM2.toFixed(2).replace('.', ',')}

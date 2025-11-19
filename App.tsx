@@ -664,9 +664,10 @@ const App: React.FC = () => {
                 acc.subtotal += basePrice;
                 acc.totalItemDiscount += itemDiscountAmount;
                 acc.priceAfterItemDiscounts += finalItemPrice;
+                acc.totalQuantity += quantidade; // Adicionando a quantidade total
             }
             return acc;
-        }, { totalM2: 0, subtotal: 0, totalItemDiscount: 0, priceAfterItemDiscounts: 0 });
+        }, { totalM2: 0, subtotal: 0, totalItemDiscount: 0, priceAfterItemDiscounts: 0, totalQuantity: 0 }); // Inicializando totalQuantity
 
         let generalDiscountAmount = 0;
         const discountInputValue = parseFloat(String(generalDiscount.value).replace(',', '.')) || 0;

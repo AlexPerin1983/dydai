@@ -2264,6 +2264,9 @@ const App: React.FC = () => {
                     confirmButtonVariant="danger"
                 />
             )}
+            {newVersionAvailable && (
+                <UpdateNotification onUpdate={handleUpdate} />
+            )}
         </div>
     );
 };

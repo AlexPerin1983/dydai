@@ -12,7 +12,7 @@ export const usePwaUpdate = () => {
         if (waitingWorker) {
             // Envia uma mensagem para o Service Worker esperando para pular a etapa 'waiting'
             waitingWorker.postMessage({ type: 'SKIP_WAITING' });
-            
+
             // Recarrega a página após o Service Worker ser ativado
             waitingWorker.addEventListener('statechange', (e) => {
                 if ((e.target as ServiceWorker).state === 'activated') {
@@ -48,15 +48,9 @@ export const usePwaUpdate = () => {
                     setWaitingWorker(reg.waiting);
                 }
             });
-            
-            // 3. Listener para o evento 'controllerchange' (recarrega a página após a atualização forçada)
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    window.location.reload();
-                    refreshing = true;
-                }
-            });
+
+            // 3. Listener para o evento 'controllerchange' removido para evitar reload automático indesejado.
+            // O reload será controlado manualmente pelo handleUpdate.
         }
     }, []);
 

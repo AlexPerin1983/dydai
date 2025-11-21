@@ -7,14 +7,15 @@ const { ExpirationPlugin } = workbox.expiration;
 const { precacheAndRoute } = workbox.precaching;
 
 // Força o Service Worker a assumir o controle imediatamente após a instalação
+// O Service Worker NÃO deve pular a espera automaticamente.
+// Ele deve aguardar a ação do usuário para chamar skipWaiting().
 self.addEventListener('install', (event) => {
-    self.skipWaiting();
-    console.log('[SW] Instalado e pulando espera.');
+    console.log('[SW] Instalado. Aguardando ativação pelo usuário.');
 });
 
 // Precache and route
 precacheAndRoute([
-    { url: '/index.html', revision: '12' }, // Aumentar a revisão para forçar o cache
+    { url: '/index.html', revision: '13' }, // Aumentar a revisão para forçar o cache
     { url: '/offline.html', revision: '1' }
 ]);
 

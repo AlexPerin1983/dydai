@@ -21,7 +21,17 @@ const formatAddress = (client: Client): string => {
         client.uf,
     ];
     return parts.filter(Boolean).join(', ');
+    return parts.filter(Boolean).join(', ');
 }
+
+const getInitials = (name: string) => {
+    return name
+        .split(' ')
+        .map(n => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+};
 
 const ClientBar: React.FC<ClientBarProps> = ({
     selectedClient,
@@ -236,116 +246,57 @@ const ClientBar: React.FC<ClientBarProps> = ({
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                style={{ touchAction: 'pan-y' }} // Permite o scroll vertical, mas captura o horizontal
+                style={{ touchAction: 'pan-y' }}
             >
                 {selectedClient ? (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-3 animate-fade-in-scale">
-                        <div className="flex items-start gap-3">
-                            {/* Avatar - Agora clicável e com ícone de múltiplos clientes */}
-                            <div
-                                onClick={onSelectClientClick}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectClientClick() }}
-                                className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
-                                aria-label="Trocar de cliente"
-                            >
-                                <i className="fas fa-users text-white text-sm"></i>
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 animate-fade-in-scale relative overflow-hidden">
+                        {/* Card Content - Opens Action Menu */}
+                        <div
+                            onClick={() => setIsMenuOpen(true)}
+                            className="flex items-start gap-4 cursor-pointer active:opacity-70 transition-opacity"
+                        >
+                            {/* Avatar */}
+                            <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 border border-slate-200 dark:border-slate-600">
+                                <span className="text-xl font-bold text-slate-600 dark:text-slate-300">
+                                    {getInitials(selectedClient.nome)}
+                                </span>
                             </div>
 
-                            {/* Client Info - Clicável */}
-                            <div
-                                onClick={onSelectClientClick}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectClientClick() }}
-                                className="flex-1 min-w-0 cursor-pointer"
-                                aria-label="Trocar de cliente"
-                            >
-                                <h2 className="text-base font-bold text-slate-800 dark:text-white leading-tight truncate">
+                            {/* Client Info */}
+                            <div className="flex-1 min-w-0 pt-0.5 pr-8">
+                                <h2 className="text-lg font-bold text-slate-800 dark:text-white leading-tight truncate mb-1">
                                     {selectedClient.nome}
                                 </h2>
 
-                                {/* Info row */}
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-400 mt-1">
+                                <div className="flex flex-col gap-1">
                                     {selectedClient.telefone && (
-                                        <div className="flex items-center gap-1.5">
-                                            <i className="fas fa-phone text-slate-400"></i>
+                                        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                            <i className="fas fa-phone text-xs text-slate-400 w-4 text-center"></i>
                                             <span>{selectedClient.telefone}</span>
                                         </div>
                                     )}
                                     {fullAddress && (
-                                        <a
-                                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-1.5 hover:text-blue-600 transition-colors min-w-0"
-                                            aria-label={`Abrir endereço no mapa: ${fullAddress}`}
-                                        >
-                                            <i className="fas fa-map-marker-alt text-slate-400 flex-shrink-0"></i>
+                                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-500">
+                                            <i className="fas fa-map-marker-alt text-xs text-slate-400 w-4 text-center flex-shrink-0"></i>
                                             <span className="truncate">{fullAddress}</span>
-                                        </a>
+                                        </div>
                                     )}
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Menu button */}
-                            <div className="relative flex-shrink-0" ref={menuRef}>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsMenuOpen(!isMenuOpen);
-                                    }}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                                    aria-label="Menu de opções"
-                                >
-                                    <i className="fas fa-ellipsis-v"></i>
-                                </button>
-
-                                {/* Desktop Dropdown Only */}
-                                {isMenuOpen && (
-                                    <div className="hidden sm:block absolute right-0 top-full mt-1 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1 z-50">
-                                        <MenuItem
-                                            onClick={handleOpenWhatsApp}
-                                            icon="fab fa-whatsapp"
-                                            label="WhatsApp"
-                                            isWhatsApp
-                                            disabled={!selectedClient.telefone}
-                                        />
-                                        <MenuItem
-                                            onClick={handleCall}
-                                            icon="fas fa-phone"
-                                            label="Ligar"
-                                            disabled={!selectedClient.telefone}
-                                        />
-                                        <MenuItem
-                                            onClick={handleOpenMaps}
-                                            icon="fas fa-map-marker-alt"
-                                            label="Endereço"
-                                            disabled={!fullAddress}
-                                        />
-                                        <div className="border-t border-slate-200 dark:border-slate-700 my-1"></div>
-                                        <MenuItem
-                                            onClick={onAddClient}
-                                            icon="fas fa-plus"
-                                            label="Novo Cliente"
-                                        />
-                                        <MenuItem
-                                            onClick={onEditClient}
-                                            icon="fas fa-pen"
-                                            label="Editar"
-                                        />
-                                        <div className="border-t border-slate-200 dark:border-slate-700 my-1"></div>
-                                        <MenuItem
-                                            onClick={onDeleteClient}
-                                            icon="fas fa-trash-alt"
-                                            label="Excluir"
-                                            isDestructive
-                                        />
-                                    </div>
-                                )}
-                            </div>
+                        {/* Change Client Button - Absolute Positioned */}
+                        <div className="absolute top-4 right-4">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelectClientClick();
+                                }}
+                                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                                aria-label="Trocar cliente"
+                            >
+                                <i className="fas fa-exchange-alt text-sm"></i>
+                            </button>
                         </div>
                     </div>
                 ) : (
@@ -354,37 +305,17 @@ const ClientBar: React.FC<ClientBarProps> = ({
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectClientClick() }}
-                        className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 cursor-pointer active:bg-slate-50 dark:active:bg-slate-700 transition-colors animate-fade-in-scale"
-                        aria-label="Selecionar cliente"
+                        className="bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 p-4 flex items-center justify-center gap-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors animate-fade-in"
                     >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                    <i className="fas fa-users text-slate-400 text-sm"></i>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Nenhum cliente selecionado</p>
-                                    <p className="text-xs text-slate-400">Toque para selecionar</p>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onAddClient();
-                                }}
-                                className="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                                aria-label="Adicionar cliente"
-                            >
-                                <i className="fas fa-plus text-sm"></i>
-                            </button>
+                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400">
+                            <i className="fas fa-user-plus"></i>
                         </div>
+                        <span className="font-medium text-slate-600 dark:text-slate-300">Selecionar Cliente</span>
                     </div>
                 )}
             </div>
-
-            {/* Desktop Layout - unchanged */}
-            <div className="hidden sm:flex items-center justify-between">
+            {/* Desktop Layout */}
+            <div className="hidden sm:flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
                 <div
                     onClick={onSelectClientClick}
                     role="button"
@@ -458,7 +389,7 @@ const ClientBar: React.FC<ClientBarProps> = ({
                         disabled={!selectedClient}
                     />
                 </div>
-            </div>
+            </div >
 
             {/* Mobile Bottom Sheet - Rendered at root to avoid transform stacking context issues */}
             {isMenuOpen && (
@@ -575,7 +506,7 @@ const ClientBar: React.FC<ClientBarProps> = ({
                     animation: fade-in 0.2s ease-out forwards;
                 }
             `}</style>
-        </div>
+        </div >
     );
 };
 

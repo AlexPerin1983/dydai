@@ -47,7 +47,7 @@ const DynamicSelector: React.FC<DynamicSelectorProps> = ({ label, options, value
 
     return (
         <div className="relative" ref={containerRef}>
-            <label className="block text-sm font-medium text-slate-600">{label}</label>
+            <label className="block text-sm font-medium text-slate-600 dark:text-slate-400">{label}</label>
             <input
                 type="text"
                 value={inputValue}
@@ -56,16 +56,16 @@ const DynamicSelector: React.FC<DynamicSelectorProps> = ({ label, options, value
                     setShowDropdown(true);
                     e.target.select();
                 }}
-                className="w-full mt-1 p-2 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-md shadow-sm focus:ring-slate-500 focus:border-slate-500 sm:text-sm disabled:bg-slate-100"
+                className="w-full mt-1 p-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-slate-500 focus:border-slate-500 sm:text-sm disabled:bg-slate-100 dark:disabled:bg-slate-800"
                 disabled={disabled}
             />
             {showDropdown && filteredOptions.length > 0 && (
-                <ul className="absolute z-10 w-full bg-white border border-slate-300 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
+                <ul className="absolute z-10 w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
                     {filteredOptions.map(option => (
                         <li
                             key={option}
                             onClick={() => handleSelect(option)}
-                            className="p-2 hover:bg-slate-100 cursor-pointer text-slate-700"
+                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-300"
                         >
                             {option}
                         </li>

@@ -19,19 +19,19 @@ const applyPhoneMask = (value: string) => {
     if (!value) return "";
     let digitsOnly = value.replace(/\D/g, "");
     if (digitsOnly.length > 11) {
-      digitsOnly = digitsOnly.slice(0, 11);
+        digitsOnly = digitsOnly.slice(0, 11);
     }
     if (digitsOnly.length > 10) {
-      return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 7)}-${digitsOnly.slice(7)}`;
+        return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 7)}-${digitsOnly.slice(7)}`;
     }
     if (digitsOnly.length > 6) {
-      return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 6)}-${digitsOnly.slice(6)}`;
+        return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 6)}-${digitsOnly.slice(6)}`;
     }
     if (digitsOnly.length > 2) {
-      return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2)}`;
+        return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2)}`;
     }
     if (digitsOnly.length > 0) {
-      return `(${digitsOnly}`;
+        return `(${digitsOnly}`;
     }
     return "";
 };
@@ -119,7 +119,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
             setError("Preencha o máximo de campos de endereço possível para buscar o CEP.");
             return;
         }
-        
+
         setIsSearchingByAddress(true);
         setError(null);
         try {
@@ -164,7 +164,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { id, value } = e.target;
         let maskedValue = value;
-        
+
         setError(null); // Clear errors on any change
 
         switch (id) {
@@ -188,15 +188,15 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
         if (isOpen) {
             setError(null);
             setEmailSuggestion(null);
-            
+
             let baseData: Omit<Client, 'id'> = initialFormData;
-            
+
             if (mode === 'edit' && client) {
                 baseData = { ...initialFormData, ...client };
             } else {
                 baseData = { ...initialFormData, nome: initialName || '' };
             }
-            
+
             // 1. Aplica dados base e máscaras
             const initialFormState = {
                 ...baseData,
@@ -204,7 +204,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
                 telefone: applyPhoneMask(baseData.telefone || ''),
                 cep: applyCepMask(baseData.cep || ''),
             };
-            
+
             // 2. Aplica dados da IA (que já devem estar limpos/mascarados no App.tsx)
             let finalFormState = initialFormState;
             let cepToSearch: string | undefined;
@@ -227,9 +227,9 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
                 };
                 cepToSearch = aiData.cep;
             }
-            
+
             setFormData(finalFormState);
-            
+
             // 3. Se houver CEP (do cliente existente ou da IA), aciona a busca do ViaCEP
             if (cepToSearch || (mode === 'edit' && client?.cep)) {
                 const cep = cepToSearch || client?.cep;
@@ -244,15 +244,15 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
     const handleEmailSuggestionClick = () => { if (emailSuggestion) { setFormData(prev => ({ ...prev, email: emailSuggestion })); setEmailSuggestion(null); } };
     const handleDomainTagClick = (domain: string) => { let currentValue = formData.email; const atIndex = currentValue.indexOf('@'); if (atIndex !== -1) { currentValue = currentValue.substring(0, atIndex); } const newValue = `${currentValue}@${domain}`; setFormData(prev => ({ ...prev, email: newValue })); setEmailSuggestion(null); };
     const handleEmailKeyDown = (e: KeyboardEvent<HTMLInputElement>) => { if ((e.key === 'Tab' || e.key === 'Enter') && emailSuggestion) { e.preventDefault(); setFormData(prev => ({ ...prev, email: emailSuggestion })); setEmailSuggestion(null); } };
-    
+
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         onSave(formData);
     };
-    
+
     const modalTitle = (
         <div className="flex justify-between items-center w-full">
-            <h2 className="text-xl font-semibold text-slate-800">
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-white">
                 {mode === 'add' ? (aiData ? 'Confirmar Dados da IA' : 'Adicionar Novo Cliente') : 'Editar Cliente'}
             </h2>
             {mode === 'add' && !aiData && (
@@ -260,7 +260,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
                     <button
                         type="button"
                         onClick={(e) => { e.preventDefault(); onOpenAIModal(); }}
-                        className="px-3 py-1.5 bg-slate-100 text-slate-700 font-semibold rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2 text-sm"
+                        className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center gap-2 text-sm"
                         aria-label="Preencher formulário com Inteligência Artificial"
                     >
                         <i className="fas fa-robot"></i>
@@ -274,30 +274,30 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={modalTitle}>
             <form id="clientForm" onSubmit={handleSubmit} className="space-y-4">
-                 <fieldset disabled={isFetchingCep || isSearchingByAddress} className="space-y-4">
+                <fieldset disabled={isFetchingCep || isSearchingByAddress} className="space-y-4">
                     <Input id="nome" label="Nome do Cliente" type="text" value={formData.nome} onChange={handleChange} required placeholder="Ex: João da Silva" />
                     <Input id="telefone" label="Telefone" type="tel" value={formData.telefone} onChange={handleChange} placeholder="(XX) XXXXX-XXXX" maxLength={15} />
-                    <Input 
-                        id="cpfCnpj" 
-                        label="CPF/CNPJ" 
-                        type="text" 
-                        inputMode="numeric" 
-                        value={formData.cpfCnpj} 
-                        onChange={handleChange} 
-                        maxLength={18} 
+                    <Input
+                        id="cpfCnpj"
+                        label="CPF/CNPJ"
+                        type="text"
+                        inputMode="numeric"
+                        value={formData.cpfCnpj}
+                        onChange={handleChange}
+                        maxLength={18}
                         // REMOVIDO: required
-                        placeholder="000.000.000-00 ou 00.000.000/0000-00" 
+                        placeholder="000.000.000-00 ou 00.000.000/0000-00"
                     />
-                    
-                    <div className="pt-4 border-t border-slate-200">
+
+                    <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                         <div className="relative">
                             <Input id="cep" label="CEP" type="tel" value={formData.cep || ''} onChange={handleChange} onBlur={() => handleCepBlur()} maxLength={9} placeholder="00000-000" />
                             {isFetchingCep && <i className="fas fa-spinner fa-spin absolute right-3 top-[38px] text-slate-400"></i>}
                         </div>
                     </div>
-                    
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-                        <p className="text-sm text-slate-600 -mt-1">Não sabe o CEP? Preencha os campos abaixo para buscar.</p>
+
+                    <div className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg space-y-3">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 -mt-1">Não sabe o CEP? Preencha os campos abaixo para buscar.</p>
                         <Input id="logradouro" label="Rua / Logradouro" type="text" value={formData.logradouro || ''} onChange={handleChange} placeholder="Ex: Av. Principal, 1234" />
                         <div className="grid grid-cols-3 gap-4">
                             <div className="col-span-2">
@@ -311,10 +311,10 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
                             type="button"
                             onClick={handleAddressSearch}
                             disabled={isSearchingByAddress}
-                            className="w-full h-12 bg-slate-200 text-slate-700 font-semibold rounded-lg flex items-center justify-center hover:bg-slate-300 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                            className="w-full h-12 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-lg flex items-center justify-center hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-wait"
                         >
-                            {isSearchingByAddress ? 
-                                <><i className="fas fa-spinner fa-spin mr-2"></i> Buscando...</> : 
+                            {isSearchingByAddress ?
+                                <><i className="fas fa-spinner fa-spin mr-2"></i> Buscando...</> :
                                 <><i className="fas fa-search mr-2"></i> Buscar CEP por Endereço</>
                             }
                         </button>
@@ -329,11 +329,11 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
                         </div>
                     </div>
                     <Input id="bairro" label="Bairro" type="text" value={formData.bairro || ''} onChange={handleChange} placeholder="Ex: Centro" />
-                    
-                    <div className="pt-4 border-t border-slate-200">
+
+                    <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                         <Input id="email" label="Email" type="email" value={formData.email} onChange={handleChange} onKeyDown={handleEmailKeyDown} autoComplete="off" placeholder="Ex: cliente@exemplo.com" />
                         {emailSuggestion && <div className="mt-1 text-left"><button type="button" onClick={handleEmailSuggestionClick} className="text-sm text-slate-500 hover:text-slate-800 transition-colors p-1 rounded">Sugestão: <span className="font-semibold">{emailSuggestion}</span></button></div>}
-                        <div className="mt-2 flex flex-wrap gap-1.5">{popularDomains.map(domain => <button key={domain} type="button" onClick={() => handleDomainTagClick(domain)} className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded-full hover:bg-slate-200 transition-colors">@{domain}</button>)}</div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">{popularDomains.map(domain => <button key={domain} type="button" onClick={() => handleDomainTagClick(domain)} className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">@{domain}</button>)}</div>
                     </div>
                 </fieldset>
 
@@ -342,9 +342,9 @@ const ClientModal: React.FC<ClientModalProps> = ({ isOpen, onClose, onSave, mode
                         {error}
                     </div>
                 )}
-                
+
                 <div className="pt-4">
-                    <button type="submit" disabled={isFetchingCep || isSearchingByAddress} className="w-full p-3 bg-slate-800 text-white rounded-md hover:bg-slate-700 transition duration-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:bg-slate-500 disabled:cursor-wait">
+                    <button type="submit" disabled={isFetchingCep || isSearchingByAddress} className="w-full p-3 bg-slate-800 dark:bg-slate-700 text-white rounded-md hover:bg-slate-700 dark:hover:bg-slate-600 transition duration-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:bg-slate-500 disabled:cursor-wait">
                         {isFetchingCep || isSearchingByAddress ? 'Processando...' : 'Salvar Cliente'}
                     </button>
                 </div>

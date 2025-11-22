@@ -32,10 +32,10 @@ interface MeasurementListProps {
     totalQuantity: number; // NOVA PROP
 }
 
-const MeasurementList: React.FC<MeasurementListProps> = ({ 
-    measurements, 
-    films, 
-    onMeasurementsChange, 
+const MeasurementList: React.FC<MeasurementListProps> = ({
+    measurements,
+    films,
+    onMeasurementsChange,
     onOpenFilmModal,
     onOpenFilmSelectionModal,
     onOpenClearAllModal,
@@ -59,7 +59,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
     const [swipedItemId, setSwipedItemId] = useState<number | null>(null);
     const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
-    
+
     const scrollVelocityRef = useRef(0);
     const animationFrameRef = useRef<number | null>(null);
     const listContainerRef = useRef<HTMLDivElement>(null);
@@ -82,9 +82,9 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
             if (element) {
                 // Abre o numpad diretamente no campo de largura
                 onOpenNumpad(firstNewMeasurementRef.current, 'largura', '');
-                
+
                 // Limpa a flag isNew após focar
-                onMeasurementsChange(measurements.map(m => m.id === firstNewMeasurementRef.current ? {...m, isNew: false} : m));
+                onMeasurementsChange(measurements.map(m => m.id === firstNewMeasurementRef.current ? { ...m, isNew: false } : m));
                 firstNewMeasurementRef.current = null;
             }
         }
@@ -158,7 +158,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
             setIsDeleteSelectedModalOpen(true);
         }
     };
-    
+
     const handleConfirmDeleteSelected = () => {
         const newMeasurements = measurements.filter(m => !selectedIds.has(m.id));
         onMeasurementsChange(newMeasurements);
@@ -169,7 +169,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     const handleToggleSelection = (id: number, index: number, isShiftKey: boolean) => {
         setSelectedIds(prevSelectedIds => {
             const newSelectedIds = new Set(prevSelectedIds);
-            
+
             if (isShiftKey && lastSelectedIndex !== null && lastSelectedIndex !== index) {
                 const start = Math.min(lastSelectedIndex, index);
                 const end = Math.max(lastSelectedIndex, index);
@@ -190,7 +190,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                     newSelectedIds.add(id);
                 }
             }
-            
+
             setLastSelectedIndex(index);
             return newSelectedIds;
         });
@@ -218,7 +218,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
 
     const handleDragEnd = () => {
         if (isSelectionMode) return;
-        
+
         scrollVelocityRef.current = 0;
         if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
@@ -239,28 +239,28 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
         const newMeasurements = measurements.map(m => m.id === id ? { ...m, ...updatedMeasurement } : m);
         onMeasurementsChange(newMeasurements);
     };
-    
+
     // Função que o MeasurementGroup chama para iniciar a exclusão
     const requestDeleteMeasurement = (id: number) => {
         onDeleteMeasurement(id); // Chama a função do App.tsx que abre o modal
     };
-    
+
     const duplicateMeasurement = (id: number) => {
         const measurementToDuplicate = measurements.find(m => m.id === id);
         if (measurementToDuplicate) {
-            const newMeasurement: UIMeasurement = { 
-                ...measurementToDuplicate, 
-                id: Date.now(), 
+            const newMeasurement: UIMeasurement = {
+                ...measurementToDuplicate,
+                id: Date.now(),
                 isNew: false
             };
-            
+
             const index = measurements.findIndex(m => m.id === id);
             const newMeasurements = [...measurements];
             newMeasurements.splice(index + 1, 0, newMeasurement);
-            
+
             // Garante que apenas a nova medida seja marcada como nova
-            const finalMeasurements = newMeasurements.map(m => m.id === newMeasurement.id ? {...m, isNew: true} : {...m, isNew: false});
-            
+            const finalMeasurements = newMeasurements.map(m => m.id === newMeasurement.id ? { ...m, isNew: true } : { ...m, isNew: false });
+
             onMeasurementsChange(finalMeasurements);
         }
     };
@@ -279,9 +279,9 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
             <button
                 onClick={() => { onClick(); setIsActionsMenuOpen(false); }}
                 className={`flex items-center w-full px-3 py-2 text-sm rounded-md ${isDestructive
-                    ? 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                }`}
+                    ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
+                    }`}
             >
                 <i className={`${icon} mr-3 h-5 w-5 ${isDestructive ? 'text-red-400' : 'text-slate-400'}`}></i>
                 {label}
@@ -296,20 +296,20 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
 
     const getAnimationStyle = () => {
         if (!swipeDirection || swipeDistance === 0) return {};
-        
+
         // Base duration + additional time per step
         const duration = 200 + (swipeDistance * 200);
-        
+
         return {
             animationDuration: `${duration}ms`
         };
     };
-    
+
     return (
         <>
-            <div className="my-4 pt-4 border-t border-slate-200">
+            <div className="my-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                 {isSelectionMode ? (
-                    <div className="flex justify-between items-center px-2 py-2 rounded-lg bg-slate-100 border border-slate-200">
+                    <div className="flex justify-between items-center px-2 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                         <div className="flex items-center gap-3">
                             <input
                                 type="checkbox"
@@ -318,16 +318,16 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                                 onChange={handleToggleSelectAll}
                                 aria-label="Selecionar todas as medidas"
                             />
-                            <span className="text-sm font-semibold text-slate-800">
+                            <span className="text-sm font-semibold text-slate-800 dark:text-white">
                                 {selectedIds.size} / {measurements.length} selecionadas
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button onClick={handleCancelSelectionMode} className="text-sm text-slate-600 hover:text-slate-900 rounded-md px-3 py-1.5 transition-colors duration-200">
+                            <button onClick={handleCancelSelectionMode} className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-md px-3 py-1.5 transition-colors duration-200">
                                 Cancelar
                             </button>
-                            <button 
-                                onClick={handleDeleteSelected} 
+                            <button
+                                onClick={handleDeleteSelected}
                                 className="text-sm text-white bg-red-600 hover:bg-red-700 rounded-md px-3 py-1.5 transition-colors duration-200 flex items-center gap-2 disabled:bg-red-400 disabled:cursor-not-allowed"
                                 disabled={selectedIds.size === 0}
                             >
@@ -339,17 +339,17 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                 ) : (
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-4">
-                            <span title="Quantidade de Medidas (Grupos e Total de Vidros)" className="text-sm font-semibold text-slate-600 bg-slate-100 px-3 py-2 rounded-lg">
+                            <span title="Quantidade de Medidas (Grupos e Total de Vidros)" className="text-sm font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-lg">
                                 QM: {measurements.length} ({totalQuantity})
                             </span>
-                            <span title="Total de Metros Quadrados" className="text-sm font-semibold text-slate-600 bg-slate-100 px-3 py-2 rounded-lg">
+                            <span title="Total de Metros Quadrados" className="text-sm font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-lg">
                                 M²: {totalM2.toFixed(2).replace('.', ',')}
                             </span>
                         </div>
                         <div className="relative" ref={actionsMenuRef}>
                             <button
                                 onClick={() => setIsActionsMenuOpen(prev => !prev)}
-                                className="text-sm font-semibold text-slate-700 bg-slate-200 hover:bg-slate-300 rounded-lg px-4 py-2 transition-colors duration-200 flex items-center gap-2"
+                                className="text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg px-4 py-2 transition-colors duration-200 flex items-center gap-2"
                                 aria-expanded={isActionsMenuOpen}
                             >
                                 Ações
@@ -357,7 +357,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                             </button>
 
                             {isActionsMenuOpen && (
-                                <div className="absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20 p-1">
+                                <div className="absolute right-0 mt-2 w-56 origin-top-right bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20 p-1">
                                     <ul className="space-y-1">
                                         <ActionMenuItem
                                             onClick={handleEnterSelectionMode}
@@ -382,9 +382,9 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                     </div>
                 )}
             </div>
-            <div 
-                onDragOver={handleDragOver} 
-                ref={listContainerRef} 
+            <div
+                onDragOver={handleDragOver}
+                ref={listContainerRef}
                 className={getAnimationClass()}
                 style={getAnimationStyle()}
             >
@@ -432,7 +432,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                     confirmButtonVariant="danger"
                 />
             )}
-            
+
             <style jsx>{`
                 @keyframes carousel-left {
                     0% {

@@ -144,13 +144,13 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                 </button>
             )}
             <div className="flex-grow"></div>
-            <button onClick={onClose} className="px-4 py-2 text-sm font-semibold rounded-md hover:bg-slate-100">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-semibold rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-300">
                 Cancelar
             </button>
             <button
                 type="submit"
                 form="filmForm"
-                className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-700"
+                className="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white text-sm font-semibold rounded-md hover:bg-slate-700 dark:hover:bg-slate-600"
             >
                 {film ? 'Salvar Alterações' : 'Adicionar Película'}
             </button>
@@ -201,8 +201,8 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                     </div>
                 </div>
 
-                <div className="pt-4 mt-4 border-t border-slate-200">
-                    <h3 className="text-base font-semibold leading-6 text-slate-800 mb-2">
+                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                    <h3 className="text-base font-semibold leading-6 text-slate-800 dark:text-slate-200 mb-2">
                         Garantias
                     </h3>
                     <div className="grid grid-cols-2 gap-4 items-start">
@@ -229,8 +229,8 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                     </div>
                 </div>
 
-                <div className="pt-4 mt-4 border-t border-slate-200">
-                    <h3 className="text-base font-semibold leading-6 text-slate-800 mb-2">
+                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                    <h3 className="text-base font-semibold leading-6 text-slate-800 dark:text-slate-200 mb-2">
                         Dados Técnicos
                     </h3>
                     {/* Grid de Dados Técnicos - 2 colunas em mobile, 3 em desktop */}
@@ -290,14 +290,14 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                 </div>
 
                 {/* Campo de Imagens - Seção separada para melhor controle de layout */}
-                <div className="pt-4 mt-4 border-t border-slate-200">
-                    <h3 className="text-base font-semibold leading-6 text-slate-800 mb-2">
+                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                    <h3 className="text-base font-semibold leading-6 text-slate-800 dark:text-slate-200 mb-2">
                         Imagens de Amostra ({currentImages.length}/{MAX_IMAGES})
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
                         {currentImages.map((image, index) => (
                             <div key={index} className="relative aspect-square">
-                                <img src={image} alt={`Preview ${index + 1}`} className="w-full h-full object-cover rounded-lg border border-slate-200" />
+                                <img src={image} alt={`Preview ${index + 1}`} className="w-full h-full object-cover rounded-lg border border-slate-200 dark:border-slate-600" />
                                 <button
                                     type="button"
                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveImage(index); }}
@@ -320,10 +320,10 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                                 />
                                 <label
                                     htmlFor="film-image-upload"
-                                    className={`w-full h-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors cursor-pointer border-slate-300 hover:border-slate-400 bg-slate-50`}
+                                    className={`w-full h-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors cursor-pointer border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 bg-slate-50 dark:bg-slate-800`}
                                 >
-                                    <i className="fas fa-camera text-xl text-slate-400"></i>
-                                    <span className="text-xs text-slate-600 mt-1 text-center px-1">Adicionar ({MAX_IMAGES - currentImages.length} restantes)</span>
+                                    <i className="fas fa-camera text-xl text-slate-400 dark:text-slate-500"></i>
+                                    <span className="text-xs text-slate-600 dark:text-slate-400 mt-1 text-center px-1">Adicionar ({MAX_IMAGES - currentImages.length} restantes)</span>
                                 </label>
                             </div>
                         )}

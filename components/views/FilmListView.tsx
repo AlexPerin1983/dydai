@@ -124,33 +124,33 @@ const FilmCard: React.FC<{
         onEdit(film);
         onSetSwipedItem(null);
     };
-    
+
     const handleImageClick = (index: number, e: React.MouseEvent) => {
         e.stopPropagation();
         if (film.imagens && film.imagens.length > 0) {
             onOpenGallery(film.imagens, index);
         }
     };
-    
+
     const hasTechnicalData = film.uv || film.ir || film.vtl || film.espessura || film.tser;
     const hasImages = (film.imagens?.length || 0) > 0;
     const hasExpandableContent = hasTechnicalData || hasImages;
-    
+
     const TechnicalDataItem: React.FC<{ label: string; value: number | undefined; unit: string; }> = ({ label, value, unit }) => {
         if (!value) return null;
         return (
             <div>
-                <span className="text-xs text-slate-500">{label}</span>
-                <p className="font-medium text-slate-700">{value}{unit}</p>
+                <span className="text-xs text-slate-500 dark:text-slate-400">{label}</span>
+                <p className="font-medium text-slate-700 dark:text-slate-300">{value}{unit}</p>
             </div>
         );
     };
-    
+
     const pricePerM2 = film.preco || film.maoDeObra || 0;
     const priceLabel = film.preco > 0 ? 'Preço' : (film.maoDeObra > 0 ? 'Mão de Obra' : 'Preço');
 
     return (
-        <div className="relative rounded-lg sm:overflow-visible overflow-hidden bg-white border border-slate-200 shadow-sm">
+        <div className="relative rounded-lg sm:overflow-visible overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
             <div className="absolute inset-y-0 right-0 flex">
                 <button
                     onClick={handleEditClick}
@@ -176,7 +176,7 @@ const FilmCard: React.FC<{
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                className="relative z-10 w-full bg-white rounded-lg"
+                className="relative z-10 w-full bg-white dark:bg-slate-800 rounded-lg"
             >
                 <div
                     onClick={hasExpandableContent ? onToggleExpand : undefined}
@@ -185,38 +185,38 @@ const FilmCard: React.FC<{
                     aria-expanded={isExpanded}
                 >
                     <div className="flex justify-between items-start">
-                        <p className="font-bold text-slate-800 text-lg pr-4">{film.nome}</p>
+                        <p className="font-bold text-slate-800 dark:text-slate-200 text-lg pr-4">{film.nome}</p>
                         <div className="text-right flex-shrink-0">
-                            <p className="font-bold text-slate-800 text-lg">{formatCurrency(pricePerM2)}</p>
-                            <p className="text-sm text-slate-500">/ m² ({priceLabel})</p>
+                            <p className="font-bold text-slate-800 dark:text-slate-200 text-lg">{formatCurrency(pricePerM2)}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">/ m² ({priceLabel})</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-6 text-sm text-slate-600 mt-3 pt-3 border-t border-slate-100">
+                    <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
                         <div>
-                            <span className="text-xs text-slate-500">Garantia Fab.</span>
-                            <p className="font-medium">{film.garantiaFabricante || 'N/A'} anos</p>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Garantia Fab.</span>
+                            <p className="font-medium dark:text-slate-300">{film.garantiaFabricante || 'N/A'} anos</p>
                         </div>
                         <div>
-                            <span className="text-xs text-slate-500">Mão de Obra</span>
-                            <p className="font-medium">{film.garantiaMaoDeObra || 'N/A'} dias</p>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Mão de Obra</span>
+                            <p className="font-medium dark:text-slate-300">{film.garantiaMaoDeObra || 'N/A'} dias</p>
                         </div>
                     </div>
 
                     {hasExpandableContent && (
-                         <div className="text-center text-slate-400 mt-3 -mb-1">
-                             <i className={`fas fa-chevron-down transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}></i>
-                         </div>
+                        <div className="text-center text-slate-400 dark:text-slate-500 mt-3 -mb-1">
+                            <i className={`fas fa-chevron-down transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}></i>
+                        </div>
                     )}
                 </div>
 
                 <div className={`transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="p-4 pt-3 bg-slate-50/70 border-t border-slate-200/80 technical-data-section">
-                        
+                    <div className="p-4 pt-3 bg-slate-50/70 dark:bg-slate-900/50 border-t border-slate-200/80 dark:border-slate-700 technical-data-section">
+
                         {hasTechnicalData && (
                             <>
-                                <h4 className="text-sm font-semibold text-slate-700 mb-2">Dados Técnicos</h4>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm mb-4 pb-4 border-b border-slate-200">
+                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Dados Técnicos</h4>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
                                     <TechnicalDataItem label="UV" value={film.uv} unit="%" />
                                     <TechnicalDataItem label="IR" value={film.ir} unit="%" />
                                     <TechnicalDataItem label="VTL" value={film.vtl} unit="%" />
@@ -225,18 +225,18 @@ const FilmCard: React.FC<{
                                 </div>
                             </>
                         )}
-                        
+
                         {hasImages && (
                             <>
-                                <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
                                     {film.imagens!.length} Imagens de Amostra
                                 </h4>
                                 <div className="grid grid-cols-3 gap-3">
                                     {film.imagens!.map((image, index) => (
                                         <div key={index} className="aspect-square overflow-hidden rounded-lg shadow-md cursor-pointer">
-                                            <img 
-                                                src={image} 
-                                                alt={`Amostra ${index + 1} de ${film.nome}`} 
+                                            <img
+                                                src={image}
+                                                alt={`Amostra ${index + 1} de ${film.nome}`}
                                                 onClick={(e) => handleImageClick(index, e)}
                                                 className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                                             />
@@ -263,11 +263,11 @@ const FilmListView: React.FC<FilmListViewProps> = ({ films, onAdd, onEdit, onDel
     return (
         <div className="space-y-4 p-4 sm:p-0">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                <h2 className="text-xl font-bold text-slate-800">Minhas Películas</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Minhas Películas</h2>
                 {films.length > 0 && (
                     <button
                         onClick={onAdd}
-                        className="px-5 py-2.5 bg-slate-800 text-white font-semibold rounded-lg hover:bg-slate-700 transition duration-300 shadow-sm flex items-center justify-center gap-2"
+                        className="px-5 py-2.5 bg-slate-800 dark:bg-slate-700 text-white font-semibold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition duration-300 shadow-sm flex items-center justify-center gap-2"
                     >
                         <i className="fas fa-plus"></i>
                         Adicionar Nova Película
@@ -292,15 +292,15 @@ const FilmListView: React.FC<FilmListViewProps> = ({ films, onAdd, onEdit, onDel
                     ))}
                 </div>
             ) : (
-                <div className="text-center p-8 flex flex-col items-center justify-center h-full min-h-[300px] bg-slate-50 rounded-lg border-2 border-dashed border-slate-200 mt-4">
-                    <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
-                        <i className="fas fa-layer-group fa-2x text-slate-500"></i>
+                <div className="text-center p-8 flex flex-col items-center justify-center h-full min-h-[300px] bg-slate-50 dark:bg-slate-900 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 mt-4">
+                    <div className="w-16 h-16 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                        <i className="fas fa-layer-group fa-2x text-slate-500 dark:text-slate-400"></i>
                     </div>
-                    <h3 className="text-xl font-semibold text-slate-800">Cadastre sua Primeira Película</h3>
-                    <p className="mt-2 text-slate-600 max-w-xs mx-auto">Adicione os tipos de películas com que você trabalha, incluindo preços e detalhes técnicos.</p>
+                    <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200">Cadastre sua Primeira Película</h3>
+                    <p className="mt-2 text-slate-600 dark:text-slate-400 max-w-xs mx-auto">Adicione os tipos de películas com que você trabalha, incluindo preços e detalhes técnicos.</p>
                     <button
                         onClick={onAdd}
-                        className="mt-6 px-6 py-3 bg-slate-800 text-white font-semibold rounded-lg hover:bg-slate-700 transition duration-300 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 flex items-center gap-2"
+                        className="mt-6 px-6 py-3 bg-slate-800 dark:bg-slate-700 text-white font-semibold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition duration-300 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 flex items-center gap-2"
                     >
                         <i className="fas fa-plus"></i>
                         Adicionar Película

@@ -108,16 +108,16 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ isOpen, onClose, onSave
         <>
             <button
                 onClick={handleClear}
-                className="px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-200 hover:bg-slate-300 rounded-lg transition-colors mr-auto"
+                className="px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 rounded-lg transition-colors mr-auto"
             >
                 Limpar
             </button>
-            <button onClick={onClose} className="px-4 py-2 text-sm font-semibold rounded-md hover:bg-slate-100">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-semibold rounded-md hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
                 Cancelar
             </button>
             <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-700"
+                className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-700 dark:bg-slate-600 dark:hover:bg-slate-500 transition-colors"
             >
                 Salvar Assinatura
             </button>
@@ -126,7 +126,7 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ isOpen, onClose, onSave
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Criar Assinatura Digital" footer={footer}>
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2" style={{ touchAction: 'none' }}>
+            <div className="bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg p-2" style={{ touchAction: 'none' }}>
                 <canvas
                     ref={canvasRef}
                     className="w-full h-48 bg-white rounded-md cursor-crosshair"
@@ -140,7 +140,7 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ isOpen, onClose, onSave
                     onTouchEnd={stopDrawing}
                 />
             </div>
-            <p className="text-center text-sm text-slate-500 mt-2">
+            <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-2">
                 Desenhe sua assinatura no campo acima.
             </p>
         </Modal>

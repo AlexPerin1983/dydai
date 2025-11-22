@@ -14,18 +14,18 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer,
 
     return (
         <div className={`fixed inset-0 bg-black/60 flex items-center justify-center transition-opacity duration-300 ease-in-out z-50 p-4 ${wrapperClassName || ''}`}>
-            <div className="bg-white rounded-lg shadow-xl transform transition-transform duration-300 ease-in-out max-w-lg w-full mx-4 sm:mx-0 scale-100 flex flex-col">
-                <div className="flex justify-between items-center p-4 border-b border-slate-200">
-                    <h2 className="text-xl font-semibold text-slate-800 flex-grow min-w-0">{title}</h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 focus:outline-none h-8 w-8 rounded-full flex items-center justify-center hover:bg-slate-100 flex-shrink-0 ml-2">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl transform transition-transform duration-300 ease-in-out max-w-lg w-full mx-4 sm:mx-0 scale-100 flex flex-col">
+                <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700">
+                    <h2 className="text-xl font-semibold text-slate-800 dark:text-white flex-grow min-w-0">{title}</h2>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 focus:outline-none h-8 w-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 flex-shrink-0 ml-2">
                         <i className="fas fa-times"></i>
                     </button>
                 </div>
-                <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto text-slate-700 dark:text-slate-300">
                     {children}
                 </div>
                 {footer && (
-                    <div className="flex justify-end items-center p-4 border-t border-slate-200 bg-slate-50 space-x-3 rounded-b-lg">
+                    <div className="flex justify-end items-center p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 space-x-3 rounded-b-lg">
                         {footer}
                     </div>
                 )}

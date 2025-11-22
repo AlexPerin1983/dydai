@@ -23,22 +23,22 @@ const formatNumberBR = (number: number) => {
 };
 
 const SummaryBar: React.FC<SummaryBarProps> = ({ totals, generalDiscount, onOpenGeneralDiscountModal, isDesktop = false }) => {
-    
+
     const hasGeneralDiscount = !!(parseFloat(String(generalDiscount.value).replace(',', '.')) || 0);
 
-    const SummaryRow: React.FC<{label: string; value: string, className?: string}> = ({label, value, className}) => (
+    const SummaryRow: React.FC<{ label: string; value: string, className?: string }> = ({ label, value, className }) => (
         <div className={`flex justify-between items-center text-sm ${className}`}>
-            <span className="text-slate-600">{label}</span>
-            <span className="font-semibold text-slate-800">{value}</span>
+            <span className="text-slate-600 dark:text-slate-400">{label}</span>
+            <span className="font-semibold text-slate-800 dark:text-white">{value}</span>
         </div>
     );
 
     const TotalsBlock = ({ isMobile }: { isMobile?: boolean }) => (
-        <div className={`space-y-1.5 ${isMobile ? 'p-3 bg-slate-100 rounded-lg' : 'pt-1'}`}>
+        <div className={`space-y-1.5 ${isMobile ? 'p-3 bg-slate-100 dark:bg-slate-800 rounded-lg' : 'pt-1'}`}>
             <SummaryRow label={`Subtotal (${totals.totalM2.toFixed(2)} m²)`} value={formatNumberBR(totals.subtotal)} />
             {totals.totalItemDiscount > 0 && <SummaryRow label="Descontos (itens)" value={`-${formatNumberBR(totals.totalItemDiscount)}`} />}
             {totals.generalDiscountAmount > 0 && <SummaryRow label="Desconto Geral" value={`-${formatNumberBR(totals.generalDiscountAmount)}`} />}
-            <div className={`pt-1.5 mt-1.5 border-t ${isMobile ? 'border-slate-200/80' : 'border-slate-200'}`}>
+            <div className={`pt-1.5 mt-1.5 border-t ${isMobile ? 'border-slate-200/80 dark:border-slate-700/80' : 'border-slate-200 dark:border-slate-700'}`}>
                 <SummaryRow label="Total" value={formatNumberBR(totals.finalTotal)} className={isMobile ? 'text-base' : 'text-lg'} />
             </div>
         </div>
@@ -48,11 +48,11 @@ const SummaryBar: React.FC<SummaryBarProps> = ({ totals, generalDiscount, onOpen
         return (
             <div className="grid grid-cols-2 gap-x-8 items-start mb-4">
                 <div>
-                    <button 
+                    <button
                         onClick={onOpenGeneralDiscountModal}
-                        className="text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-2 transition-colors duration-200 flex items-center gap-2"
+                        className="text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg px-3 py-2 transition-colors duration-200 flex items-center gap-2"
                     >
-                        <i className="fas fa-percent"></i> 
+                        <i className="fas fa-percent"></i>
                         {hasGeneralDiscount ? 'Editar Desconto Geral' : 'Adicionar Desconto Geral'}
                     </button>
                 </div>
@@ -65,11 +65,11 @@ const SummaryBar: React.FC<SummaryBarProps> = ({ totals, generalDiscount, onOpen
     return (
         <div className="space-y-3">
             <TotalsBlock isMobile />
-            <button 
+            <button
                 onClick={onOpenGeneralDiscountModal}
-                className="w-full text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg py-2 transition-colors duration-200 flex items-center justify-center gap-2"
+                className="w-full text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg py-2 transition-colors duration-200 flex items-center justify-center gap-2"
             >
-                <i className="fas fa-percent"></i> 
+                <i className="fas fa-percent"></i>
                 {hasGeneralDiscount ? 'Editar Desconto Geral' : 'Adicionar Desconto Geral'}
             </button>
         </div>

@@ -10,11 +10,15 @@ if (!rootElement) {
 
 import { ErrorProvider } from './src/contexts/ErrorContext';
 
+import { ThemeProvider } from './src/contexts/ThemeContext';
+
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <ErrorProvider>
-      <App />
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
     </ErrorProvider>
   </React.StrictMode>
 );

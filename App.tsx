@@ -1798,15 +1798,15 @@ const App: React.FC = () => {
 
         if (clients.length === 0) {
             return (
-                <div className="text-center p-8 flex flex-col items-center justify-center h-full min-h-[300px] bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                    <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
-                        <i className="fas fa-users fa-2x text-slate-500"></i>
+                <div className="text-center p-8 flex flex-col items-center justify-center h-full min-h-[300px] bg-slate-50 dark:bg-slate-900 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
+                    <div className="w-16 h-16 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                        <i className="fas fa-users fa-2x text-slate-500 dark:text-slate-400"></i>
                     </div>
-                    <h3 className="text-xl font-semibold text-slate-800">Crie seu Primeiro Cliente</h3>
-                    <p className="mt-2 text-slate-600 max-w-xs mx-auto">Tudo começa com um cliente. Adicione os dados para começar a gerar orçamentos.</p>
+                    <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200">Crie seu Primeiro Cliente</h3>
+                    <p className="mt-2 text-slate-600 dark:text-slate-400 max-w-xs mx-auto">Tudo começa com um cliente. Adicione os dados para começar a gerar orçamentos.</p>
                     <button
                         onClick={() => handleOpenClientModal('add')}
-                        className="mt-6 px-6 py-3 bg-slate-800 text-white font-semibold rounded-lg hover:bg-slate-700 transition duration-300 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 flex items-center gap-2"
+                        className="mt-6 px-6 py-3 bg-slate-800 dark:bg-slate-700 text-white font-semibold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition duration-300 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 flex items-center gap-2"
                     >
                         <i className="fas fa-plus"></i>
                         Adicionar Cliente
@@ -1839,15 +1839,15 @@ const App: React.FC = () => {
         }
         if (selectedClientId && measurements.length === 0) {
             return (
-                <div className="text-center p-8 flex flex-col items-center justify-center h-full min-h-[300px] bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                    <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
-                        <i className="fas fa-ruler-combined fa-2x text-slate-500"></i>
+                <div className="text-center p-8 flex flex-col items-center justify-center h-full min-h-[300px] bg-slate-50 dark:bg-slate-900 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
+                    <div className="w-16 h-16 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                        <i className="fas fa-ruler-combined fa-2x text-slate-500 dark:text-slate-400"></i>
                     </div>
-                    <h3 className="text-xl font-semibold text-slate-800">Adicione a Primeira Medida</h3>
-                    <p className="mt-2 text-slate-600 max-w-xs mx-auto">Insira as dimensões (largura, altura, etc.) para calcular o orçamento deste cliente.</p>
+                    <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200">Adicione a Primeira Medida</h3>
+                    <p className="mt-2 text-slate-600 dark:text-slate-400 max-w-xs mx-auto">Insira as dimensões (largura, altura, etc.) para calcular o orçamento deste cliente.</p>
                     <button
                         onClick={addMeasurement}
-                        className="mt-6 px-6 py-3 bg-slate-800 text-white font-semibold rounded-lg hover:bg-slate-700 transition duration-300 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 flex items-center gap-2"
+                        className="mt-6 px-6 py-3 bg-slate-800 dark:bg-slate-700 text-white font-semibold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition duration-300 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 flex items-center gap-2"
                     >
                         <i className="fas fa-plus"></i>
                         Adicionar Medida
@@ -1869,7 +1869,7 @@ const App: React.FC = () => {
     return (
         <div className="h-full font-roboto flex flex-col">
             <main ref={mainRef} className="flex-grow overflow-y-auto pb-36 sm:pb-0">
-                <div className="sticky top-0 bg-white/80 backdrop-blur-sm z-10 border-b border-slate-200">
+                <div className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-10 border-b border-slate-200 dark:border-slate-700">
                     <div className="container mx-auto px-2 sm:px-4 w-full max-w-2xl">
                         <div className="pt-2 pb-1 sm:py-3">
                             <Header
@@ -1881,7 +1881,7 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="container mx-auto px-0.5 sm:px-4 py-4 sm:py-8 w-full max-w-2xl">
-                    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-4 sm:p-6">
                         {deferredPrompt && !isInstalled && (
                             <div className="mb-4 p-3 bg-blue-100 border border-blue-200 rounded-lg flex justify-between items-center">
                                 <p className="text-sm text-blue-800 font-medium">Instale o app para usar offline!</p>
@@ -1897,7 +1897,7 @@ const App: React.FC = () => {
                         {activeTab === 'client' ? (
                             <>
                                 {clients.length > 0 ? (
-                                    <div className="bg-slate-100 p-2 px-2 rounded-xl">
+                                    <div className="bg-slate-100 dark:bg-slate-900 p-2 px-2 rounded-xl">
                                         <div className="relative z-20">
                                             <ClientBar
                                                 key={clientTransitionKey}
@@ -1934,7 +1934,7 @@ const App: React.FC = () => {
                                 )}
                             </>
                         ) : ['history', 'agenda'].includes(activeTab) ? (
-                            <div className="bg-blue-50 -m-4 sm:-m-6 p-4 sm:p-6 rounded-2xl">
+                            <div className="bg-blue-50 dark:bg-slate-900 -m-4 sm:-m-6 p-4 sm:p-6 rounded-2xl">
                                 <div id="contentContainer" className="w-full min-h-[300px]">
                                     {renderContent()}
                                 </div>

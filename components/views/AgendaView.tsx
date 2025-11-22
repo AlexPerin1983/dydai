@@ -53,7 +53,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({ agendamentos, pdfs, clients, on
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
     const startDayOfWeek = startOfMonth.getDay(); // 0 (Sun) - 6 (Sat)
-    
+
     const daysInMonth = useMemo(() => {
         const days: (Date | null)[] = [];
         for (let i = 0; i < startDayOfWeek; i++) {
@@ -64,7 +64,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({ agendamentos, pdfs, clients, on
         }
         return days;
     }, [currentDate, startDayOfWeek, endOfMonth]);
-    
+
     const pdfStatusMap = useMemo(() => {
         const map = new Map<number, SavedPDF['status']>();
         pdfs.forEach(pdf => {
@@ -112,23 +112,23 @@ const AgendaView: React.FC<AgendaViewProps> = ({ agendamentos, pdfs, clients, on
         const today = new Date();
         return date.toDateString() === today.toDateString();
     };
-    
+
     const isSelected = (date: Date) => {
         return date.toDateString() === selectedDate.toDateString();
     };
-    
+
     const getDayNumberClasses = (day: Date) => {
         const classes = ['flex', 'items-center', 'justify-center', 'h-6', 'w-6', 'text-sm', 'font-semibold', 'rounded-full', 'transition-colors'];
         if (isSelected(day)) {
-            classes.push('bg-slate-800', 'text-white');
+            classes.push('bg-slate-800', 'dark:bg-slate-700', 'text-white');
         } else if (isToday(day)) {
-            classes.push('bg-slate-200', 'text-slate-800');
+            classes.push('bg-slate-200', 'dark:bg-slate-700', 'text-slate-800', 'dark:text-slate-200');
         } else {
-            classes.push('text-slate-700');
+            classes.push('text-slate-700', 'dark:text-slate-300');
         }
         return classes.join(' ');
     }
-    
+
     const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
     const selectedDateString = useMemo(() => {
@@ -146,13 +146,13 @@ const AgendaView: React.FC<AgendaViewProps> = ({ agendamentos, pdfs, clients, on
     return (
         <div className="p-1">
             <header className="flex items-center justify-between mb-4">
-                <button onClick={() => changeMonth(-1)} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-600">
+                <button onClick={() => changeMonth(-1)} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400">
                     <i className="fas fa-chevron-left"></i>
                 </button>
-                <h2 className="text-xl font-bold text-slate-800 capitalize">
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 capitalize">
                     {currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
                 </h2>
-                <button onClick={() => changeMonth(1)} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-600">
+                <button onClick={() => changeMonth(1)} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400">
                     <i className="fas fa-chevron-right"></i>
                 </button>
             </header>
@@ -165,10 +165,10 @@ const AgendaView: React.FC<AgendaViewProps> = ({ agendamentos, pdfs, clients, on
                 {daysInMonth.map((day, index) => {
                     const dayAgendamentos = day ? agendamentosByDate.get(day.toDateString()) || [] : [];
                     return (
-                        <div 
-                            key={index} 
+                        <div
+                            key={index}
                             onClick={() => day && setSelectedDate(day)}
-                            className={`relative pt-[100%] rounded-md transition-colors duration-200 ${day ? 'bg-white border border-slate-200/80 cursor-pointer hover:bg-slate-50' : 'bg-transparent'}`}
+                            className={`relative pt-[100%] rounded-md transition-colors duration-200 ${day ? 'bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700' : 'bg-transparent'}`}
                         >
                             {day && (
                                 <div className="absolute inset-0 p-1.5 flex flex-col items-center overflow-hidden">
@@ -191,18 +191,18 @@ const AgendaView: React.FC<AgendaViewProps> = ({ agendamentos, pdfs, clients, on
                     );
                 })}
             </div>
-            
-             <div className="mt-8">
+
+            <div className="mt-8">
                 <div className="flex justify-between items-center pb-2 mb-4 border-b border-slate-200">
                     <div>
                         <span className="text-sm font-semibold text-slate-500">Agenda:</span>
-                        <h3 className="text-lg font-bold text-slate-800 leading-tight">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 leading-tight">
                             {selectedDateString}
                         </h3>
                     </div>
                     <button
                         onClick={() => onCreateNewAgendamento(selectedDate)}
-                        className="w-10 h-10 bg-slate-800 text-white rounded-lg flex items-center justify-center hover:bg-slate-700 transition-colors shadow"
+                        className="w-10 h-10 bg-slate-800 dark:bg-slate-700 text-white rounded-lg flex items-center justify-center hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors shadow"
                         aria-label="Criar novo agendamento para o dia selecionado"
                     >
                         <i className="fas fa-plus text-lg"></i>
@@ -218,14 +218,14 @@ const AgendaView: React.FC<AgendaViewProps> = ({ agendamentos, pdfs, clients, on
                                 <button
                                     key={ag.id}
                                     onClick={() => onEditAgendamento(ag)}
-                                    className="w-full text-left p-4 bg-white rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50/80 transition-all duration-200 hover:shadow-md"
+                                    className="w-full text-left p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50/80 dark:hover:bg-slate-700/80 transition-all duration-200 hover:shadow-md"
                                 >
                                     <div className="flex justify-between items-center gap-4">
                                         <div className="flex-grow min-w-0">
-                                            <p className="font-bold text-lg text-slate-800 truncate">{ag.clienteNome}</p>
+                                            <p className="font-bold text-lg text-slate-800 dark:text-slate-200 truncate">{ag.clienteNome}</p>
                                             <div className="flex items-center gap-3 mt-2 flex-wrap">
                                                 <StatusBadge status={ag.status} />
-                                                <p className="text-sm text-slate-600 font-medium flex items-center gap-2">
+                                                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium flex items-center gap-2">
                                                     <i className="far fa-clock text-slate-400"></i>
                                                     <span>
                                                         {new Date(ag.start).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -234,7 +234,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({ agendamentos, pdfs, clients, on
                                                     </span>
                                                 </p>
                                                 {bairro && (
-                                                    <p className="text-sm text-slate-600 font-medium flex items-center gap-2" title={formatFullAddress(client)}>
+                                                    <p className="text-sm text-slate-600 dark:text-slate-400 font-medium flex items-center gap-2" title={formatFullAddress(client)}>
                                                         <i className="fas fa-map-marker-alt text-slate-400"></i>
                                                         <span>{bairro}</span>
                                                     </p>
@@ -252,9 +252,9 @@ const AgendaView: React.FC<AgendaViewProps> = ({ agendamentos, pdfs, clients, on
                     </div>
                 ) : (
                     <div className="text-center text-slate-500 p-8 mt-4">
-                         <i className="fas fa-calendar-check fa-3x mb-4 text-slate-400"></i>
-                         <p className="text-slate-600">Nenhum serviço agendado para este dia.</p>
-                     </div>
+                        <i className="fas fa-calendar-check fa-3x mb-4 text-slate-400"></i>
+                        <p className="text-slate-600">Nenhum serviço agendado para este dia.</p>
+                    </div>
                 )}
             </div>
         </div>

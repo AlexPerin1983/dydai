@@ -38,9 +38,9 @@ const SearchableSelect = <T extends { [key: string]: any }>({
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const selectedOption = useMemo(() => 
-        options.find(opt => opt[valueField] === value), 
-    [options, value, valueField]);
+    const selectedOption = useMemo(() =>
+        options.find(opt => opt[valueField] === value),
+        [options, value, valueField]);
 
     // Effect to set display text when dropdown is closed or value changes
     useEffect(() => {
@@ -50,7 +50,7 @@ const SearchableSelect = <T extends { [key: string]: any }>({
             setDebouncedSearchTerm(displayValue);
         }
     }, [isOpen, selectedOption, displayField]);
-    
+
     // Effect for debouncing user input
     useEffect(() => {
         const timerId = setTimeout(() => {
@@ -101,12 +101,12 @@ const SearchableSelect = <T extends { [key: string]: any }>({
         setSearchTerm(e.target.value);
         if (!isOpen) setIsOpen(true);
     };
-    
+
     const handleInputFocus = () => {
         if (onFocus) onFocus();
         setIsOpen(true);
     };
-    
+
     const handleClear = (e: React.MouseEvent) => {
         e.stopPropagation();
         setSearchTerm('');
@@ -128,7 +128,7 @@ const SearchableSelect = <T extends { [key: string]: any }>({
                     onChange={handleInputChange}
                     onFocus={handleInputFocus}
                     placeholder={currentPlaceholder}
-                    className="w-full p-3 pr-12 text-base bg-white text-slate-900 border border-slate-300 rounded-lg shadow-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500 placeholder:text-slate-400 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+                    className="w-full p-3 pr-12 text-base bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
                     disabled={disabled || loading}
                     autoComplete="off"
                 />
@@ -161,9 +161,9 @@ const SearchableSelect = <T extends { [key: string]: any }>({
                 </div>
             </div>
             {isOpen && (
-                <ul className="absolute z-20 w-full bg-white border border-slate-300 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
+                <ul className="absolute z-20 w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
                     {loading ? (
-                         <li className="p-2 text-slate-500 text-center flex items-center justify-center">
+                        <li className="p-2 text-slate-500 text-center flex items-center justify-center">
                             <i className="fas fa-spinner fa-spin mr-2"></i>
                             Carregando...
                         </li>
@@ -175,7 +175,7 @@ const SearchableSelect = <T extends { [key: string]: any }>({
                                     e.preventDefault();
                                     handleSelect(option);
                                 }}
-                                className={`p-3 hover:bg-slate-100 cursor-pointer text-slate-700 ${value === option[valueField] ? 'bg-slate-200' : ''}`}
+                                className={`p-3 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-300 ${value === option[valueField] ? 'bg-slate-200 dark:bg-slate-700' : ''}`}
                             >
                                 {String(option[displayField])}
                             </li>
@@ -184,7 +184,7 @@ const SearchableSelect = <T extends { [key: string]: any }>({
                         debouncedSearchTerm && renderNoResults ? (
                             renderNoResults(debouncedSearchTerm)
                         ) : (
-                            <li className="p-3 text-slate-500">Nenhum resultado encontrado</li>
+                            <li className="p-3 text-slate-500 dark:text-slate-400">Nenhum resultado encontrado</li>
                         )
                     )}
                 </ul>

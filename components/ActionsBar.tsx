@@ -16,21 +16,21 @@ const ActionsBar: React.FC<ActionsBarProps> = ({
     onOpenAIModal
 }) => {
     const baseButton = "w-full p-4 rounded-lg transition duration-300 shadow-md font-semibold text-sm flex items-center justify-center";
-    
+
     return (
         <div className="flex flex-col sm:flex-row gap-3">
-            <button onClick={onAddMeasurement} className={`${baseButton} bg-slate-800 text-white hover:bg-slate-700`}>
+            <button onClick={onAddMeasurement} className={`${baseButton} bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-700 dark:hover:bg-slate-600`}>
                 Adicionar Medida
             </button>
-            <button onClick={onOpenAIModal} className={`${baseButton} bg-slate-800 text-white hover:bg-slate-700`}>
+            <button onClick={onOpenAIModal} className={`${baseButton} bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-700 dark:hover:bg-slate-600`}>
                 <i className="fas fa-robot mr-2"></i> com IA
             </button>
-            <button onClick={onDuplicateMeasurements} className={`${baseButton} bg-slate-200 text-slate-700 hover:bg-slate-300`}>
+            <button onClick={onDuplicateMeasurements} className={`${baseButton} bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-500`}>
                 Duplicar Medidas
             </button>
-            <button 
-                onClick={onGeneratePdf} 
-                className={`${baseButton} bg-slate-800 text-white hover:bg-slate-900 disabled:bg-slate-500 disabled:cursor-wait`}
+            <button
+                onClick={onGeneratePdf}
+                className={`${baseButton} bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-900 dark:hover:bg-slate-600 disabled:bg-slate-500 disabled:cursor-wait`}
                 disabled={isGeneratingPdf}
             >
                 {isGeneratingPdf ? <span className="loader-sm"></span> : 'Gerar PDF'}

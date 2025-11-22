@@ -50,7 +50,7 @@ const formatClientAddress = (client: Client): string => {
 const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, onSave, onDelete, schedulingInfo, clients, onAddNewClient, userInfo, agendamentos }) => {
     const agendamento = schedulingInfo.agendamento;
     const pdf = 'pdf' in schedulingInfo ? schedulingInfo.pdf : undefined;
-    
+
     const isEditing = !!agendamento?.id;
     const isClientLocked = !!pdf?.clienteId || !!agendamento?.pdfId;
 
@@ -77,7 +77,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
                 setStartTime(startDate.toTimeString().split(' ')[0].substring(0, 5));
                 setEndTime(endDate.toTimeString().split(' ')[0].substring(0, 5));
                 setNotes(agendamento.notes || '');
-            } else if(agendamento?.start) {
+            } else if (agendamento?.start) {
                 const startDate = new Date(agendamento.start);
                 setDate(startDate.toISOString().split('T')[0]);
                 setStartTime(startDate.toTimeString().split(' ')[0].substring(0, 5));
@@ -118,9 +118,9 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
         const client = clients.find(c => c.id === selectedClientId);
         const clientAddress = client ? formatClientAddress(client) : '';
         if (!client || !clientAddress.trim()) {
-             setValidationError("O cliente selecionado precisa ter um endereço cadastrado para a otimização de rota.");
-             setIsSuggesting(false);
-             return;
+            setValidationError("O cliente selecionado precisa ter um endereço cadastrado para a otimização de rota.");
+            setIsSuggesting(false);
+            return;
         }
 
         try {
@@ -138,7 +138,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
                         address: agClient ? formatClientAddress(agClient) : 'Endereço desconhecido'
                     };
                 });
-            
+
             const prompt = `
                 Você é um especialista em logística e agendamento. Sua tarefa é encontrar os melhores horários para um novo agendamento para minimizar o tempo total de deslocamento do dia.
 
@@ -160,9 +160,9 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
                 **Formato da Resposta:**
                 Responda APENAS com um objeto JSON válido que corresponda ao schema fornecido.
             `;
-            
+
             const genAI = new GoogleGenerativeAI(userInfo.aiConfig.apiKey);
-            const model = genAI.getGenerativeModel({ 
+            const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash-exp",
                 generationConfig: {
                     responseMimeType: "application/json",
@@ -180,7 +180,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
                     }
                 }
             });
-            
+
             const result = await model.generateContent(prompt);
             const response = await result.response;
             const suggestions = JSON.parse(response.text());
@@ -204,12 +204,12 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         setValidationError(null);
-        
+
         if (!selectedClientId) {
             setValidationError("Por favor, selecione um cliente.");
             return;
         }
-        
+
         const client = clients.find(c => c.id === selectedClientId);
         if (!client) {
             setValidationError("Cliente selecionado é inválido.");
@@ -226,7 +226,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
             setValidationError("Configurações da empresa (horário, equipe) não encontradas. Por favor, configure na aba 'Empresa'.");
             return;
         }
-        
+
         const maxAppointments = userInfo.employees.length;
         if (maxAppointments === 0) {
             setValidationError('Não há colaboradores cadastrados para realizar agendamentos. Adicione um colaborador na aba "Empresa".');
@@ -262,7 +262,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
             setValidationError(`Todos os ${maxAppointments} colaboradores já estão ocupados neste horário.`);
             return;
         }
-        
+
         const agendamentoPayload: Omit<Agendamento, 'id'> | Agendamento = {
             clienteId: client.id!,
             clienteNome: client.nome,
@@ -278,7 +278,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
 
         onSave(agendamentoPayload);
     };
-    
+
     const handleDelete = () => {
         if (isEditing && agendamento) {
             onDelete(agendamento as Agendamento);
@@ -289,15 +289,15 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
         if (!agendamento || !selectedClientId) return;
         const client = clients.find(c => c.id === selectedClientId);
         if (!client) return;
-    
+
         const formatDateForICS = (date: Date) => {
             return date.toISOString().replace(/-|:|\.\d+/g, "");
         };
-    
+
         const startDate = new Date(agendamento.start);
         const endDate = new Date(agendamento.end);
         const now = new Date();
-    
+
         let description = `Serviço agendado para ${client.nome}.\\n`;
         if (client.telefone) {
             description += `Telefone: ${client.telefone}\\n`;
@@ -308,7 +308,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
         if (agendamento.notes) {
             description += `\\nObservações:\\n${agendamento.notes.replace(/\n/g, '\\n')}`;
         }
-    
+
         const icsContent = [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
@@ -324,7 +324,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
             'END:VEVENT',
             'END:VCALENDAR'
         ].join('\r\n');
-    
+
         const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -336,7 +336,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     };
-    
+
     const footerContent = (
         <>
             <div className="flex items-center gap-2 mr-auto">
@@ -349,7 +349,7 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
                         >
                             Excluir
                         </button>
-                         <button
+                        <button
                             type="button"
                             onClick={handleExportToCalendar}
                             className="px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-200 hover:bg-slate-300 rounded-lg transition-colors flex items-center gap-2"
@@ -363,28 +363,28 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
             <button
                 type="button"
                 onClick={onClose}
-                className="font-semibold text-slate-700 px-4 py-2 hover:bg-slate-100 rounded-md"
+                className="font-semibold text-slate-700 dark:text-slate-300 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md"
             >
                 Cancelar
             </button>
             <button
                 type="submit"
                 form="agendamentoForm"
-                className="font-semibold text-white bg-slate-800 px-5 py-2.5 rounded-lg shadow-sm hover:bg-slate-700"
+                className="font-semibold text-white bg-slate-800 dark:bg-slate-700 px-5 py-2.5 rounded-lg shadow-sm hover:bg-slate-700 dark:hover:bg-slate-600"
             >
                 {isEditing ? 'Salvar' : 'Agendar'}
             </button>
         </>
     );
 
-    const inputClassName = "bg-slate-100/70 border-slate-200 placeholder:text-slate-400 focus:bg-white focus:border-slate-400 focus:ring-slate-400 focus:ring-1";
+    const inputClassName = "bg-slate-100/70 border-slate-200 placeholder:text-slate-400 focus:bg-white focus:border-slate-400 focus:ring-slate-400 focus:ring-1 dark:bg-slate-700 dark:border-slate-600 dark:placeholder:text-slate-500 dark:text-slate-200 dark:focus:bg-slate-800 dark:focus:border-slate-500";
     const textareaClassName = `${inputClassName} min-h-[120px] resize-none`;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? "Editar Agendamento" : "Novo Agendamento"} footer={footerContent}>
             <form id="agendamentoForm" onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cliente</label>
                     <SearchableSelect
                         options={clients}
                         value={selectedClientId}
@@ -414,26 +414,26 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
                 </div>
 
                 {pdf && (
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600 space-y-2">
                         <div className="flex justify-between items-center">
-                            <h4 className="text-sm font-semibold text-slate-600">Orçamento Associado</h4>
+                            <h4 className="text-sm font-semibold text-slate-600 dark:text-slate-400">Orçamento Associado</h4>
                             <StatusBadge status={pdf.status} />
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                             <span className="text-slate-500">{new Date(pdf.date).toLocaleDateString('pt-BR')}</span>
-                             <span className="font-semibold text-slate-700">{formatCurrency(pdf.totalPreco)}</span>
+                            <span className="text-slate-500 dark:text-slate-400">{new Date(pdf.date).toLocaleDateString('pt-BR')}</span>
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">{formatCurrency(pdf.totalPreco)}</span>
                         </div>
                     </div>
                 )}
-                
+
                 <div>
                     <div className="flex justify-between items-center mb-1">
-                         <label htmlFor="date" className="block text-sm font-medium text-slate-700">Data</label>
-                         <button 
-                            type="button" 
+                        <label htmlFor="date" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Data</label>
+                        <button
+                            type="button"
                             onClick={handleAISuggestion}
                             disabled={isSuggesting || !date || !selectedClientId}
-                            className="text-sm font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSuggesting ? (
                                 <i className="fas fa-spinner fa-spin"></i>
@@ -455,27 +455,27 @@ const AgendamentoModal: React.FC<AgendamentoModalProps> = ({ isOpen, onClose, on
                 </div>
 
                 {aiSuggestions && aiSuggestions.length > 0 && (
-                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
                         <h4 className="text-sm font-semibold text-blue-800">Sugestões da IA:</h4>
                         {aiSuggestions.map((sug, index) => (
-                             <button
+                            <button
                                 key={index}
                                 type="button"
                                 onClick={() => handleApplySuggestion(sug)}
                                 className="w-full text-left p-2 bg-white rounded-md border border-blue-200 hover:bg-blue-100 transition-colors"
-                             >
+                            >
                                 <p className="font-semibold text-slate-800">{sug.startTime} - {sug.endTime}</p>
                                 <p className="text-xs text-slate-600">{sug.reason}</p>
-                             </button>
+                            </button>
                         ))}
                     </div>
                 )}
-               
+
                 <div className="grid grid-cols-2 gap-4">
-                    <Input id="startTime" label="Início" type="time" value={startTime} onChange={(e) => setStartTime((e.target as HTMLInputElement).value)} required className={inputClassName}/>
+                    <Input id="startTime" label="Início" type="time" value={startTime} onChange={(e) => setStartTime((e.target as HTMLInputElement).value)} required className={inputClassName} />
                     <Input id="endTime" label="Término" type="time" value={endTime} onChange={(e) => setEndTime((e.target as HTMLInputElement).value)} required className={inputClassName} />
                 </div>
-                
+
                 <Input
                     as="textarea"
                     id="notes"

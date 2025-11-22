@@ -27,7 +27,7 @@ const FilmListItem: React.FC<{
     const swipeableRef = useRef<HTMLDivElement>(null);
     const currentTranslateX = useRef(0);
     const ACTIONS_WIDTH = 160;
-    
+
     const pricePerM2 = film.preco || film.maoDeObra || 0;
     const priceLabel = film.preco > 0 ? 'Preço' : (film.maoDeObra > 0 ? 'Mão de Obra' : 'Preço');
 
@@ -52,7 +52,7 @@ const FilmListItem: React.FC<{
             swipeableRef.current.style.transition = 'none';
         }
     };
-    
+
     const handleTouchMove = (e: React.TouchEvent) => {
         if (!isDraggingCard.current || !swipeableRef.current) return;
 
@@ -107,7 +107,7 @@ const FilmListItem: React.FC<{
             }
         }
     };
-    
+
     const handleDeleteClick = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -123,7 +123,7 @@ const FilmListItem: React.FC<{
     };
 
     return (
-        <div className="relative rounded-lg overflow-hidden bg-white border border-slate-200 shadow-sm">
+        <div className="relative rounded-lg overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
             <div className="absolute inset-y-0 right-0 flex">
                 <button
                     onClick={handleEditClick}
@@ -149,7 +149,7 @@ const FilmListItem: React.FC<{
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                className="relative z-10 w-full bg-white"
+                className="relative z-10 w-full bg-white dark:bg-slate-800"
             >
                 <div
                     role="button"
@@ -173,16 +173,16 @@ const FilmListItem: React.FC<{
                             onSelect(film.nome);
                         }
                     }}
-                    className="w-full text-left p-4 hover:bg-slate-50 transition-colors duration-150 flex items-center justify-between gap-4 cursor-pointer"
+                    className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-150 flex items-center justify-between gap-4 cursor-pointer"
                 >
                     <div className="flex-grow min-w-0">
-                        <p className="font-semibold text-slate-800 truncate">{film.nome}</p>
+                        <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{film.nome}</p>
                     </div>
                     <div className="flex-shrink-0 text-right">
-                        <p className="font-bold text-slate-800">
+                        <p className="font-bold text-slate-800 dark:text-slate-200">
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pricePerM2)}
                         </p>
-                        <p className="text-sm text-slate-500">/ m² ({priceLabel})</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">/ m² ({priceLabel})</p>
                     </div>
                 </div>
             </div>
@@ -211,7 +211,7 @@ const FilmSelectionModal: React.FC<FilmSelectionModalProps> = ({ isOpen, onClose
 
     useEffect(() => {
         if (isOpen) {
-            setSearchTerm(''); 
+            setSearchTerm('');
             setTimeout(() => inputRef.current?.focus(), 100);
         }
     }, [isOpen]);
@@ -231,11 +231,11 @@ const FilmSelectionModal: React.FC<FilmSelectionModalProps> = ({ isOpen, onClose
         onSelect(filmName);
         onClose();
     };
-    
+
     const handleAddNew = () => {
         onAddNewFilm(searchTerm);
     };
-    
+
     const handleClearSearch = () => {
         setSearchTerm('');
         inputRef.current?.focus();
@@ -250,16 +250,16 @@ const FilmSelectionModal: React.FC<FilmSelectionModalProps> = ({ isOpen, onClose
     };
 
     return (
-        <div className="fixed inset-0 bg-white/95 backdrop-blur-sm z-50 flex flex-col animate-fade-in">
+        <div className="fixed inset-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-50 flex flex-col animate-fade-in">
             {/* Header */}
-            <div className="flex-shrink-0 p-4 border-b border-slate-200 bg-white sticky top-0">
+            <div className="flex-shrink-0 p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 sticky top-0">
                 <div className="flex items-center justify-between gap-4 max-w-3xl mx-auto">
-                    <h2 className="text-xl font-bold text-slate-800">Selecionar Película</h2>
-                    <button onClick={onClose} className="text-slate-500 hover:text-slate-800 h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100">
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Selecionar Película</h2>
+                    <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
                         <i className="fas fa-times text-xl"></i>
                     </button>
                 </div>
-                 <div className="mt-4 max-w-3xl mx-auto relative">
+                <div className="mt-4 max-w-3xl mx-auto relative">
                     <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                     <input
                         ref={inputRef}
@@ -267,7 +267,7 @@ const FilmSelectionModal: React.FC<FilmSelectionModalProps> = ({ isOpen, onClose
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Buscar pelo nome da película..."
-                        className="w-full pl-12 pr-12 py-3 bg-slate-100 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                        className="w-full pl-12 pr-12 py-3 bg-slate-100 dark:bg-slate-800 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400"
                     />
                     {searchTerm && (
                         <button
@@ -287,23 +287,23 @@ const FilmSelectionModal: React.FC<FilmSelectionModalProps> = ({ isOpen, onClose
                 <div className="max-w-3xl mx-auto space-y-2">
                     {filteredFilms.map(film => (
                         <FilmListItem
-                           key={film.nome}
-                           film={film}
-                           onSelect={handleSelectFilm}
-                           onEdit={handleEditFilm}
-                           onDelete={handleDeleteFilm}
-                           swipedItemName={swipedItemName}
-                           onSetSwipedItem={setSwipedItemName}
+                            key={film.nome}
+                            film={film}
+                            onSelect={handleSelectFilm}
+                            onEdit={handleEditFilm}
+                            onDelete={handleDeleteFilm}
+                            swipedItemName={swipedItemName}
+                            onSetSwipedItem={setSwipedItemName}
                         />
                     ))}
                     {filteredFilms.length === 0 && debouncedSearchTerm && (
-                         <div className="text-center py-10 px-4">
-                            <p className="text-slate-500 mb-4">Nenhuma película encontrada com o nome <strong className="text-slate-700">"{debouncedSearchTerm}"</strong>.</p>
-                             <button
+                        <div className="text-center py-10 px-4">
+                            <p className="text-slate-500 dark:text-slate-400 mb-4">Nenhuma película encontrada com o nome <strong className="text-slate-700 dark:text-slate-300">"{debouncedSearchTerm}"</strong>.</p>
+                            <button
                                 onClick={handleAddNew}
-                                className="px-5 py-2.5 bg-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-300 transition duration-300 shadow-sm flex items-center justify-center gap-2 mx-auto"
+                                className="px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition duration-300 shadow-sm flex items-center justify-center gap-2 mx-auto"
                             >
-                                 <i className="fas fa-plus"></i>
+                                <i className="fas fa-plus"></i>
                                 Adicionar "{debouncedSearchTerm}"
                             </button>
                         </div>
@@ -312,18 +312,18 @@ const FilmSelectionModal: React.FC<FilmSelectionModalProps> = ({ isOpen, onClose
             </div>
 
             {/* Footer */}
-             <div className="flex-shrink-0 p-4 border-t border-slate-200 bg-white sticky bottom-0">
+            <div className="flex-shrink-0 p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 sticky bottom-0">
                 <div className="max-w-3xl mx-auto">
                     <button
                         onClick={() => onAddNewFilm('')}
-                        className="w-full p-3 bg-slate-800 text-white font-semibold rounded-lg hover:bg-slate-700 transition duration-300 shadow-md flex items-center justify-center gap-2"
+                        className="w-full p-3 bg-slate-800 dark:bg-slate-700 text-white font-semibold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition duration-300 shadow-md flex items-center justify-center gap-2"
                     >
-                         <i className="fas fa-plus"></i>
+                        <i className="fas fa-plus"></i>
                         Adicionar Nova Película
                     </button>
                 </div>
             </div>
-             <style jsx>{`
+            <style jsx>{`
                 @keyframes fade-in {
                     from { opacity: 0; }
                     to { opacity: 1; }

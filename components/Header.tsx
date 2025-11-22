@@ -11,17 +11,16 @@ const Header: React.FC<HeaderProps> = ({
     activeTab,
     onTabChange,
 }) => {
-    
+
     const TabButton: React.FC<{ tabId: ActiveTab; children: React.ReactNode, icon: string }> = ({ tabId, children, icon }) => {
         const isActive = activeTab === tabId;
         return (
             <button
                 onClick={() => onTabChange(tabId)}
-                className={`px-2 py-1.5 text-sm font-semibold rounded-lg transition-all duration-300 flex-1 flex items-center justify-center gap-2 transform ${
-                    isActive
-                        ? 'bg-slate-800 text-white shadow-lg scale-105'
-                        : 'text-slate-600 hover:bg-slate-200 hover:scale-100'
-                }`}
+                className={`px-2 py-1.5 text-sm font-semibold rounded-lg transition-all duration-300 flex-1 flex items-center justify-center gap-2 transform ${isActive
+                        ? 'bg-slate-800 text-white shadow-lg scale-105 dark:bg-slate-900'
+                        : 'text-slate-600 hover:bg-slate-200 hover:scale-100 dark:text-slate-300 dark:hover:bg-slate-600'
+                    }`}
             >
                 <i className={`${icon} text-sm`}></i>
                 <span className="hidden sm:inline">{children}</span>
@@ -32,7 +31,7 @@ const Header: React.FC<HeaderProps> = ({
     return (
         <div>
             <div className="flex justify-center">
-                <div className="flex space-x-1 p-0.5 bg-slate-100 rounded-xl w-full">
+                <div className="flex space-x-1 p-0.5 bg-slate-100 dark:bg-slate-700 rounded-xl w-full">
                     <TabButton tabId="client" icon="fas fa-user-friends">Cliente</TabButton>
                     <TabButton tabId="films" icon="fas fa-layer-group">Películas</TabButton>
                     <TabButton tabId="agenda" icon="fas fa-calendar-alt">Agenda</TabButton>

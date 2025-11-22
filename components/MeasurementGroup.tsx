@@ -65,7 +65,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
     isModalMode = false
 }) => {
     const [additionalFieldsVisible, setAdditionalFieldsVisible] = useState(isModalMode);
-    
+
     const groupRef = useRef<HTMLDivElement>(null);
 
     const [translateX, setTranslateX] = useState(0);
@@ -75,7 +75,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
     const gestureDirection = useRef<'horizontal' | 'vertical' | null>(null);
     const currentTranslateX = useRef(0);
     const swipeableRef = useRef<HTMLDivElement>(null);
-    const ACTIONS_WIDTH = 160; 
+    const ACTIONS_WIDTH = 160;
 
     useEffect(() => {
         if (swipedItemId !== measurement.id && swipeableRef.current) {
@@ -91,12 +91,12 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         if (swipedItemId && swipedItemId !== measurement.id) {
             onSetSwipedItem(null);
         }
-        
+
         isDraggingCard.current = true;
         gestureDirection.current = null;
         touchStartX.current = e.touches[0].clientX;
         touchStartY.current = e.touches[0].clientY;
-        
+
         if (swipeableRef.current) {
             swipeableRef.current.style.transition = 'none';
         }
@@ -113,11 +113,11 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                 gestureDirection.current = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical';
             }
         }
-        
+
         if (gestureDirection.current === 'vertical') return;
-        
+
         if (e.cancelable) e.preventDefault();
-        
+
         const newTranslateX = currentTranslateX.current + deltaX;
 
         let finalTranslateX = newTranslateX;
@@ -127,7 +127,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
             const overflow = -ACTIONS_WIDTH - newTranslateX;
             finalTranslateX = -ACTIONS_WIDTH - Math.pow(overflow, 0.7);
         }
-        
+
         swipeableRef.current.style.transform = `translateX(${finalTranslateX}px)`;
     };
 
@@ -135,7 +135,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         if (!isDraggingCard.current || isSelectionMode || isModalMode || !swipeableRef.current) return;
 
         isDraggingCard.current = false;
-        
+
         if (gestureDirection.current === 'vertical') {
             gestureDirection.current = null;
             return;
@@ -184,11 +184,11 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         }
     };
 
-    
+
     const handleInputChange = (field: keyof Measurement, value: any) => {
         onUpdate({ [field]: value });
     };
-    
+
     const handleRowClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (isSelectionMode) {
             const target = e.target as HTMLElement;
@@ -205,22 +205,22 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
 
     const isEditingThisMeasurement = numpadConfig.isOpen && numpadConfig.measurementId === measurement.id;
 
-    const larguraNum = isEditingThisMeasurement && numpadConfig.field === 'largura' 
+    const larguraNum = isEditingThisMeasurement && numpadConfig.field === 'largura'
         ? parseFloat((numpadConfig.currentValue || '0').replace(',', '.'))
         : parseFloat((String(measurement.largura) || '0').replace(',', '.'));
 
-    const alturaNum = isEditingThisMeasurement && numpadConfig.field === 'altura' 
+    const alturaNum = isEditingThisMeasurement && numpadConfig.field === 'altura'
         ? parseFloat((numpadConfig.currentValue || '0').replace(',', '.'))
         : parseFloat((String(measurement.altura) || '0').replace(',', '.'));
 
-    const quantidadeNum = isEditingThisMeasurement && numpadConfig.field === 'quantidade' 
+    const quantidadeNum = isEditingThisMeasurement && numpadConfig.field === 'quantidade'
         ? parseInt(numpadConfig.currentValue || '0', 10)
         : measurement.quantidade || 0;
 
     const m2 = larguraNum * alturaNum * quantidadeNum;
-    
+
     const selectedFilm = films.find(f => f.nome === measurement.pelicula);
-    
+
     const { basePrice, finalPrice, priceLabel } = useMemo(() => {
         let pricePerM2 = 0;
         let label = 'Preço';
@@ -247,12 +247,12 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         }
         return { basePrice: price, finalPrice: Math.max(0, final), priceLabel: label };
     }, [m2, selectedFilm, measurement.discount, measurement.discountType]);
-    
+
     const hasDiscount = (measurement.discount || 0) > 0;
 
     // --- Lógica para exibir o ambiente (AJUSTADA) ---
     const displayFilmName = measurement.pelicula || 'Nenhuma';
-    
+
     const displayAmbiente = useMemo(() => {
         const ambiente = measurement.ambiente;
         if (ambiente && ambiente !== 'Desconhecido' && ambiente.trim() !== '') {
@@ -263,21 +263,21 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         }
         return '';
     }, [measurement.ambiente]);
-    
+
     const combinedDisplay = `${displayFilmName}${displayAmbiente}`;
     // --- Fim da Lógica para exibir o ambiente ---
 
 
     // Mantendo o padding principal e espaçamento interno compactos
     // Removendo p-2 e substituindo por py-2 e px-3 para manter o espaçamento interno mínimo
-    const baseClasses = `border rounded-lg py-2 px-3 space-y-1.5 bg-white transition-shadow, transform`;
+    const baseClasses = `border rounded-lg py-2 px-3 space-y-1.5 bg-white dark:bg-slate-800 transition-shadow, transform`;
     const selectionClasses = isSelectionMode
-        ? `cursor-pointer ${isSelected ? 'border-blue-500 bg-blue-50/70 ring-1 ring-blue-500' : 'border-slate-200 hover:bg-slate-50/80'}`
-        : 'border-slate-200';
-    
+        ? `cursor-pointer ${isSelected ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-900/30 ring-1 ring-blue-500' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50/80 dark:hover:bg-slate-700/50'}`
+        : 'border-slate-200 dark:border-slate-700';
+
     // Inputs numéricos: text-sm e py-2
     const inputBaseClasses = "w-full text-center py-2 px-1.5 rounded-lg border text-sm transition-colors duration-200";
-    
+
     const isDraggable = !isSelectionMode && translateX === 0 && !isModalMode;
 
     const NumberInputButton: React.FC<{
@@ -288,18 +288,18 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         const isEditing = isEditingThisMeasurement && numpadConfig.field === field;
         const isSelectedForReplacement = isEditing && numpadConfig.shouldClearOnNextInput;
         const displayValue = isEditing ? numpadConfig.currentValue : String(value);
-        
+
         const getButtonClasses = () => {
-            let classes = `${inputBaseClasses} bg-white text-slate-800 border-slate-300 placeholder:text-slate-400 focus:outline-none`;
+            let classes = `${inputBaseClasses} bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none`;
             if (isEditing) {
                 classes += ' border-2 border-blue-500';
             }
             if (!measurement.active) {
-                classes += ' bg-slate-200 text-slate-500 border-slate-300 cursor-not-allowed';
+                classes += ' bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed';
             }
             return classes;
         };
-        
+
         const renderContent = () => {
             // Usando text-sm para o conteúdo
             const displayValWithComma = (isEditing ? displayValue.replace('.', ',') : displayValue);
@@ -320,10 +320,10 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                     </>
                 );
             }
-            
+
             return displayValue !== '' ? displayValue : <span className="text-slate-400">{placeholder}</span>;
         };
-    
+
         return (
             <div
                 role="button"
@@ -388,10 +388,10 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                     <div className="flex items-start justify-between">
                         {/* Left Side: Film Info & Selector */}
                         <div className="flex-1 pr-2 min-w-0">
-                            <div 
+                            <div
                                 role="button"
                                 tabIndex={(!measurement.active || isSelectionMode) ? -1 : 0}
-                                onClick={() => measurement.active && !isSelectionMode && onOpenFilmSelectionModal(measurement.id)} 
+                                onClick={() => measurement.active && !isSelectionMode && onOpenFilmSelectionModal(measurement.id)}
                                 onKeyDown={(e) => {
                                     if (measurement.active && !isSelectionMode && (e.key === 'Enter' || e.key === ' ')) {
                                         e.preventDefault();
@@ -401,8 +401,8 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                                 className={`text-left w-full rounded-lg transition-colors`}
                                 aria-label={`Película atual: ${combinedDisplay || 'Nenhuma'}. Clique para alterar.`}
                             >
-                                <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Película</div>
-                                <div className="text-sm font-bold text-slate-800 truncate leading-tight">{combinedDisplay}</div>
+                                <div className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Película</div>
+                                <div className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">{combinedDisplay}</div>
                             </div>
                         </div>
 
@@ -414,21 +414,21 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                                     tabIndex={isSelectionMode ? -1 : 0}
                                     onClick={() => !isSelectionMode && onOpenDiscountModal(measurement)}
                                     onKeyDown={(e) => !isSelectionMode && (e.key === 'Enter' || e.key === ' ') && onOpenDiscountModal(measurement)}
-                                    className={`text-right rounded-lg transition-colors ${isSelectionMode ? 'cursor-default' : 'hover:bg-slate-100 cursor-pointer'}`}
+                                    className={`text-right rounded-lg transition-colors ${isSelectionMode ? 'cursor-default' : 'hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer'}`}
                                     aria-label="Preço, clique para aplicar ou editar desconto"
                                 >
-                                    <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider">{priceLabel}</div>
+                                    <div className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 tracking-wider">{priceLabel}</div>
                                     {basePrice > 0 ? (
                                         finalPrice < basePrice ? (
                                             <div className="flex flex-col items-end leading-tight">
                                                 <s className="text-red-500/80 text-[10px] font-normal">{formatCurrency(basePrice)}</s>
-                                                <span className="text-sm font-bold text-slate-800 leading-tight">{formatCurrency(finalPrice)}</span>
+                                                <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">{formatCurrency(finalPrice)}</span>
                                             </div>
                                         ) : (
-                                            <span className="text-sm font-bold text-slate-800 leading-tight">{formatCurrency(basePrice)}</span>
+                                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">{formatCurrency(basePrice)}</span>
                                         )
                                     ) : (
-                                    <span className="text-sm font-bold text-slate-800 leading-tight">-</span>
+                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">-</span>
                                     )}
                                 </div>
                             </Tooltip>
@@ -439,7 +439,7 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                                         <button
                                             onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) onOpenEditModal(measurement); }}
                                             disabled={isSelectionMode}
-                                            className="w-8 h-10 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
+                                            className="w-8 h-10 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                                             aria-label="Editar detalhes da medida"
                                         >
                                             <i className="fas fa-ellipsis-v"></i>
@@ -451,21 +451,21 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                     </div>
 
                     {/* Checkbox and Inputs Row */}
-                    <div className="flex items-center space-x-2 pt-1.5 border-t border-slate-200">
+                    <div className="flex items-center space-x-2 pt-1.5 border-t border-slate-200 dark:border-slate-700">
                         {isSelectionMode ? (
-                            <input 
-                                type="checkbox" 
-                                checked={isSelected} 
+                            <input
+                                type="checkbox"
+                                checked={isSelected}
                                 onChange={(e) => onToggleSelection(measurement.id, index, e.shiftKey)}
                                 className="form-checkbox h-4 w-4 text-blue-600 rounded-md border-slate-400 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 cursor-pointer flex-shrink-0"
                                 aria-label={`Selecionar medida ${measurement.id}`}
                             />
                         ) : (
                             <Tooltip text="Ativar/Desativar cálculo">
-                                <input 
-                                    type="checkbox" 
-                                    checked={measurement.active} 
-                                    onChange={(e) => handleInputChange('active', e.target.checked)} 
+                                <input
+                                    type="checkbox"
+                                    checked={measurement.active}
+                                    onChange={(e) => handleInputChange('active', e.target.checked)}
                                     className="form-checkbox h-4 w-4 text-blue-600 rounded-md border-slate-400 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 cursor-pointer flex-shrink-0"
                                     aria-label="Ativar ou desativar esta medida do cálculo"
                                 />
@@ -476,13 +476,13 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                             <NumberInputButton field="largura" placeholder="L" value={measurement.largura} />
                             <NumberInputButton field="altura" placeholder="A" value={measurement.altura} />
                             <NumberInputButton field="quantidade" placeholder="Qtd" value={measurement.quantidade} />
-                            <div className={`${inputBaseClasses} bg-white text-slate-800 font-medium border-slate-300 cursor-default flex items-center justify-center`}>
+                            <div className={`${inputBaseClasses} bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium border-slate-300 dark:border-slate-600 cursor-default flex items-center justify-center`}>
                                 {m2 > 0 ? m2.toFixed(2).replace('.', ',') : ''}
                             </div>
                         </div>
                     </div>
                     <div className={`additional-fields-content ${additionalFieldsVisible ? 'visible' : ''}`}>
-                        <div className="space-y-3 pt-3 mt-2 border-t border-slate-200">
+                        <div className="space-y-3 pt-3 mt-2 border-t border-slate-200 dark:border-slate-700">
                             <DynamicSelector
                                 label="Ambiente"
                                 options={AMBIENTES}

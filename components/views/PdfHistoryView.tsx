@@ -74,14 +74,14 @@ const PdfHistoryItem: React.FC<{
                 gestureDirection.current = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical';
             }
         }
-        
+
         if (gestureDirection.current === 'vertical') return;
-        
+
         if (e.cancelable) e.preventDefault();
-        
+
         const newTranslateX = currentTranslateX.current + deltaX;
         let finalTranslateX = newTranslateX;
-        
+
         if (newTranslateX > ACTION_WIDTH_RIGHT) {
             const overflow = newTranslateX - ACTION_WIDTH_RIGHT;
             finalTranslateX = ACTION_WIDTH_RIGHT + Math.pow(overflow, 0.7);
@@ -95,10 +95,10 @@ const PdfHistoryItem: React.FC<{
     const handleTouchEnd = () => {
         if (!isDraggingCard.current || !swipeableRef.current) return;
         isDraggingCard.current = false;
-        
+
         if (gestureDirection.current === 'vertical') {
-             gestureDirection.current = null;
-             return;
+            gestureDirection.current = null;
+            return;
         }
         gestureDirection.current = null;
 
@@ -107,7 +107,7 @@ const PdfHistoryItem: React.FC<{
         const currentX = matrix.m41;
 
         swipeableRef.current.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
-        
+
         if (currentX > ACTION_WIDTH_RIGHT / 2) {
             swipeableRef.current.style.transform = `translateX(${ACTION_WIDTH_RIGHT}px)`;
             currentTranslateX.current = ACTION_WIDTH_RIGHT;
@@ -146,10 +146,10 @@ const PdfHistoryItem: React.FC<{
         const { text, classes } = statusInfo[status];
         return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${classes}`}>{text}</span>;
     };
-    
+
     const expirationDate = pdf.expirationDate ? new Date(pdf.expirationDate) : null;
     const isExpired = expirationDate ? new Date(expirationDate.toDateString()) < new Date(new Date().toDateString()) : false;
-    
+
     return (
         <div className="relative rounded-lg bg-slate-100 overflow-hidden">
             {/* Background Actions */}
@@ -162,7 +162,7 @@ const PdfHistoryItem: React.FC<{
                     <i className="fas fa-eye text-xl"></i>
                     <span className="text-xs mt-1 font-semibold">Revisar</span>
                 </button>
-                 <button
+                <button
                     onClick={() => handleActionClick('approved')}
                     className="bg-green-500 text-white flex-shrink-0 flex flex-col items-center justify-center transition-colors hover:bg-green-600 rounded-r-lg"
                     style={{ width: `${ACTION_WIDTH_LEFT}px` }}
@@ -181,7 +181,7 @@ const PdfHistoryItem: React.FC<{
                 style={{ touchAction: 'pan-y' }}
                 className="relative z-10 w-full"
             >
-                <div className="relative z-10 w-full p-4 bg-white rounded-lg border border-slate-200/80 shadow-md">
+                <div className="relative z-10 w-full p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200/80 dark:border-slate-700 shadow-md">
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex items-center flex-shrink-0 mr-3">
                             <input
@@ -195,18 +195,18 @@ const PdfHistoryItem: React.FC<{
                         </div>
                         <div className="flex-grow min-w-0">
                             {pdf.proposalOptionName && (
-                                <p className="font-bold text-slate-900 text-lg truncate">
+                                <p className="font-bold text-slate-900 dark:text-slate-100 text-lg truncate">
                                     {pdf.proposalOptionName}
                                 </p>
                             )}
-                            <p className="text-sm text-slate-500 mt-0.5">
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                                 {new Date(pdf.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </p>
                         </div>
                         <div className="flex items-center space-x-1 text-slate-500 flex-shrink-0">
                             <button
                                 onClick={(e) => { e.stopPropagation(); onDownload(pdf.pdfBlob, pdf.nomeArquivo); }}
-                                className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-slate-100 hover:text-slate-800 transition-colors"
+                                className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-white transition-colors"
                                 aria-label="Baixar PDF"
                             >
                                 <i className="fas fa-download"></i>
@@ -230,30 +230,30 @@ const PdfHistoryItem: React.FC<{
                         )}
                     </div>
 
-                    
-                    <div className="flex items-end justify-between mt-4 pt-4 border-t border-slate-100">
+
+                    <div className="flex items-end justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                         <div className="flex flex-col">
-                            <p className="text-slate-600 font-medium">
-                               {pdf.totalM2.toFixed(2).replace('.',',')} m²
+                            <p className="text-slate-600 dark:text-slate-400 font-medium">
+                                {pdf.totalM2.toFixed(2).replace('.', ',')} m²
                             </p>
                             {agendamento ? (
-                                 <button onClick={() => onSchedule({ pdf, agendamento })} className="mt-2 text-left">
-                                     <div className="flex items-center text-sm font-semibold text-blue-600 bg-blue-100 px-2 py-1 rounded-md">
-                                         <i className="fas fa-check-circle mr-2"></i>
-                                         <span>{new Date(agendamento.start).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                                     </div>
-                                 </button>
-                             ) : (
-                                 <button 
-                                     onClick={() => onSchedule({ pdf })}
-                                     className="mt-2 px-3 py-1.5 bg-slate-800 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors text-sm flex items-center gap-2"
-                                 >
-                                     <i className="fas fa-calendar-plus"></i>
-                                     Agendar
-                                 </button>
-                             )}
+                                <button onClick={() => onSchedule({ pdf, agendamento })} className="mt-2 text-left">
+                                    <div className="flex items-center text-sm font-semibold text-blue-600 bg-blue-100 px-2 py-1 rounded-md">
+                                        <i className="fas fa-check-circle mr-2"></i>
+                                        <span>{new Date(agendamento.start).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => onSchedule({ pdf })}
+                                    className="mt-2 px-3 py-1.5 bg-slate-800 dark:bg-slate-700 text-white font-semibold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors text-sm flex items-center gap-2"
+                                >
+                                    <i className="fas fa-calendar-plus"></i>
+                                    Agendar
+                                </button>
+                            )}
                         </div>
-                        <p className="font-bold text-slate-900 text-lg">
+                        <p className="font-bold text-slate-900 dark:text-slate-100 text-lg">
                             {formatNumberBR(pdf.totalPreco)}
                         </p>
                     </div>
@@ -266,7 +266,7 @@ const PdfHistoryItem: React.FC<{
 
 const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendamentos, onDelete, onDownload, onUpdateStatus, onSchedule, onGenerateCombinedPdf }) => {
     const [swipedItemId, setSwipedItemId] = useState<number | null>(null);
-    const [expandedClientId, setExpandedClientId] = useState<number | null>(null); 
+    const [expandedClientId, setExpandedClientId] = useState<number | null>(null);
     const [selectedPdfIds, setSelectedPdfIds] = useState<Set<number>>(new Set());
 
     const clientsById = useMemo(() => {
@@ -284,7 +284,7 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
 
     const groupedHistory = useMemo(() => {
         const groups = new Map<number, { client: Client, pdfs: SavedPDF[] }>();
-        
+
         // 1. Sort PDFs by date descending
         const sortedPdfs = [...pdfs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -293,7 +293,7 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
             const clientId = pdf.clienteId;
             const client = clientsById.get(clientId);
 
-            if (!client) return; 
+            if (!client) return;
 
             if (!groups.has(clientId)) {
                 groups.set(clientId, { client, pdfs: [] });
@@ -305,12 +305,12 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
         // 3. Convert Map values to array
         return Array.from(groups.values());
     }, [pdfs, clientsById]);
-    
+
     const handleToggleExpand = (clientId: number) => {
         setExpandedClientId(prev => prev === clientId ? null : clientId);
         setSwipedItemId(null); // Fecha qualquer item que esteja swiped ao expandir/recolher
     };
-    
+
     const handleToggleSelect = (pdfId: number) => {
         setSelectedPdfIds(prev => {
             const newSet = new Set(prev);
@@ -327,24 +327,24 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
             return newSet;
         });
     };
-    
+
     const handleGenerateCombined = () => {
         if (selectedPdfIds.size < 2) {
             alert("Selecione pelo menos dois orçamentos para gerar um PDF combinado.");
             return;
         }
-        
+
         const selectedPdfs = pdfs.filter(p => selectedPdfIds.has(p.id!));
-        
+
         // Verifica se todos os PDFs selecionados são do mesmo cliente
         const firstClientId = selectedPdfs[0].clienteId;
         const allSameClient = selectedPdfs.every(p => p.clienteId === firstClientId);
-        
+
         if (!allSameClient) {
             alert("Apenas orçamentos do mesmo cliente podem ser combinados em um único PDF.");
             return;
         }
-        
+
         onGenerateCombinedPdf(selectedPdfs);
         setSelectedPdfIds(new Set()); // Limpa a seleção após a ação
     };
@@ -354,7 +354,7 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
     }> = React.memo(({ group }) => {
         const { client, pdfs } = group;
         const isExpanded = expandedClientId === client.id;
-        
+
         // Verifica se há algum PDF selecionado neste grupo
         const hasSelectedInGroup = pdfs.some(p => selectedPdfIds.has(p.id!));
 
@@ -362,7 +362,7 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
         const totalPdfs = pdfs.length;
         const latestPdf = pdfs[0]; // Já ordenado pela data mais recente
         const approvedCount = pdfs.filter(p => p.status === 'approved').length;
-        
+
         // Determine overall status for display
         let statusText = `${totalPdfs} Orçamento${totalPdfs > 1 ? 's' : ''}`;
         if (approvedCount > 0) {
@@ -374,21 +374,21 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
         }
 
         return (
-            <div className={`rounded-lg border shadow-md bg-white overflow-hidden transition-all duration-300 ${hasSelectedInGroup ? 'border-slate-800 ring-1 ring-slate-800' : 'border-slate-200'}`}>
+            <div className={`rounded-lg border shadow-md bg-white dark:bg-slate-800 overflow-hidden transition-all duration-300 ${hasSelectedInGroup ? 'border-slate-800 ring-1 ring-slate-800' : 'border-slate-200 dark:border-slate-700'}`}>
                 {/* Header Row (Clickable) */}
                 <button
                     onClick={() => handleToggleExpand(client.id!)}
-                    className="w-full p-4 flex justify-between items-center hover:bg-slate-50 transition-colors"
+                    className="w-full p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                     aria-expanded={isExpanded}
                 >
                     <div className="text-left flex-grow min-w-0 pr-4">
-                        <h3 className="font-bold text-xl text-slate-800 truncate">{client.nome}</h3>
-                        <p className="text-sm text-slate-500 mt-1">{statusText}</p>
+                        <h3 className="font-bold text-xl text-slate-800 dark:text-slate-200 truncate">{client.nome}</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{statusText}</p>
                     </div>
                     <div className="flex items-center gap-4 flex-shrink-0">
                         <div className="text-right hidden sm:block">
-                            <p className="text-xs text-slate-500">Último Orçamento</p>
-                            <p className="font-bold text-slate-800">{formatNumberBR(latestPdf.totalPreco)}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Último Orçamento</p>
+                            <p className="font-bold text-slate-800 dark:text-slate-200">{formatNumberBR(latestPdf.totalPreco)}</p>
                         </div>
                         <i className={`fas fa-chevron-down text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}></i>
                     </div>
@@ -396,7 +396,7 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
 
                 {/* Expanded Content */}
                 <div className={`transition-[max-height] duration-500 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[2000px]' : 'max-h-0'}`}>
-                    <div className="p-4 pt-0 space-y-3 border-t border-slate-100">
+                    <div className="p-4 pt-0 space-y-3 border-t border-slate-100 dark:border-slate-700">
                         {pdfs.map(pdf => (
                             <PdfHistoryItem
                                 key={pdf.id}

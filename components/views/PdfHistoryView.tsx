@@ -268,6 +268,8 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
     const [swipedItemId, setSwipedItemId] = useState<number | null>(null);
     const [expandedClientId, setExpandedClientId] = useState<number | null>(null);
     const [selectedPdfIds, setSelectedPdfIds] = useState<Set<number>>(new Set());
+    const [searchTerm, setSearchTerm] = useState('');
+    const [visibleCount, setVisibleCount] = useState(10);
 
     const clientsById = useMemo(() => {
         return new Map(clients.map(c => [c.id, c]));
@@ -305,6 +307,32 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
         // 3. Convert Map values to array
         return Array.from(groups.values());
     }, [pdfs, clientsById]);
+
+    const filteredGroupedHistory = useMemo(() => {
+        let groups = groupedHistory;
+
+        if (searchTerm.trim()) {
+            const lowerTerm = searchTerm.toLowerCase().trim();
+            groups = groups.filter(group => {
+                const clientMatch = group.client.nome.toLowerCase().includes(lowerTerm);
+                const pdfMatch = group.pdfs.some(pdf =>
+                    (pdf.proposalOptionName && pdf.proposalOptionName.toLowerCase().includes(lowerTerm)) ||
+                    formatNumberBR(pdf.totalPreco).includes(lowerTerm) ||
+                    new Date(pdf.date).toLocaleDateString('pt-BR').includes(lowerTerm)
+                );
+                return clientMatch || pdfMatch;
+            });
+        }
+        return groups;
+    }, [groupedHistory, searchTerm]);
+
+    const displayedHistory = useMemo(() => {
+        return filteredGroupedHistory.slice(0, visibleCount);
+    }, [filteredGroupedHistory, visibleCount]);
+
+    const handleLoadMore = () => {
+        setVisibleCount(prev => prev + 10);
+    };
 
     const handleToggleExpand = (clientId: number) => {
         setExpandedClientId(prev => prev === clientId ? null : clientId);
@@ -421,7 +449,34 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
 
 
     return (
-        <div>
+        <div className="space-y-6">
+            {/* Search Section */}
+            <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i className="fas fa-search text-slate-400 text-lg"></i>
+                </div>
+                <input
+                    type="text"
+                    placeholder="Buscar por cliente, proposta, data ou valor..."
+                    className="w-full pl-12 pr-10 py-4 rounded-xl border-none bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 focus:ring-2 focus:ring-slate-500 transition-all text-base"
+                    value={searchTerm}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setVisibleCount(10); // Reset pagination on search
+                    }}
+                />
+                {searchTerm && (
+                    <button
+                        onClick={() => {
+                            setSearchTerm('');
+                            setVisibleCount(10);
+                        }}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                    >
+                        <i className="fas fa-times-circle text-lg"></i>
+                    </button>
+                )}
+            </div>
             {selectedPdfIds.size > 0 && (
                 <div className="sticky top-16 sm:top-20 z-10 mb-4 p-3 bg-slate-800 rounded-lg shadow-xl flex justify-between items-center">
                     <p className="text-white text-sm font-semibold">
@@ -438,17 +493,40 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
                 </div>
             )}
             <div className="space-y-4">
-                {groupedHistory.length > 0 ? (
-                    groupedHistory.map(group => (
-                        <ClientHistoryGroup key={group.client.id} group={group} />
-                    ))
+                {displayedHistory.length > 0 ? (
+                    <>
+                        {displayedHistory.map(group => (
+                            <ClientHistoryGroup key={group.client.id} group={group} />
+                        ))}
+
+                        {visibleCount < filteredGroupedHistory.length && (
+                            <div className="pt-4 flex justify-center">
+                                <button
+                                    onClick={handleLoadMore}
+                                    className="group flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold rounded-full shadow-md hover:shadow-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-300"
+                                >
+                                    <span>Carregar mais</span>
+                                    <i className="fas fa-chevron-down text-sm group-hover:translate-y-0.5 transition-transform"></i>
+                                </button>
+                            </div>
+                        )}
+                    </>
                 ) : (
-                    <div className="text-center text-slate-500 p-8 flex flex-col items-center justify-center h-full min-h-[300px] bg-white/50 rounded-lg border-2 border-dashed border-slate-200">
-                        <i className="fas fa-history fa-3x mb-4 text-slate-300"></i>
-                        <h3 className="text-xl font-semibold text-slate-700">Nenhum PDF no Histórico</h3>
-                        <p className="mt-1">Quando um orçamento for gerado, ele aparecerá aqui.</p>
-                    </div>
-                )}
+                    searchTerm ? (
+                        <div className="text-center py-12">
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
+                                <i className="fas fa-search text-slate-400 text-2xl"></i>
+                            </div>
+                            <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">Nenhum resultado encontrado</h3>
+                            <p className="text-slate-500 dark:text-slate-400 mt-1">Tente buscar com outros termos.</p>
+                        </div>
+                    ) : (
+                        <div className="text-center text-slate-500 p-8 flex flex-col items-center justify-center h-full min-h-[300px] bg-white/50 rounded-lg border-2 border-dashed border-slate-200">
+                            <i className="fas fa-history fa-3x mb-4 text-slate-300"></i>
+                            <h3 className="text-xl font-semibold text-slate-700">Nenhum PDF no Histórico</h3>
+                            <p className="mt-1">Quando um orçamento for gerado, ele aparecerá aqui.</p>
+                        </div>
+                    ))}
             </div>
         </div>
     );

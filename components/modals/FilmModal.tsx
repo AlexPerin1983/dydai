@@ -2,6 +2,7 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import { Film } from '../../types';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
+import InfoModal from './InfoModal';
 
 interface FilmModalProps {
     isOpen: boolean;
@@ -27,6 +28,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
         tser: 0,
         imagens: [],
     });
+    const [infoModalConfig, setInfoModalConfig] = useState<{ isOpen: boolean; message: string }>({ isOpen: false, message: '' });
 
     useEffect(() => {
         if (film) {
@@ -63,16 +65,20 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { id, value } = e.target;
         const isNumeric = (e.target as HTMLInputElement).type === 'number' || e.target.tagName === 'SELECT';
-        
+
         let processedValue: string | number = value;
         if (isNumeric) {
             const sanitizedValue = value.replace(',', '.');
             processedValue = parseFloat(sanitizedValue);
         }
-        
+
         setFormData(prev => ({ ...prev, [id]: processedValue }));
     };
-    
+
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+        e.target.select();
+    };
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
@@ -81,7 +87,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
         const filesToProcess = Array.from(files).slice(0, MAX_IMAGES - currentImagesCount);
 
         if (filesToProcess.length === 0 && currentImagesCount >= MAX_IMAGES) {
-            alert(`Você já atingiu o limite de ${MAX_IMAGES} imagens.`);
+            setInfoModalConfig({ isOpen: true, message: `Você já atingiu o limite de ${MAX_IMAGES} imagens.` });
             return;
         }
 
@@ -96,23 +102,23 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                 filesProcessed++;
 
                 if (filesProcessed === filesToProcess.length) {
-                    setFormData(prev => ({ 
-                        ...prev, 
-                        imagens: [...(prev.imagens || []), ...newImages] 
+                    setFormData(prev => ({
+                        ...prev,
+                        imagens: [...(prev.imagens || []), ...newImages]
                     }));
                 }
             };
             reader.readAsDataURL(file);
         });
-        
+
         // Clear the input value so the same file can be selected again
         e.target.value = '';
     };
-    
+
     const handleRemoveImage = (indexToRemove: number) => {
-        setFormData(prev => ({ 
-            ...prev, 
-            imagens: (prev.imagens || []).filter((_, index) => index !== indexToRemove) 
+        setFormData(prev => ({
+            ...prev,
+            imagens: (prev.imagens || []).filter((_, index) => index !== indexToRemove)
         }));
     };
 
@@ -120,37 +126,37 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
         e.preventDefault();
         onSave(formData, film);
     };
-    
+
     const handleDelete = () => {
         if (film) {
             onDelete(film.nome);
         }
     };
-    
+
     const footer = (
-      <>
-        {film && (
-          <button
-            onClick={handleDelete}
-            className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-700"
-          >
-            Excluir
-          </button>
-        )}
-        <div className="flex-grow"></div>
-        <button onClick={onClose} className="px-4 py-2 text-sm font-semibold rounded-md hover:bg-slate-100">
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          form="filmForm"
-          className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-700"
-        >
-          {film ? 'Salvar Alterações' : 'Adicionar Película'}
-        </button>
-      </>
+        <>
+            {film && (
+                <button
+                    onClick={handleDelete}
+                    className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-700"
+                >
+                    Excluir
+                </button>
+            )}
+            <div className="flex-grow"></div>
+            <button onClick={onClose} className="px-4 py-2 text-sm font-semibold rounded-md hover:bg-slate-100">
+                Cancelar
+            </button>
+            <button
+                type="submit"
+                form="filmForm"
+                className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-700"
+            >
+                {film ? 'Salvar Alterações' : 'Adicionar Película'}
+            </button>
+        </>
     );
-    
+
     const currentImages = formData.imagens || [];
     const canAddMore = currentImages.length < MAX_IMAGES;
 
@@ -165,6 +171,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             type="text"
                             value={formData.nome}
                             onChange={handleChange}
+                            onFocus={handleFocus}
                             required
                         />
                     </div>
@@ -175,6 +182,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             type="number"
                             value={formData.preco}
                             onChange={handleChange}
+                            onFocus={handleFocus}
                             min="0"
                             step="0.01"
                             required
@@ -185,13 +193,14 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             type="number"
                             value={formData.maoDeObra}
                             onChange={handleChange}
+                            onFocus={handleFocus}
                             min="0"
                             step="0.01"
                             placeholder="Opcional"
                         />
                     </div>
                 </div>
-                
+
                 <div className="pt-4 mt-4 border-t border-slate-200">
                     <h3 className="text-base font-semibold leading-6 text-slate-800 mb-2">
                         Garantias
@@ -205,7 +214,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             onChange={handleChange}
                             required
                         >
-                            {[0,1,2,3,5,7,10,15].map(v => <option key={v} value={v}>{v === 0 ? 'N/A' : v}</option>)}
+                            {[0, 1, 2, 3, 5, 7, 10, 15].map(v => <option key={v} value={v}>{v === 0 ? 'N/A' : v}</option>)}
                         </Input>
                         <Input
                             as="select"
@@ -215,7 +224,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             onChange={handleChange}
                             required
                         >
-                            {[30,60,90,120,180,360].map(v => <option key={v} value={v}>{v}</option>)}
+                            {[30, 60, 90, 120, 180, 360].map(v => <option key={v} value={v}>{v}</option>)}
                         </Input>
                     </div>
                 </div>
@@ -232,6 +241,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             type="number"
                             value={formData.uv}
                             onChange={handleChange}
+                            onFocus={handleFocus}
                             min="0"
                             step="0.1"
                         />
@@ -241,6 +251,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             type="number"
                             value={formData.ir}
                             onChange={handleChange}
+                            onFocus={handleFocus}
                             min="0"
                             step="0.1"
                         />
@@ -250,6 +261,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             type="number"
                             value={formData.vtl}
                             onChange={handleChange}
+                            onFocus={handleFocus}
                             min="0"
                             step="0.1"
                         />
@@ -259,6 +271,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             type="number"
                             value={formData.espessura}
                             onChange={handleChange}
+                            onFocus={handleFocus}
                             min="0"
                         />
                         <Input
@@ -267,14 +280,15 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             type="number"
                             value={formData.tser}
                             onChange={handleChange}
+                            onFocus={handleFocus}
                             min="0"
                             step="0.1"
                         />
                         {/* Adicionar um placeholder para manter o grid alinhado em 3 colunas */}
-                        <div className="hidden sm:block"></div> 
+                        <div className="hidden sm:block"></div>
                     </div>
                 </div>
-                        
+
                 {/* Campo de Imagens - Seção separada para melhor controle de layout */}
                 <div className="pt-4 mt-4 border-t border-slate-200">
                     <h3 className="text-base font-semibold leading-6 text-slate-800 mb-2">
@@ -284,8 +298,8 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                         {currentImages.map((image, index) => (
                             <div key={index} className="relative aspect-square">
                                 <img src={image} alt={`Preview ${index + 1}`} className="w-full h-full object-cover rounded-lg border border-slate-200" />
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveImage(index); }}
                                     className="absolute top-1 right-1 h-6 w-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
                                     aria-label="Remover imagem"
@@ -304,8 +318,8 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                                     className="sr-only"
                                     multiple
                                 />
-                                <label 
-                                    htmlFor="film-image-upload" 
+                                <label
+                                    htmlFor="film-image-upload"
                                     className={`w-full h-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors cursor-pointer border-slate-300 hover:border-slate-400 bg-slate-50`}
                                 >
                                     <i className="fas fa-camera text-xl text-slate-400"></i>
@@ -319,7 +333,12 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                     )}
                 </div>
             </form>
-        </Modal>
+            <InfoModal
+                isOpen={infoModalConfig.isOpen}
+                onClose={() => setInfoModalConfig({ isOpen: false, message: '' })}
+                message={infoModalConfig.message}
+            />
+        </Modal >
     );
 };
 

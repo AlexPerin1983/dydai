@@ -24,10 +24,10 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ isOpen, onClose, onSave
                 const ratio = Math.max(window.devicePixelRatio || 1, 1);
                 const parentWidth = canvas.offsetWidth;
                 const parentHeight = canvas.offsetHeight;
-                
+
                 canvas.width = parentWidth * ratio;
                 canvas.height = parentHeight * ratio;
-                
+
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                     ctx.scale(ratio, ratio);
@@ -67,10 +67,7 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ isOpen, onClose, onSave
         if (!isDrawing) return;
         const ctx = getCanvasContext();
         if (!ctx) return;
-        // Prevent scrolling on touch devices while drawing
-        if ('touches' in e) {
-            e.preventDefault();
-        }
+
         const { x, y } = getCoords(e);
         ctx.lineTo(x, y);
         ctx.stroke();
@@ -133,6 +130,7 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ isOpen, onClose, onSave
                 <canvas
                     ref={canvasRef}
                     className="w-full h-48 bg-white rounded-md cursor-crosshair"
+                    style={{ touchAction: 'none' }}
                     onMouseDown={startDrawing}
                     onMouseMove={draw}
                     onMouseUp={stopDrawing}

@@ -17,6 +17,7 @@ import CustomNumpad from './components/ui/CustomNumpad';
 import FilmSelectionModal from './components/modals/FilmSelectionModal';
 import PdfGenerationStatusModal from './components/modals/PdfGenerationStatusModal';
 import EditMeasurementModal from './components/modals/EditMeasurementModal';
+import InfoModal from './components/modals/InfoModal';
 import AgendamentoModal from './components/modals/AgendamentoModal';
 import DiscountModal from './components/modals/DiscountModal';
 import GeneralDiscountModal from './components/modals/GeneralDiscountModal';
@@ -130,6 +131,8 @@ const App: React.FC = () => {
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [galleryImages, setGalleryImages] = useState<string[]>([]);
     const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
+    const [infoModalConfig, setInfoModalConfig] = useState<{ isOpen: boolean; title: string; message: string }>({ isOpen: false, title: '', message: '' });
+    const [isSaveBeforePdfModalOpen, setIsSaveBeforePdfModalOpen] = useState(false);
 
 
     const [numpadConfig, setNumpadConfig] = useState<NumpadConfig>({
@@ -369,6 +372,14 @@ const App: React.FC = () => {
         setSwipeDistance(distance);
     }, []);
 
+    const handleShowInfo = useCallback((message: string, title: string = "Atenção") => {
+        setInfoModalConfig({ isOpen: true, title, message });
+    }, []);
+
+    const handleCloseInfoModal = useCallback(() => {
+        setInfoModalConfig(prev => ({ ...prev, isOpen: false }));
+    }, []);
+
     const createEmptyMeasurement = useCallback((): Measurement => ({
         id: Date.now(),
         largura: '',
@@ -493,7 +504,7 @@ const App: React.FC = () => {
         }
         setClientModalMode(mode);
         if (mode === 'edit' && !selectedClientId) {
-            alert('Selecione um cliente para editar.');
+            handleShowInfo('Selecione um cliente para editar.');
             return;
         }
         setAiClientData(undefined);
@@ -597,16 +608,19 @@ const App: React.FC = () => {
         await loadFilms();
         setIsFilmModalOpen(false);
         setEditingFilm(null);
-    }, [loadFilms]);
+
+        if (editingMeasurementIdForFilm !== null) {
+            const updatedMeasurements = measurements.map(m =>
+                m.id === editingMeasurementIdForFilm ? { ...m, pelicula: newFilmData.nome } : m
+            );
+            handleMeasurementsChange(updatedMeasurements);
+            setEditingMeasurementIdForFilm(null);
+        }
+    }, [loadFilms, editingMeasurementIdForFilm, measurements, handleMeasurementsChange]);
 
     const handleDeleteFilm = useCallback(async (filmName: string) => {
-        if (window.confirm(`Tem certeza que deseja excluir a película "${filmName}"?`)) {
-            await db.deleteCustomFilm(filmName);
-            await loadFilms();
-            setIsFilmModalOpen(false);
-            setEditingFilm(null);
-        }
-    }, [loadFilms]);
+        setFilmToDeleteName(filmName);
+    }, []);
 
     const handleRequestDeleteFilm = useCallback((filmName: string) => {
         setIsFilmSelectionModalOpen(false);
@@ -690,30 +704,18 @@ const App: React.FC = () => {
         };
     }, [measurements, films, generalDiscount]);
 
-    const handleGeneratePdf = useCallback(async () => {
-        if (!selectedClient || !userInfo || !activeOption) {
-            alert("Selecione um cliente e preencha as informações da empresa antes de gerar o PDF.");
-            return;
-        }
-        if (isDirty) {
-            if (window.confirm("Você tem alterações não salvas. Deseja salvar antes de gerar o PDF?")) {
-                await handleSaveChanges();
-            } else {
-                alert("Geração de PDF cancelada. Salve ou descarte suas alterações.");
-                return;
-            }
-        }
+    const executePdfGeneration = useCallback(async () => {
         const activeMeasurements = measurements.filter(m => m.active && parseFloat(String(m.largura).replace(',', '.')) > 0 && parseFloat(String(m.altura).replace(',', '.')) > 0);
         if (activeMeasurements.length === 0) {
-            alert("Não há medidas válidas para gerar um orçamento.");
+            handleShowInfo("Não há medidas válidas para gerar um orçamento.");
             return;
         }
 
         setPdfGenerationStatus('generating');
         try {
             // Passando o nome da opção de proposta para o gerador de PDF
-            const pdfBlob = await generatePDF(selectedClient, userInfo, activeMeasurements, films, generalDiscount, totals, activeOption.name);
-            const filename = `orcamento_${selectedClient.nome.replace(/\s+/g, '_').toLowerCase()}_${activeOption.name.replace(/\s+/g, '_').toLowerCase()}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
+            const pdfBlob = await generatePDF(selectedClient!, userInfo!, activeMeasurements, films, generalDiscount, totals, activeOption!.name);
+            const filename = `orcamento_${selectedClient!.nome.replace(/\s+/g, '_').toLowerCase()}_${activeOption!.name.replace(/\s+/g, '_').toLowerCase()}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
 
             const generalDiscountForDb: SavedPDF['generalDiscount'] = {
                 ...generalDiscount,
@@ -721,7 +723,7 @@ const App: React.FC = () => {
                 type: generalDiscount.value ? generalDiscount.type : 'none',
             };
 
-            const validityDays = userInfo.proposalValidityDays || 60;
+            const validityDays = userInfo!.proposalValidityDays || 60;
             const issueDate = new Date();
             const expirationDate = new Date();
             expirationDate.setDate(issueDate.getDate() + validityDays);
@@ -739,7 +741,7 @@ const App: React.FC = () => {
                 nomeArquivo: filename,
                 measurements: activeMeasurements.map(({ isNew, ...rest }) => rest),
                 status: 'pending',
-                proposalOptionName: activeOption.name
+                proposalOptionName: activeOption!.name
             };
             await db.savePDF(pdfToSave);
 
@@ -752,10 +754,28 @@ const App: React.FC = () => {
             }
         } catch (error) {
             console.error("Erro ao gerar ou salvar PDF:", error);
-            alert("Ocorreu um erro ao gerar o PDF. Verifique o console para mais detalhes.");
+            handleShowInfo("Ocorreu um erro ao gerar o PDF. Verifique o console para mais detalhes.");
             setPdfGenerationStatus('idle');
         }
-    }, [selectedClient, userInfo, activeOption, isDirty, handleSaveChanges, measurements, films, generalDiscount, totals, selectedClientId, downloadBlob, hasLoadedHistory, loadAllPdfs]);
+    }, [measurements, films, generalDiscount, totals, selectedClient, userInfo, activeOption, selectedClientId, downloadBlob, hasLoadedHistory, loadAllPdfs, handleShowInfo]);
+
+    const handleGeneratePdf = useCallback(async () => {
+        if (!selectedClient || !userInfo || !activeOption) {
+            handleShowInfo("Selecione um cliente e preencha as informações da empresa antes de gerar o PDF.");
+            return;
+        }
+        if (isDirty) {
+            setIsSaveBeforePdfModalOpen(true);
+            return;
+        }
+        await executePdfGeneration();
+    }, [selectedClient, userInfo, activeOption, isDirty, handleShowInfo, executePdfGeneration]);
+
+    const handleConfirmSaveBeforePdf = useCallback(async () => {
+        await handleSaveChanges();
+        setIsSaveBeforePdfModalOpen(false);
+        await executePdfGeneration();
+    }, [handleSaveChanges, executePdfGeneration]);
 
     const handleGenerateCombinedPdf = useCallback(async (selectedPdfs: SavedPDF[]) => {
         if (!userInfo || selectedPdfs.length === 0) return;
@@ -775,7 +795,7 @@ const App: React.FC = () => {
             setPdfGenerationStatus('success');
         } catch (error) {
             console.error("Erro ao gerar PDF combinado:", error);
-            alert(`Ocorreu um erro ao gerar o PDF combinado: ${error instanceof Error ? error.message : String(error)}`);
+            handleShowInfo(`Ocorreu um erro ao gerar o PDF combinado: ${error instanceof Error ? error.message : String(error)}`);
             setPdfGenerationStatus('idle');
         }
     }, [userInfo, clients, films, downloadBlob]);
@@ -1173,7 +1193,7 @@ const App: React.FC = () => {
             }
         } catch (error) {
             console.error("Failed to update PDF status", error);
-            alert("Não foi possível atualizar o status do orçamento.");
+            handleShowInfo("Não foi possível atualizar o status do orçamento.");
         }
     }, [loadAllPdfs]);
 
@@ -1446,7 +1466,7 @@ const App: React.FC = () => {
     const handleAddNewFilmFromSelection = useCallback((filmName: string) => {
         setIsFilmSelectionModalOpen(false);
         setIsApplyFilmToAllModalOpen(false);
-        setEditingMeasurementIdForFilm(null);
+        // setEditingMeasurementIdForFilm(null); // Mantém o ID para usar no save
         const newFilmTemplate: Film = {
             nome: filmName,
             preco: 0,
@@ -1535,7 +1555,7 @@ const App: React.FC = () => {
             handleCloseAgendamentoModal();
         } catch (error) {
             console.error("Erro ao salvar agendamento:", error);
-            alert("Não foi possível salvar o agendamento. Tente novamente.");
+            handleShowInfo("Não foi possível salvar o agendamento. Tente novamente.");
         }
     }, [handleCloseAgendamentoModal, loadAgendamentos, loadAllPdfs]);
 
@@ -1563,7 +1583,7 @@ const App: React.FC = () => {
             await Promise.all([loadAgendamentos(), loadAllPdfs()]);
         } catch (error) {
             console.error("Erro ao excluir agendamento:", error);
-            alert("Não foi possível excluir o agendamento. Tente novamente.");
+            handleShowInfo("Não foi possível excluir o agendamento. Tente novamente.");
         } finally {
             setAgendamentoToDelete(null);
         }
@@ -1998,6 +2018,7 @@ const App: React.FC = () => {
                     onClose={() => {
                         setIsFilmModalOpen(false);
                         setEditingFilm(null);
+                        setEditingMeasurementIdForFilm(null);
                     }}
                     onSave={handleSaveFilm}
                     onDelete={handleDeleteFilm}
@@ -2069,6 +2090,23 @@ const App: React.FC = () => {
                     onOpenFilmSelectionModal={handleOpenFilmSelectionModal}
                     numpadConfig={numpadConfig}
                     onOpenNumpad={handleOpenNumpad}
+                />
+            )}
+            <InfoModal
+                isOpen={infoModalConfig.isOpen}
+                onClose={handleCloseInfoModal}
+                title={infoModalConfig.title}
+                message={infoModalConfig.message}
+            />
+            {isSaveBeforePdfModalOpen && (
+                <ConfirmationModal
+                    isOpen={isSaveBeforePdfModalOpen}
+                    onClose={() => setIsSaveBeforePdfModalOpen(false)}
+                    onConfirm={handleConfirmSaveBeforePdf}
+                    title="Alterações Não Salvas"
+                    message="Você tem alterações não salvas. Deseja salvar antes de gerar o PDF?"
+                    confirmButtonText="Sim, Salvar e Gerar"
+                    cancelButtonText="Cancelar"
                 />
             )}
             {isClearAllModalOpen && (

@@ -16,7 +16,7 @@ const DynamicSelector: React.FC<DynamicSelectorProps> = ({ label, options, value
     useEffect(() => {
         setInputValue(value);
     }, [value]);
-    
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -38,7 +38,7 @@ const DynamicSelector: React.FC<DynamicSelectorProps> = ({ label, options, value
         onChange(option);
         setShowDropdown(false);
     };
-    
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInputValue(e.target.value);
         setShowDropdown(true);
@@ -52,7 +52,10 @@ const DynamicSelector: React.FC<DynamicSelectorProps> = ({ label, options, value
                 type="text"
                 value={inputValue}
                 onChange={handleInputChange}
-                onFocus={() => setShowDropdown(true)}
+                onFocus={(e) => {
+                    setShowDropdown(true);
+                    e.target.select();
+                }}
                 className="w-full mt-1 p-2 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-md shadow-sm focus:ring-slate-500 focus:border-slate-500 sm:text-sm disabled:bg-slate-100"
                 disabled={disabled}
             />

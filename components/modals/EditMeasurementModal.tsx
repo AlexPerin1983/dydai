@@ -59,7 +59,7 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
     // Função para garantir que o valor no estado local seja o valor final do input
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>, field: 'largura' | 'altura' | 'quantidade' | 'discount') => {
         const { value } = e.target;
-        
+
         if (field === 'largura' || field === 'altura') {
             // Garante que o valor final seja salvo no formato esperado (com vírgula)
             const sanitizedValue = value.replace(/[^0-9,.]/g, '');
@@ -78,7 +78,7 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
     const handleDiscountTypeChange = (type: 'percentage' | 'fixed') => {
         handleLocalUpdate({ discountType: type });
     };
-    
+
     const handleSave = () => {
         onUpdate(localMeasurement);
         onClose();
@@ -90,7 +90,7 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
     const quantidadeNum = Number(localMeasurement.quantidade) || 0;
     const m2 = larguraNum * alturaNum * quantidadeNum;
     const selectedFilm = films.find(f => f.nome === localMeasurement.pelicula);
-    
+
     const pricePerM2 = useMemo(() => {
         if (selectedFilm) {
             if (selectedFilm.preco > 0) return selectedFilm.preco;
@@ -110,17 +110,21 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
         }
     }
     finalPrice = Math.max(0, finalPrice);
-    
+
     const handleEditFilm = () => {
         if (selectedFilm) {
             onClose(); // Close this modal
             onOpenFilmModal(selectedFilm); // Open film editor modal
         }
     };
-    
+
     const handleDeleteClick = () => {
         onClose(); // Fecha o modal de edição
         onDelete(); // Chama a função que irá abrir o modal de confirmação no App.tsx
+    };
+
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+        e.target.select();
     };
 
     const LabeledInput: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
@@ -151,37 +155,40 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
                         <h3 className="font-semibold text-slate-800 mb-3 text-base">Medidas e Quantidade</h3>
                         <div className="grid grid-cols-3 gap-3">
                             <LabeledInput label="Largura (m)">
-                                <input 
-                                    type="text" 
-                                    inputMode="decimal" 
-                                    defaultValue={String(localMeasurement.largura)} 
+                                <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    defaultValue={String(localMeasurement.largura)}
                                     onBlur={(e) => handleBlur(e, 'largura')}
-                                    className={inputClasses} 
+                                    onFocus={handleFocus}
+                                    className={inputClasses}
                                 />
                             </LabeledInput>
                             <LabeledInput label="Altura (m)">
-                                <input 
-                                    type="text" 
-                                    inputMode="decimal" 
-                                    defaultValue={String(localMeasurement.altura)} 
+                                <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    defaultValue={String(localMeasurement.altura)}
                                     onBlur={(e) => handleBlur(e, 'altura')}
-                                    className={inputClasses} 
+                                    onFocus={handleFocus}
+                                    className={inputClasses}
                                 />
                             </LabeledInput>
                             <LabeledInput label="Quantidade">
-                                <input 
-                                    type="text" 
-                                    inputMode="numeric" 
-                                    defaultValue={String(localMeasurement.quantidade)} 
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    defaultValue={String(localMeasurement.quantidade)}
                                     onBlur={(e) => handleBlur(e, 'quantidade')}
-                                    className={inputClasses} 
+                                    onFocus={handleFocus}
+                                    className={inputClasses}
                                 />
                             </LabeledInput>
                         </div>
                     </div>
 
                     <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                         <div className="flex justify-between items-center mb-2">
+                        <div className="flex justify-between items-center mb-2">
                             <h3 className="font-semibold text-slate-800 text-base">Película</h3>
                             {selectedFilm && (
                                 <button onClick={handleEditFilm} className="text-sm text-slate-600 hover:text-slate-900 font-medium flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-slate-100">
@@ -196,7 +203,7 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
                                     <p className="text-sm text-slate-500">
                                         {pricePerM2 > 0 ? `${formatCurrency(pricePerM2)} / m²` : 'Nenhum preço definido'}
                                     </p>
-                                     {selectedFilm && (
+                                    {selectedFilm && (
                                         <p className="text-xs text-slate-500 mt-1">
                                             Garantia: {selectedFilm.garantiaFabricante || 'N/A'}a Fab. / {selectedFilm.garantiaMaoDeObra || 'N/A'}d M.O.
                                         </p>
@@ -239,6 +246,7 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
                                     type="text"
                                     defaultValue={String(localMeasurement.discount || '').replace('.', ',')}
                                     onBlur={(e) => handleBlur(e, 'discount')}
+                                    onFocus={handleFocus}
                                     className="w-full p-2.5 bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-l-md shadow-sm focus:ring-slate-500 focus:border-slate-500 sm:text-sm"
                                     placeholder="0"
                                     inputMode="decimal"
@@ -264,7 +272,7 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
                     <button onClick={handleSave} className="px-4 py-2.5 text-sm font-semibold text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex-[2] text-center">Salvar Alterações</button>
                 </div>
             </footer>
-             <style jsx>{`
+            <style jsx>{`
                 @keyframes fade-in {
                     from { opacity: 0; }
                     to { opacity: 1; }

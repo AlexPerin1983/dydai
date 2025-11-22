@@ -1446,9 +1446,14 @@ const App: React.FC = () => {
         );
         handleMeasurementsChange(updatedMeasurements);
 
+        // Se a medida sendo editada for a mesma que recebeu a nova película, atualiza o estado da modal também
+        if (editingMeasurement && editingMeasurement.id === editingMeasurementIdForFilm) {
+            setEditingMeasurement(prev => prev ? { ...prev, pelicula: filmName } : null);
+        }
+
         setIsFilmSelectionModalOpen(false);
         setEditingMeasurementIdForFilm(null);
-    }, [editingMeasurementIdForFilm, measurements, handleMeasurementsChange]);
+    }, [editingMeasurementIdForFilm, measurements, handleMeasurementsChange, editingMeasurement]);
 
     const handleApplyFilmToAll = useCallback((filmName: string) => {
         setIsApplyFilmToAllModalOpen(false);
@@ -2012,6 +2017,35 @@ const App: React.FC = () => {
                     paymentMethods={userInfo.payment_methods}
                 />
             )}
+            {editingMeasurement && (
+                <EditMeasurementModal
+                    isOpen={!!editingMeasurement}
+                    onClose={handleCloseEditMeasurementModal}
+                    measurement={editingMeasurement}
+                    films={films}
+                    onUpdate={handleUpdateEditingMeasurement}
+                    onDelete={handleDeleteMeasurementFromEditModal}
+                    onDuplicate={() => {
+                        const measurementToDuplicate = measurements.find(m => m.id === editingMeasurement.id);
+                        if (measurementToDuplicate) {
+                            const newMeasurement: UIMeasurement = {
+                                ...measurementToDuplicate,
+                                id: Date.now(),
+                                isNew: false
+                            };
+                            const index = measurements.findIndex(m => m.id === measurementToDuplicate.id);
+                            const newMeasurements = [...measurements];
+                            newMeasurements.splice(index + 1, 0, newMeasurement);
+                            handleMeasurementsChange(newMeasurements);
+                        }
+                        handleCloseEditMeasurementModal();
+                    }}
+                    onOpenFilmModal={handleOpenFilmModal}
+                    onOpenFilmSelectionModal={handleOpenFilmSelectionModal}
+                    numpadConfig={numpadConfig}
+                    onOpenNumpad={handleOpenNumpad}
+                />
+            )}
             {isFilmModalOpen && (
                 <FilmModal
                     isOpen={isFilmModalOpen}
@@ -2063,35 +2097,7 @@ const App: React.FC = () => {
                     agendamentos={agendamentos}
                 />
             )}
-            {editingMeasurement && (
-                <EditMeasurementModal
-                    isOpen={!!editingMeasurement}
-                    onClose={handleCloseEditMeasurementModal}
-                    measurement={editingMeasurement}
-                    films={films}
-                    onUpdate={handleUpdateEditingMeasurement}
-                    onDelete={handleDeleteMeasurementFromEditModal}
-                    onDuplicate={() => {
-                        const measurementToDuplicate = measurements.find(m => m.id === editingMeasurement.id);
-                        if (measurementToDuplicate) {
-                            const newMeasurement: UIMeasurement = {
-                                ...measurementToDuplicate,
-                                id: Date.now(),
-                                isNew: false
-                            };
-                            const index = measurements.findIndex(m => m.id === measurementToDuplicate.id);
-                            const newMeasurements = [...measurements];
-                            newMeasurements.splice(index + 1, 0, newMeasurement);
-                            handleMeasurementsChange(newMeasurements);
-                        }
-                        handleCloseEditMeasurementModal();
-                    }}
-                    onOpenFilmModal={handleOpenFilmModal}
-                    onOpenFilmSelectionModal={handleOpenFilmSelectionModal}
-                    numpadConfig={numpadConfig}
-                    onOpenNumpad={handleOpenNumpad}
-                />
-            )}
+
             <InfoModal
                 isOpen={infoModalConfig.isOpen}
                 onClose={handleCloseInfoModal}

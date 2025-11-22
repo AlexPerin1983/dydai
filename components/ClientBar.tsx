@@ -44,14 +44,22 @@ const ClientBar: React.FC<ClientBarProps> = ({
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setIsMenuOpen(false);
+                // Only close if it's NOT the bottom sheet overlay (handled separately)
+                if (window.innerWidth >= 640) { // sm breakpoint
+                    setIsMenuOpen(false);
+                }
             }
         };
         if (isMenuOpen) {
             document.addEventListener('mousedown', handleClickOutside);
+            // Prevent body scroll when menu is open on mobile
+            if (window.innerWidth < 640) {
+                document.body.style.overflow = 'hidden';
+            }
         }
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
+            document.body.style.overflow = '';
         };
     }, [isMenuOpen]);
 
@@ -126,8 +134,8 @@ const ClientBar: React.FC<ClientBarProps> = ({
                 onClick={onClick}
                 disabled={disabled}
                 className={`flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg transition duration-200 ${disabled
-                        ? 'text-slate-400 bg-slate-100 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'
-                        : `text-slate-600 bg-white hover:bg-slate-200 hover:text-slate-800 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 dark:hover:text-white ${className}`
+                    ? 'text-slate-400 bg-slate-100 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'
+                    : `text-slate-600 bg-white hover:bg-slate-200 hover:text-slate-800 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 dark:hover:text-white ${className}`
                     }`}
                 aria-label={tooltip}
             >
@@ -145,24 +153,29 @@ const ClientBar: React.FC<ClientBarProps> = ({
         isDestructive?: boolean;
         disabled?: boolean;
         isWhatsApp?: boolean;
-    }> = ({ onClick, icon, label, isDestructive = false, disabled = false, isWhatsApp = false }) => (
+        description?: string;
+    }> = ({ onClick, icon, label, isDestructive = false, disabled = false, isWhatsApp = false, description }) => (
         <button
             onClick={() => {
                 onClick();
                 setIsMenuOpen(false);
             }}
             disabled={disabled}
-            className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${disabled
-                    ? 'text-slate-400 cursor-not-allowed'
-                    : isDestructive
-                        ? 'text-red-600 hover:bg-red-50'
-                        : isWhatsApp
-                            ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
-                            : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'
-                }`}
+            className={`w-full flex items-center gap-4 px-4 py-4 sm:py-3 text-left transition-colors 
+                ${disabled ? 'opacity-50 cursor-not-allowed' : 'active:bg-slate-100 dark:active:bg-slate-700 sm:hover:bg-slate-50 dark:sm:hover:bg-slate-700'}
+                ${isDestructive ? 'text-red-600' : isWhatsApp ? 'text-green-600' : 'text-slate-700 dark:text-slate-200'}
+            `}
         >
-            <i className={`${icon} w-4 text-center`}></i>
-            <span className="font-medium">{label}</span>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 
+                ${isDestructive ? 'bg-red-50 dark:bg-red-900/20' : isWhatsApp ? 'bg-green-50 dark:bg-green-900/20' : 'bg-slate-100 dark:bg-slate-700'}
+            `}>
+                <i className={`${icon} text-lg`}></i>
+            </div>
+            <div className="flex-1">
+                <span className="font-semibold block text-base">{label}</span>
+                {description && <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">{description}</span>}
+            </div>
+            <i className="fas fa-chevron-right text-slate-300 text-xs sm:hidden"></i>
         </button>
     );
 
@@ -241,9 +254,9 @@ const ClientBar: React.FC<ClientBarProps> = ({
                                     <i className="fas fa-ellipsis-v"></i>
                                 </button>
 
-                                {/* Dropdown menu */}
+                                {/* Desktop Dropdown Only */}
                                 {isMenuOpen && (
-                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-50">
+                                    <div className="hidden sm:block absolute right-0 top-full mt-1 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1 z-50">
                                         <MenuItem
                                             onClick={handleOpenWhatsApp}
                                             icon="fab fa-whatsapp"
@@ -385,6 +398,69 @@ const ClientBar: React.FC<ClientBarProps> = ({
                     />
                 </div>
             </div>
+
+            {/* Mobile Bottom Sheet - Rendered at root to avoid transform stacking context issues */}
+            {isMenuOpen && (
+                <div className="sm:hidden fixed inset-0 z-[9999] flex items-end justify-center">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+                        onClick={() => setIsMenuOpen(false)}
+                    ></div>
+
+                    {/* Sheet */}
+                    <div className="relative w-full bg-white dark:bg-slate-800 rounded-t-2xl shadow-2xl overflow-hidden animate-slide-up max-w-md mx-auto">
+                        <div className="flex justify-center pt-3 pb-2">
+                            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+                        </div>
+
+                        <div className="px-4 pb-4 pt-2">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1 px-2">Ações do Cliente</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 px-2 mb-4">O que deseja fazer com {selectedClient?.nome}?</p>
+
+                            <div className="space-y-1">
+                                <MenuItem
+                                    onClick={handleOpenWhatsApp}
+                                    icon="fab fa-whatsapp"
+                                    label="Enviar WhatsApp"
+                                    description="Iniciar conversa direta"
+                                    isWhatsApp
+                                    disabled={!selectedClient?.telefone}
+                                />
+                                <div className="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-4"></div>
+                                <MenuItem
+                                    onClick={onEditClient}
+                                    icon="fas fa-pen"
+                                    label="Editar Dados"
+                                    description="Alterar informações do cliente"
+                                />
+                                <MenuItem
+                                    onClick={onAddClient}
+                                    icon="fas fa-user-plus"
+                                    label="Novo Cliente"
+                                    description="Cadastrar outra pessoa"
+                                />
+                                <div className="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-4"></div>
+                                <MenuItem
+                                    onClick={onDeleteClient}
+                                    icon="fas fa-trash-alt"
+                                    label="Excluir Cliente"
+                                    description="Remover permanentemente"
+                                    isDestructive
+                                />
+                            </div>
+
+                            <button
+                                onClick={() => setIsMenuOpen(false)}
+                                className="w-full mt-6 py-3.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style jsx>{`
                 @keyframes fade-in-scale {
                     from {
@@ -398,6 +474,20 @@ const ClientBar: React.FC<ClientBarProps> = ({
                 }
                 .animate-fade-in-scale {
                     animation: fade-in-scale 0.3s ease-out forwards;
+                }
+                @keyframes slide-up {
+                    from { transform: translateY(100%); }
+                    to { transform: translateY(0); }
+                }
+                .animate-slide-up {
+                    animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                @keyframes fade-in {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                .animate-fade-in {
+                    animation: fade-in 0.2s ease-out forwards;
                 }
             `}</style>
         </div>

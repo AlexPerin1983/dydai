@@ -327,15 +327,21 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         return (
             <div
                 role="button"
+                data-numpad-input="true"
                 tabIndex={measurement.active ? 0 : -1}
-                onClick={() => measurement.active && !isSelectionMode && onOpenNumpad(measurement.id, field, value)}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (measurement.active && !isSelectionMode) {
+                        onOpenNumpad(measurement.id, field, value);
+                    }
+                }}
                 onKeyDown={(e) => {
                     if (measurement.active && !isSelectionMode && (e.key === 'Enter' || e.key === ' ')) {
                         e.preventDefault();
                         onOpenNumpad(measurement.id, field, value);
                     }
                 }}
-                className={getButtonClasses()}
+                className={`${getButtonClasses()} relative z-50`}
             >
                 {renderContent()}
             </div>

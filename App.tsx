@@ -1977,6 +1977,7 @@ const App: React.FC = () => {
                                     totals={totals}
                                     generalDiscount={generalDiscount}
                                     onOpenGeneralDiscountModal={() => setIsGeneralDiscountModalOpen(true)}
+                                    onUpdateGeneralDiscount={handleGeneralDiscountChange}
                                     onAddMeasurement={addMeasurement}
                                     onDuplicateMeasurements={duplicateAllMeasurements}
                                     onGeneratePdf={handleGeneratePdf}

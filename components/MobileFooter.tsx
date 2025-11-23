@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { TotalsDrawer } from './ui/TotalsDrawer';
 
 interface Totals {
     totalM2: number;
@@ -12,6 +13,7 @@ interface MobileFooterProps {
     totals: Totals;
     generalDiscount: { value: string; type: 'percentage' | 'fixed' };
     onOpenGeneralDiscountModal: () => void;
+    onUpdateGeneralDiscount: (value: { value: string; type: 'percentage' | 'fixed' }) => void;
     onAddMeasurement: () => void;
     onDuplicateMeasurements: () => void;
     onGeneratePdf: () => void;
@@ -19,33 +21,18 @@ interface MobileFooterProps {
     onOpenAIModal: () => void;
 }
 
-const formatNumberBR = (number: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-    }).format(number);
-};
-
 const MobileFooter: React.FC<MobileFooterProps> = ({
     totals,
     generalDiscount,
     onOpenGeneralDiscountModal,
+    onUpdateGeneralDiscount,
     onAddMeasurement,
     onDuplicateMeasurements,
     onGeneratePdf,
     isGeneratingPdf,
     onOpenAIModal
 }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-
-    const hasGeneralDiscount = !!(parseFloat(String(generalDiscount.value).replace(',', '.')) || 0);
-
-    const SummaryRow: React.FC<{ label: string; value: string, className?: string }> = ({ label, value, className }) => (
-        <div className={`flex justify-between items-center text-sm ${className}`}>
-            <span className="text-slate-600 dark:text-slate-400">{label}</span>
-            <span className="font-semibold text-slate-800 dark:text-white">{value}</span>
-        </div>
-    );
+    const [isTotalsDrawerOpen, setIsTotalsDrawerOpen] = useState(false);
 
     const ActionButton: React.FC<{ onClick: () => void, label: string, icon: string, isActive?: boolean }> = ({ onClick, label, icon, isActive = false }) => (
         <button onClick={onClick} aria-label={label} className={`flex flex-col items-center justify-center transition-colors w-16 h-full ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}>
@@ -80,58 +67,51 @@ const MobileFooter: React.FC<MobileFooterProps> = ({
         return <ActionButton onClick={onGeneratePdf} label="Gerar PDF" icon="fas fa-file-pdf" />;
     };
 
+    const handleUpdateDiscount = (value: string, type: 'percentage' | 'fixed') => {
+        onUpdateGeneralDiscount({ value, type });
+    };
+
     return (
-        <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-[0_-8px_20px_rgba(0,0,0,0.1)] border-t border-slate-200 dark:border-slate-700 z-30">
-            <div className="container mx-auto px-2">
-                {/* Expandable Content */}
-                <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-80 opacity-100 p-4 border-b border-slate-200/80 dark:border-slate-700/80' : 'max-h-0 opacity-0 p-0'}`}>
-                    <div className="space-y-1.5">
-                        <SummaryRow label={`Subtotal (${totals.totalM2.toFixed(2)} m²)`} value={formatNumberBR(totals.subtotal)} />
-                        {totals.totalItemDiscount > 0 && <SummaryRow label="Descontos (itens)" value={`-${formatNumberBR(totals.totalItemDiscount)}`} />}
-                        {totals.generalDiscountAmount > 0 && <SummaryRow label="Desconto Geral" value={`-${formatNumberBR(totals.generalDiscountAmount)}`} />}
-                        <div className="pt-1.5 mt-1.5 border-t border-slate-200 dark:border-slate-700">
-                            <SummaryRow label="Total" value={formatNumberBR(totals.finalTotal)} className='text-base' />
+        <>
+            <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shadow-[0_-8px_20px_rgba(0,0,0,0.1)] border-t border-slate-200 dark:border-slate-700 z-30">
+                <div className="container mx-auto px-2">
+                    {/* Main Action Bar */}
+                    <div className="relative">
+                        <div className="flex justify-around items-center h-16">
+                            <ActionButton onClick={onOpenAIModal} label="com IA" icon="fas fa-robot" />
+                            <ActionButton onClick={onDuplicateMeasurements} label="Duplicar" icon="fas fa-copy" />
+
+                            {/* Floating Action Button */}
+                            <div className="-translate-y-5">
+                                <button
+                                    onClick={onAddMeasurement}
+                                    aria-label="Adicionar Nova Medida"
+                                    className="w-14 h-14 bg-slate-900 dark:bg-slate-700 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
+                                >
+                                    <i className="fas fa-plus text-xl"></i>
+                                </button>
+                            </div>
+
+                            <ActionButton
+                                onClick={() => setIsTotalsDrawerOpen(true)}
+                                label="Totais"
+                                icon="fas fa-dollar-sign"
+                                isActive={isTotalsDrawerOpen}
+                            />
+                            <PdfActionButton />
                         </div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <button
-                            onClick={onOpenGeneralDiscountModal}
-                            className="w-full text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg py-2.5 transition-colors duration-200 flex items-center justify-center gap-2"
-                        >
-                            <i className="fas fa-percent"></i>
-                            {hasGeneralDiscount ? 'Editar Desconto Geral' : 'Adicionar Desconto Geral'}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Main Action Bar */}
-                <div className="relative">
-                    <div className="flex justify-around items-center h-16">
-                        <ActionButton onClick={onOpenAIModal} label="com IA" icon="fas fa-robot" />
-                        <ActionButton onClick={onDuplicateMeasurements} label="Duplicar" icon="fas fa-copy" />
-
-                        {/* Floating Action Button */}
-                        <div className="-translate-y-5">
-                            <button
-                                onClick={onAddMeasurement}
-                                aria-label="Adicionar Nova Medida"
-                                className="w-14 h-14 bg-slate-900 dark:bg-slate-700 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
-                            >
-                                <i className="fas fa-plus text-xl"></i>
-                            </button>
-                        </div>
-
-                        <ActionButton
-                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                            label="Totais"
-                            icon="fas fa-dollar-sign"
-                            isActive={isExpanded}
-                        />
-                        <PdfActionButton />
                     </div>
                 </div>
             </div>
-        </div>
+
+            <TotalsDrawer
+                isOpen={isTotalsDrawerOpen}
+                onClose={() => setIsTotalsDrawerOpen(false)}
+                totals={totals}
+                generalDiscount={generalDiscount}
+                onUpdateGeneralDiscount={handleUpdateDiscount}
+            />
+        </>
     );
 };
 

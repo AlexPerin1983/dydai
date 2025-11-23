@@ -1469,6 +1469,8 @@ const App: React.FC = () => {
         setFilmToApplyToAll(null);
     }, [filmToApplyToAll, measurements, handleMeasurementsChange]);
 
+
+
     const handleAddNewFilmFromSelection = useCallback((filmName: string) => {
         setIsFilmSelectionModalOpen(false);
         setIsApplyFilmToAllModalOpen(false);

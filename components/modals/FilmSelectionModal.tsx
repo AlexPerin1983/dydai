@@ -250,7 +250,7 @@ const FilmSelectionModal: React.FC<FilmSelectionModalProps> = ({ isOpen, onClose
     };
 
     return (
-        <div className="fixed inset-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-50 flex flex-col animate-fade-in">
+        <div className="fixed inset-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-[10000] flex flex-col animate-fade-in">
             {/* Header */}
             <div className="flex-shrink-0 p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 sticky top-0">
                 <div className="flex items-center justify-between gap-4 max-w-3xl mx-auto">

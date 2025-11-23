@@ -12,6 +12,7 @@ type NumpadConfig = {
     currentValue: string;
 };
 
+
 interface MeasurementListProps {
     measurements: UIMeasurement[];
     films: Film[];
@@ -59,6 +60,8 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
     const [swipedItemId, setSwipedItemId] = useState<number | null>(null);
     const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+
+
 
     const scrollVelocityRef = useRef(0);
     const animationFrameRef = useRef<number | null>(null);
@@ -289,43 +292,12 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
         </li>
     );
 
-    const MobileMenuItem: React.FC<{
-        onClick: () => void;
-        icon: string;
-        label: string;
-        description?: string;
-        isDestructive?: boolean;
-    }> = ({ onClick, icon, label, description, isDestructive = false }) => (
-        <button
-            type="button"
-            onClick={(e) => {
-                e.stopPropagation();
-                // Trigger action first (modal will open on top due to higher z-index)
-                onClick();
-                // Then close the menu
-                setIsActionsMenuOpen(false);
-            }}
-            className={`w-full flex items-center gap-4 px-4 py-4 text-left transition-colors active:bg-slate-100 dark:active:bg-slate-700 rounded-xl
-                ${isDestructive ? 'text-red-600' : 'text-slate-700 dark:text-slate-200'}
-            `}
-        >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 
-                ${isDestructive ? 'bg-red-50 dark:bg-red-900/20' : 'bg-slate-100 dark:bg-slate-700'}
-            `}>
-                <i className={`${icon} text-lg`}></i>
-            </div>
-            <div className="flex-1">
-                <span className="font-semibold block text-base">{label}</span>
-                {description && <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">{description}</span>}
-            </div>
-            <i className="fas fa-chevron-right text-slate-300 text-xs"></i>
-        </button>
-    );
-
     const getAnimationClass = () => {
         if (!swipeDirection || swipeDistance === 0) return '';
         return swipeDirection === 'left' ? 'animate-carousel-left' : 'animate-carousel-right';
     };
+
+
 
     const getAnimationStyle = () => {
         if (!swipeDirection || swipeDistance === 0) return {};
@@ -389,91 +361,42 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                                 <i className={`fas fa-chevron-down text-xs transition-transform duration-200 ${isActionsMenuOpen ? 'rotate-180' : ''}`}></i>
                             </button>
 
-                            {/* Desktop Dropdown */}
+                            {/* Dropdown Menu (Unified for Desktop and Mobile) */}
                             {isActionsMenuOpen && (
-                                <div className="hidden sm:block absolute right-0 mt-2 w-56 origin-top-right bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20 p-1">
-                                    <ul className="space-y-1">
-                                        <ActionMenuItem
-                                            onClick={handleEnterSelectionMode}
-                                            icon="far fa-check-square"
-                                            label="Selecionar"
-                                        />
-                                        <ActionMenuItem
-                                            onClick={onOpenApplyFilmToAllModal}
-                                            icon="fas fa-layer-group"
-                                            label="Aplicar a Todos"
-                                        />
-                                        <ActionMenuItem
-                                            onClick={onOpenClearAllModal}
-                                            icon="far fa-trash-alt"
-                                            label="Excluir Todas"
-                                            isDestructive
-                                        />
-                                    </ul>
-                                </div>
+                                <>
+                                    {/* Backdrop for Mobile to close on click outside */}
+                                    <div
+                                        className="fixed inset-0 z-10 sm:hidden"
+                                        onClick={() => setIsActionsMenuOpen(false)}
+                                    ></div>
+
+                                    <div className="absolute right-0 mt-2 w-56 origin-top-right bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20 p-1">
+                                        <ul className="space-y-1">
+                                            <ActionMenuItem
+                                                onClick={handleEnterSelectionMode}
+                                                icon="far fa-check-square"
+                                                label="Selecionar"
+                                            />
+                                            <ActionMenuItem
+                                                onClick={onOpenApplyFilmToAllModal}
+                                                icon="fas fa-layer-group"
+                                                label="Aplicar a Todos"
+                                            />
+                                            <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
+                                            <ActionMenuItem
+                                                onClick={onOpenClearAllModal}
+                                                icon="fas fa-trash-alt"
+                                                label="Excluir Todas"
+                                                isDestructive
+                                            />
+                                        </ul>
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>
                 )}
             </div>
-
-            {/* Mobile Action Sheet - Simple Overlay (No Swipe) */}
-            {isActionsMenuOpen && (
-                <div className="sm:hidden fixed inset-0 z-[9999] flex items-end justify-center">
-                    {/* Backdrop */}
-                    <div
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
-                        onClick={() => setIsActionsMenuOpen(false)}
-                    ></div>
-
-                    {/* Sheet Content */}
-                    <div className="relative z-50 w-full bg-white dark:bg-slate-800 rounded-t-2xl shadow-2xl animate-slide-up max-w-md mx-auto flex flex-col max-h-[85vh] overflow-hidden">
-
-                        {/* Header */}
-                        <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-white">Ações da Lista</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Gerencie suas medidas em lote</p>
-                            </div>
-                            <button
-                                onClick={() => setIsActionsMenuOpen(false)}
-                                className="p-2 bg-slate-200 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
-                            >
-                                <i className="fas fa-times"></i>
-                            </button>
-                        </div>
-
-                        {/* Actions List */}
-                        <div className="p-4 overflow-y-auto">
-                            <div className="space-y-2">
-                                <MobileMenuItem
-                                    onClick={handleEnterSelectionMode}
-                                    icon="far fa-check-square"
-                                    label="Selecionar Medidas"
-                                    description="Apagar ou editar múltiplos itens"
-                                />
-                                <MobileMenuItem
-                                    onClick={onOpenApplyFilmToAllModal}
-                                    icon="fas fa-layer-group"
-                                    label="Aplicar Película a Todos"
-                                    description="Definir o mesmo material para tudo"
-                                />
-                                <div className="h-px bg-slate-100 dark:bg-slate-700 my-2"></div>
-                                <MobileMenuItem
-                                    onClick={onOpenClearAllModal}
-                                    icon="fas fa-trash-alt"
-                                    label="Excluir Todas as Medidas"
-                                    description="Limpar a lista completamente"
-                                    isDestructive
-                                />
-                            </div>
-                        </div>
-
-                        {/* Safe Area Spacer for iOS */}
-                        <div className="h-6 bg-white dark:bg-slate-800"></div>
-                    </div>
-                </div>
-            )}
 
             <div
                 onDragOver={handleDragOver}

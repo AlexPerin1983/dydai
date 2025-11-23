@@ -1826,14 +1826,8 @@ const App: React.FC = () => {
                     onMeasurementsChange={handleMeasurementsChange}
                     onOpenFilmModal={handleOpenFilmModal}
                     onOpenFilmSelectionModal={handleOpenFilmSelectionModal}
-                    onOpenClearAllModal={() => {
-                        console.log('[App] onOpenClearAllModal called');
-                        setIsClearAllModalOpen(true);
-                    }}
-                    onOpenApplyFilmToAllModal={() => {
-                        console.log('[App] onOpenApplyFilmToAllModal called');
-                        setIsApplyFilmToAllModalOpen(true);
-                    }}
+                    onOpenClearAllModal={() => setIsClearAllModalOpen(true)}
+                    onOpenApplyFilmToAllModal={() => setIsApplyFilmToAllModalOpen(true)}
                     numpadConfig={numpadConfig}
                     onOpenNumpad={handleOpenNumpad}
                     activeMeasurementId={numpadConfig.measurementId}

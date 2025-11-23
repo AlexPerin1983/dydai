@@ -28,6 +28,10 @@ export interface Measurement {
     discountType?: 'percentage' | 'fixed';
 }
 
+export interface UIMeasurement extends Measurement {
+    isNew?: boolean;
+}
+
 export interface ProposalOption {
     id: number;
     name: string;

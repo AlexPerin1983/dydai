@@ -1,9 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Measurement, Film } from '../types';
+import { MobileActionsDrawer } from './MobileActionsDrawer';
+import { Measurement, Film, UIMeasurement } from '../types';
 import MeasurementGroup from './MeasurementGroup';
 import ConfirmationModal from './modals/ConfirmationModal';
-
-type UIMeasurement = Measurement & { isNew?: boolean };
 
 type NumpadConfig = {
     isOpen: boolean;
@@ -60,6 +59,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
     const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
     const [swipedItemId, setSwipedItemId] = useState<number | null>(null);
     const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
 
 
@@ -81,7 +81,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
 
     useEffect(() => {
         if (firstNewMeasurementRef.current !== null) {
-            const element = listContainerRef.current?.querySelector(`[data-measurement-id='${firstNewMeasurementRef.current}'] [inputmode='decimal']`);
+            const element = listContainerRef.current?.querySelector(`[data-measurement-id='${firstNewMeasurementRef.current}'][inputmode='decimal']`);
             if (element) {
                 // Abre o numpad diretamente no campo de largura
                 onOpenNumpad(firstNewMeasurementRef.current, 'largura', '');
@@ -282,11 +282,11 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
             <button
                 onClick={() => { onClick(); setIsActionsMenuOpen(false); }}
                 className={`flex items-center w-full px-3 py-2 text-sm rounded-md ${isDestructive
-                    ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
-                    }`}
+                        ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
+                    } `}
             >
-                <i className={`${icon} mr-3 h-5 w-5 ${isDestructive ? 'text-red-400' : 'text-slate-400'}`}></i>
+                <i className={`${icon} mr-3 h-5 w-5 ${isDestructive ? 'text-red-400' : 'text-slate-400'} `}></i>
                 {label}
             </button>
         </li>
@@ -352,47 +352,112 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                             </span>
                         </div>
                         <div className="relative" ref={actionsMenuRef}>
+                            {/* Desktop Button */}
                             <button
                                 onClick={() => setIsActionsMenuOpen(prev => !prev)}
-                                className="text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg px-4 py-2 transition-colors duration-200 flex items-center gap-2"
+                                className="hidden sm:flex text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg px-4 py-2 transition-colors duration-200 items-center gap-2"
                                 aria-expanded={isActionsMenuOpen}
                             >
                                 Ações
                                 <i className={`fas fa-chevron-down text-xs transition-transform duration-200 ${isActionsMenuOpen ? 'rotate-180' : ''}`}></i>
                             </button>
 
-                            {/* Dropdown Menu (Unified for Desktop and Mobile) */}
-                            {isActionsMenuOpen && (
-                                <>
-                                    {/* Backdrop for Mobile to close on click outside */}
-                                    <div
-                                        className="fixed inset-0 z-10 sm:hidden"
-                                        onClick={() => setIsActionsMenuOpen(false)}
-                                    ></div>
+                            {/* Mobile Button */}
+                            <button
+                                onClick={() => setIsMobileMenuOpen(true)}
+                                className="flex sm:hidden text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg px-4 py-2 transition-colors duration-200 items-center gap-2"
+                            >
+                                Ações
+                                <i className="fas fa-chevron-up text-xs"></i>
+                            </button>
 
-                                    <div className="absolute right-0 mt-2 w-56 origin-top-right bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20 p-1">
-                                        <ul className="space-y-1">
-                                            <ActionMenuItem
-                                                onClick={handleEnterSelectionMode}
-                                                icon="far fa-check-square"
-                                                label="Selecionar"
-                                            />
-                                            <ActionMenuItem
-                                                onClick={onOpenApplyFilmToAllModal}
-                                                icon="fas fa-layer-group"
-                                                label="Aplicar a Todos"
-                                            />
-                                            <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
-                                            <ActionMenuItem
-                                                onClick={onOpenClearAllModal}
-                                                icon="fas fa-trash-alt"
-                                                label="Excluir Todas"
-                                                isDestructive
-                                            />
-                                        </ul>
-                                    </div>
-                                </>
+                            {/* Desktop Dropdown Menu */}
+                            {isActionsMenuOpen && (
+                                <div className="hidden sm:block absolute right-0 mt-2 w-56 origin-top-right bg-white dark:bg-slate-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20 p-1">
+                                    <ul className="space-y-1">
+                                        <ActionMenuItem
+                                            onClick={handleEnterSelectionMode}
+                                            icon="far fa-check-square"
+                                            label="Selecionar"
+                                        />
+                                        <ActionMenuItem
+                                            onClick={onOpenApplyFilmToAllModal}
+                                            icon="fas fa-layer-group"
+                                            label="Aplicar a Todos"
+                                        />
+                                        <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
+                                        <ActionMenuItem
+                                            onClick={onOpenClearAllModal}
+                                            icon="fas fa-trash-alt"
+                                            label="Excluir Todas"
+                                            isDestructive
+                                        />
+                                    </ul>
+                                </div>
                             )}
+
+                            {/* Mobile Drawer */}
+                            <MobileActionsDrawer
+                                open={isMobileMenuOpen}
+                                onOpenChange={setIsMobileMenuOpen}
+                                title="Ações da Lista"
+                                description="Gerencie suas medidas em lote"
+                            >
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={() => {
+                                            handleEnterSelectionMode();
+                                            setIsMobileMenuOpen(false);
+                                        }}
+                                        className="w-full flex items-center gap-4 px-4 py-4 text-left transition-colors active:bg-slate-100 dark:active:bg-slate-700 rounded-xl text-slate-700 dark:text-slate-200"
+                                    >
+                                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-slate-100 dark:bg-slate-700">
+                                            <i className="far fa-check-square text-lg"></i>
+                                        </div>
+                                        <div className="flex-1">
+                                            <span className="font-semibold block text-base">Selecionar Medidas</span>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">Apagar ou editar múltiplos itens</span>
+                                        </div>
+                                        <i className="fas fa-chevron-right text-slate-300 text-xs"></i>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            onOpenApplyFilmToAllModal();
+                                            setIsMobileMenuOpen(false);
+                                        }}
+                                        className="w-full flex items-center gap-4 px-4 py-4 text-left transition-colors active:bg-slate-100 dark:active:bg-slate-700 rounded-xl text-slate-700 dark:text-slate-200"
+                                    >
+                                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-slate-100 dark:bg-slate-700">
+                                            <i className="fas fa-layer-group text-lg"></i>
+                                        </div>
+                                        <div className="flex-1">
+                                            <span className="font-semibold block text-base">Aplicar Película a Todos</span>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">Definir o mesmo material para tudo</span>
+                                        </div>
+                                        <i className="fas fa-chevron-right text-slate-300 text-xs"></i>
+                                    </button>
+
+                                    <div className="h-px bg-slate-100 dark:bg-slate-700 my-2"></div>
+
+                                    <button
+                                        onClick={() => {
+                                            onOpenClearAllModal();
+                                            setIsMobileMenuOpen(false);
+                                        }}
+                                        className="w-full flex items-center gap-4 px-4 py-4 text-left transition-colors active:bg-slate-100 dark:active:bg-slate-700 rounded-xl text-red-600"
+                                    >
+                                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-red-50 dark:bg-red-900/20">
+                                            <i className="fas fa-trash-alt text-lg"></i>
+                                        </div>
+                                        <div className="flex-1">
+                                            <span className="font-semibold block text-base">Excluir Todas as Medidas</span>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">Limpar a lista completamente</span>
+                                        </div>
+                                        <i className="fas fa-chevron-right text-slate-300 text-xs"></i>
+                                    </button>
+                                </div>
+                            </MobileActionsDrawer>
                         </div>
                     </div>
                 )}
@@ -450,67 +515,67 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
             )}
 
             <style jsx>{`
-                @keyframes carousel-left {
-                    0% {
-                        opacity: 1;
-                        transform: translateX(0) scale(1);
-                    }
-                    25% {
-                        opacity: 0.5;
-                        transform: translateX(-50px) scale(0.95);
-                    }
-                    50% {
-                        opacity: 0;
-                        transform: translateX(-100px) scale(0.9);
-                    }
-                    100% {
-                        opacity: 1;
-                        transform: translateX(0) scale(1);
-                    }
-                }
-                
-                @keyframes carousel-right {
-                    0% {
-                        opacity: 1;
-                        transform: translateX(0) scale(1);
-                    }
-                    25% {
-                        opacity: 0.5;
-                        transform: translateX(50px) scale(0.95);
-                    }
-                    50% {
-                        opacity: 0;
-                        transform: translateX(100px) scale(0.9);
-                    }
-                    100% {
-                        opacity: 1;
-                        transform: translateX(0) scale(1);
-                    }
-                }
-                
-                .animate-carousel-left {
-                    animation: carousel-left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-                }
-                
-                .animate-carousel-right {
-                    animation: carousel-right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-                }
+@keyframes carousel-left {
+    0% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+    25% {
+        opacity: 0.5;
+        transform: translateX(-50px) scale(0.95);
+    }
+    50% {
+        opacity: 0;
+        transform: translateX(-100px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
 
-                @keyframes slide-up {
-                    from { transform: translateY(100%); }
-                    to { transform: translateY(0); }
-                }
-                .animate-slide-up {
-                    animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-                }
-                @keyframes fade-in {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                .animate-fade-in {
-                    animation: fade-in 0.2s ease-out forwards;
-                }
-            `}</style>
+@keyframes carousel-right {
+    0% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+    25% {
+        opacity: 0.5;
+        transform: translateX(50px) scale(0.95);
+    }
+    50% {
+        opacity: 0;
+        transform: translateX(100px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+                
+.animate-carousel-left {
+    animation: carousel-left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+                
+.animate-carousel-right {
+    animation: carousel-right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+.animate-slide-up {
+    animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.animate-fade-in {
+    animation: fade-in 0.2s ease-out forwards;
+}
+`}</style>
         </>
     );
 };

@@ -10,15 +10,16 @@ interface FilmModalProps {
     onSave: (newFilmData: Film, originalFilm: Film | null) => void;
     onDelete: (filmName: string) => void;
     film: Film | null;
+    initialName?: string; // New prop
 }
 
 const MAX_IMAGES = 3;
 
-const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete, film }) => {
+const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete, film, initialName }) => {
     const [formData, setFormData] = useState<Film>({
         nome: '',
         preco: 0,
-        maoDeObra: 0, // Inicializando o novo campo
+        maoDeObra: 0,
         garantiaFabricante: 0,
         garantiaMaoDeObra: 30,
         uv: 0,
@@ -35,7 +36,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
             setFormData({
                 nome: film.nome || '',
                 preco: film.preco || 0,
-                maoDeObra: film.maoDeObra || 0, // Carregando o novo campo
+                maoDeObra: film.maoDeObra || 0,
                 garantiaFabricante: film.garantiaFabricante || 0,
                 garantiaMaoDeObra: film.garantiaMaoDeObra || 30,
                 uv: film.uv || 0,
@@ -47,9 +48,9 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
             });
         } else {
             setFormData({
-                nome: '',
+                nome: initialName || '', // Use initialName if provided
                 preco: 0,
-                maoDeObra: 0, // Inicializando para novo filme
+                maoDeObra: 0,
                 garantiaFabricante: 0,
                 garantiaMaoDeObra: 30,
                 uv: 0,
@@ -60,7 +61,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                 imagens: [],
             });
         }
-    }, [film, isOpen]);
+    }, [film, isOpen, initialName]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { id, value } = e.target;

@@ -113,9 +113,14 @@ const App: React.FC = () => {
     const [pdfToDeleteId, setPdfToDeleteId] = useState<number | null>(null);
     const [isFilmSelectionModalOpen, setIsFilmSelectionModalOpen] = useState(false);
     const [isApplyFilmToAllModalOpen, setIsApplyFilmToAllModalOpen] = useState(false);
+    const [newFilmName, setNewFilmName] = useState<string>('');
     const [filmToApplyToAll, setFilmToApplyToAll] = useState<string | null>(null);
     const [editingMeasurementIdForFilm, setEditingMeasurementIdForFilm] = useState<number | null>(null);
     const [newClientName, setNewClientName] = useState<string>('');
+
+    // ... (existing code)
+
+
     const [editingMeasurement, setEditingMeasurement] = useState<UIMeasurement | null>(null);
     const [schedulingInfo, setSchedulingInfo] = useState<SchedulingInfo | null>(null);
     const [agendamentoToDelete, setAgendamentoToDelete] = useState<Agendamento | null>(null);
@@ -1480,26 +1485,6 @@ const App: React.FC = () => {
 
 
 
-    const handleAddNewFilmFromSelection = useCallback((filmName: string) => {
-        setIsFilmSelectionModalOpen(false);
-        setIsApplyFilmToAllModalOpen(false);
-        // setEditingMeasurementIdForFilm(null); // Mantém o ID para usar no save
-        const newFilmTemplate: Film = {
-            nome: filmName,
-            preco: 0,
-            maoDeObra: 0, // Adicionado
-            garantiaFabricante: 0,
-            garantiaMaoDeObra: 30,
-            uv: 0,
-            ir: 0,
-            vtl: 0,
-            espessura: 0,
-            tser: 0,
-            imagens: [],
-        };
-        handleOpenFilmModal(newFilmTemplate);
-    }, [handleOpenFilmModal]);
-
     const handleAddNewClientFromSelection = useCallback((clientName: string) => {
         setIsClientSelectionModalOpen(false);
         setClientModalMode('add');
@@ -1507,6 +1492,12 @@ const App: React.FC = () => {
         setAiClientData(undefined);
         setIsClientModalOpen(true);
     }, []);
+
+    const handleAddNewFilmFromSelection = useCallback((filmName: string) => {
+        setIsFilmSelectionModalOpen(false);
+        setNewFilmName(filmName);
+        handleOpenFilmModal(null);
+    }, [handleOpenFilmModal]);
 
     const handleOpenEditMeasurementModal = useCallback((measurement: UIMeasurement) => {
         if (numpadConfig.isOpen) {
@@ -2110,10 +2101,12 @@ const App: React.FC = () => {
                         setIsFilmModalOpen(false);
                         setEditingFilm(null);
                         setEditingMeasurementIdForFilm(null);
+                        setNewFilmName('');
                     }}
                     onSave={handleSaveFilm}
                     onDelete={handleDeleteFilm}
                     film={editingFilm}
+                    initialName={newFilmName}
                 />
             )}
             {isFilmSelectionModalOpen && (

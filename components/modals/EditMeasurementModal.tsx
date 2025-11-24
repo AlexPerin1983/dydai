@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Measurement, Film } from '../../types';
 import { AMBIENTES, TIPOS_APLICACAO } from '../../constants';
 import DynamicSelector from '../ui/DynamicSelector';
+import Accordion from '../ui/Accordion';
 
 type UIMeasurement = Measurement & { isNew?: boolean };
 
@@ -68,7 +69,7 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
     };
 
     // Função para garantir que o valor no estado local seja o valor final do input
-    const handleBlur = (e: React.FocusEvent<HTMLInputElement>, field: 'largura' | 'altura' | 'quantidade' | 'discount') => {
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>, field: 'largura' | 'altura' | 'quantidade' | 'discount' | 'observation') => {
         const { value } = e.target;
 
         if (field === 'largura' || field === 'altura') {
@@ -83,6 +84,8 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
             const sanitizedValue = value.replace(/[^0-9,.]/g, '');
             const numericValue = parseFloat(sanitizedValue.replace(',', '.')) || 0;
             handleLocalUpdate({ discount: numericValue });
+        } else if (field === 'observation') {
+            handleLocalUpdate({ observation: value });
         }
     };
 
@@ -134,7 +137,7 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
         onDelete(); // Chama a função que irá abrir o modal de confirmação no App.tsx
     };
 
-    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         e.target.select();
     };
 
@@ -150,7 +153,7 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
 
     return (
         <div className="fixed inset-0 bg-white dark:bg-slate-900 z-50 flex flex-col animate-fade-in">
-            <header className="flex-shrink-0 p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 sticky top-0">
+            <header className="flex-shrink-0 p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 sticky top-0 z-40">
                 <div className="flex items-center justify-between gap-4 max-w-3xl mx-auto">
                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Editar Medida</h2>
                     <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
@@ -162,8 +165,8 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
             <main className="flex-grow overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900">
                 <div className="max-w-xl mx-auto space-y-4 pb-24">
 
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
-                        <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-3 text-base">Medidas e Quantidade</h3>
+                    {/* Seção 1: Medidas (Sempre aberta por padrão) */}
+                    <Accordion title="Medidas e Quantidade" defaultOpen={true}>
                         <div className="grid grid-cols-3 gap-3">
                             <LabeledInput label="Largura (m)">
                                 <input
@@ -204,11 +207,12 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
                                 />
                             </LabeledInput>
                         </div>
-                    </div>
+                    </Accordion>
 
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                    {/* Seção 2: Película */}
+                    <Accordion title="Película" defaultOpen={true}>
                         <div className="flex justify-between items-center mb-2">
-                            <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-base">Película</h3>
+                            <span className="text-sm text-slate-500 dark:text-slate-400">Película selecionada</span>
                             {selectedFilm && (
                                 <button onClick={handleEditFilm} className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700">
                                     <i className="fas fa-pen text-xs"></i> Editar
@@ -231,10 +235,10 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
                                 <i className="fas fa-chevron-right text-slate-400"></i>
                             </div>
                         </button>
-                    </div>
+                    </Accordion>
 
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
-                        <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-3 text-base">Detalhes Adicionais</h3>
+                    {/* Seção 3: Detalhes Adicionais */}
+                    <Accordion title="Detalhes Adicionais">
                         <div className="space-y-3">
                             <DynamicSelector
                                 label="Ambiente"
@@ -251,15 +255,27 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
                                 disabled={!localMeasurement.active}
                             />
                         </div>
-                    </div>
+                    </Accordion>
 
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm relative z-20">
-                        <div className="flex justify-between items-center mb-3">
-                            <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-base">Desconto e Preço</h3>
-                            <p className="font-bold text-slate-800 dark:text-slate-200 text-lg">{formatCurrency(finalPrice)}</p>
+                    {/* Seção 4: Observações (NOVO) */}
+                    <Accordion title="Observações">
+                        <textarea
+                            className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 focus:border-slate-500 resize-none"
+                            rows={3}
+                            placeholder="Adicione observações sobre esta medida (ex: vidro com difícil acesso, necessidade de andaime...)"
+                            defaultValue={localMeasurement.observation || ''}
+                            onBlur={(e) => handleBlur(e, 'observation')}
+                        />
+                    </Accordion>
+
+                    {/* Seção 5: Desconto e Preço */}
+                    <Accordion title="Desconto e Preço" defaultOpen={true}>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="font-medium text-slate-600 dark:text-slate-400">Preço Final</span>
+                            <p className="font-bold text-slate-800 dark:text-slate-200 text-xl">{formatCurrency(finalPrice)}</p>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Valor do Desconto</label>
+                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Aplicar Desconto</label>
                             <div className="flex">
                                 <input
                                     type="text"
@@ -280,7 +296,8 @@ const EditMeasurementModal: React.FC<EditMeasurementModalProps> = ({
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </Accordion>
+
                 </div>
             </main>
 

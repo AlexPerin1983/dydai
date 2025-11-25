@@ -79,13 +79,14 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
     const swipeableRef = useRef<HTMLDivElement>(null);
 
     // New Physics & Thresholds
-    const EDIT_THRESHOLD = 60;
-    const DUPLICATE_THRESHOLD = 110;       // Reduced from 140
+    // New Physics & Thresholds
+    const ACTIONS_REVEAL_WIDTH = 160;
+    const SNAP_THRESHOLD = 50;
     const DELETE_REVEAL_THRESHOLD = -60;
-    const DELETE_AUTO_THRESHOLD = -130;    // Reduced from -170
+    const DELETE_AUTO_THRESHOLD = -130;
 
     // We use translateX directly for rendering, but keep track of the "intent" for vibration
-    const lastVibrationIntent = useRef<'none' | 'edit' | 'duplicate' | 'delete' | 'auto-delete'>('none');
+    const lastVibrationIntent = useRef<'none' | 'reveal-actions' | 'delete' | 'auto-delete'>('none');
 
     useEffect(() => {
         if (swipedItemId !== measurement.id && swipeableRef.current) {
@@ -150,11 +151,11 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         // This feels more "responsive" and less "heavy"
 
         if (newTranslateX > 0) {
-            // Right Swipe (Edit -> Duplicate)
-            if (newTranslateX > EDIT_THRESHOLD) {
-                // Apply 0.4x resistance after the first threshold
-                const extra = newTranslateX - EDIT_THRESHOLD;
-                newTranslateX = EDIT_THRESHOLD + (extra * 0.4);
+            // Right Swipe (Reveal Actions)
+            if (newTranslateX > ACTIONS_REVEAL_WIDTH) {
+                // Apply resistance after the reveal width
+                const extra = newTranslateX - ACTIONS_REVEAL_WIDTH;
+                newTranslateX = ACTIONS_REVEAL_WIDTH + (extra * 0.4);
             }
         } else {
             // Left Swipe (Delete)
@@ -166,16 +167,15 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         }
 
         // Haptic Feedback Logic based on Threshold Crossings
-        let currentIntent: 'none' | 'edit' | 'duplicate' | 'delete' | 'auto-delete' = 'none';
+        let currentIntent: 'none' | 'reveal-actions' | 'delete' | 'auto-delete' = 'none';
 
-        if (newTranslateX > DUPLICATE_THRESHOLD) currentIntent = 'duplicate';
-        else if (newTranslateX > EDIT_THRESHOLD / 2) currentIntent = 'edit';
+        if (newTranslateX > SNAP_THRESHOLD) currentIntent = 'reveal-actions';
         else if (newTranslateX < DELETE_AUTO_THRESHOLD) currentIntent = 'auto-delete';
         else if (newTranslateX < DELETE_REVEAL_THRESHOLD / 2) currentIntent = 'delete';
 
         if (currentIntent !== lastVibrationIntent.current) {
             if (
-                (currentIntent === 'duplicate' && lastVibrationIntent.current === 'edit') ||
+                (currentIntent === 'reveal-actions' && lastVibrationIntent.current === 'none') ||
                 (currentIntent === 'auto-delete' && lastVibrationIntent.current === 'delete')
             ) {
                 if (navigator.vibrate) navigator.vibrate(50);
@@ -205,30 +205,23 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         const matrix = new DOMMatrix(transformValue);
         const currentX = matrix.m41;
 
-        let finalAction: 'none' | 'edit' | 'duplicate' | 'delete' = 'none';
+        let finalAction: 'none' | 'reveal-actions' | 'delete' = 'none';
 
         // Determine action based on final position
-        if (currentX > DUPLICATE_THRESHOLD) {
-            finalAction = 'duplicate';
-        } else if (currentX > EDIT_THRESHOLD) {
-            finalAction = 'edit';
+        if (currentX > SNAP_THRESHOLD) {
+            finalAction = 'reveal-actions';
         } else if (currentX < DELETE_AUTO_THRESHOLD) {
             finalAction = 'delete';
-        } else if (currentX < DELETE_REVEAL_THRESHOLD) {
-            // For reveal, we don't execute an action immediately, we just snap to open
-            // But here we handle the snap logic
         }
 
         // Execute Action or Snap Back
-        if (finalAction === 'duplicate') {
-            onDuplicate();
-            if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
-
-            // Reset
-            swipeableRef.current.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
-            swipeableRef.current.style.transform = `translateX(0px)`;
-            currentTranslateX.current = 0;
-            setTranslateX(0);
+        if (finalAction === 'reveal-actions') {
+            // Snap to reveal actions
+            swipeableRef.current.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            swipeableRef.current.style.transform = `translateX(${ACTIONS_REVEAL_WIDTH}px)`;
+            currentTranslateX.current = ACTIONS_REVEAL_WIDTH;
+            setTranslateX(ACTIONS_REVEAL_WIDTH);
+            onSetSwipedItem(measurement.id);
         } else if (finalAction === 'delete') {
             onDeleteImmediate();
             if (navigator.vibrate) navigator.vibrate(100);
@@ -237,15 +230,6 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
             swipeableRef.current.style.transition = 'transform 0.3s ease-out';
             swipeableRef.current.style.transform = `translateX(-100%)`;
             onSetSwipedItem(null);
-        } else if (finalAction === 'edit') {
-            // Open Edit Modal
-            onOpenEditModal(measurement);
-
-            // Reset
-            swipeableRef.current.style.transition = 'transform 0.3s ease-out';
-            swipeableRef.current.style.transform = `translateX(0px)`;
-            currentTranslateX.current = 0;
-            setTranslateX(0);
         } else if (currentX < DELETE_REVEAL_THRESHOLD) {
             // Snap to reveal delete button
             swipeableRef.current.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
@@ -263,6 +247,28 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
                 onSetSwipedItem(null);
             }
         }
+    };
+
+    const closeSwipe = () => {
+        if (swipeableRef.current) {
+            swipeableRef.current.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            swipeableRef.current.style.transform = 'translateX(0px)';
+        }
+        currentTranslateX.current = 0;
+        setTranslateX(0);
+        onSetSwipedItem(null);
+    };
+
+    const handleDuplicateClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onDuplicate();
+        closeSwipe();
+    };
+
+    const handleEditClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onOpenEditModal(measurement);
+        closeSwipe();
     };
 
     const handleDeleteClick = (e: React.MouseEvent) => {
@@ -457,26 +463,31 @@ const MeasurementGroup: React.FC<MeasurementGroupProps> = ({
         const absX = Math.abs(translateX);
 
         // Right Swipe: Edit -> Duplicate
+        // Right Swipe: Reveal Actions (Duplicate & Edit)
         if (isRightSwipe) {
-            const isDuplicate = absX > DUPLICATE_THRESHOLD;
-            // Interpolate color from Slate (Edit) to Green (Duplicate)
-            // We switch class based on threshold for simplicity, but could interpolate
-            const bgClass = isDuplicate
-                ? 'bg-green-500'
-                : 'bg-slate-600';
-
-            const iconClass = isDuplicate ? 'fa-copy' : 'fa-expand-arrows-alt';
-            const text = isDuplicate ? 'Solte para Duplicar' : 'Editar';
-
-            // Scale icon based on pull distance
-            const scale = Math.min(1 + (absX / 300), 1.5);
-
             return (
-                <div className={`absolute inset-y-0 left-0 flex items-center pl-6 transition-colors duration-200 ${bgClass} w-full rounded-lg`}>
-                    <div className="flex items-center text-white font-bold gap-3" style={{ transform: `scale(${scale})`, transformOrigin: 'left center' }}>
-                        <i className={`fas ${iconClass} text-xl transition-all duration-200`}></i>
-                        <span className="text-sm font-medium">{text}</span>
-                    </div>
+                <div className="absolute inset-y-0 left-0 flex items-center w-full h-full rounded-lg overflow-hidden">
+                    {/* Duplicate Button */}
+                    <button
+                        onClick={handleDuplicateClick}
+                        className="bg-green-500 hover:bg-green-600 text-white flex flex-col items-center justify-center h-full transition-colors"
+                        style={{ width: ACTIONS_REVEAL_WIDTH / 2 }}
+                        aria-label="Duplicar medida"
+                    >
+                        <i className="fas fa-copy text-lg mb-1"></i>
+                        <span className="text-[10px] font-bold uppercase">Duplicar</span>
+                    </button>
+
+                    {/* Edit Button */}
+                    <button
+                        onClick={handleEditClick}
+                        className="bg-slate-600 hover:bg-slate-700 text-white flex flex-col items-center justify-center h-full transition-colors"
+                        style={{ width: ACTIONS_REVEAL_WIDTH / 2 }}
+                        aria-label="Editar medida"
+                    >
+                        <i className="fas fa-pen text-lg mb-1"></i>
+                        <span className="text-[10px] font-bold uppercase">Editar</span>
+                    </button>
                 </div>
             );
         }

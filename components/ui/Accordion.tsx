@@ -15,8 +15,20 @@ const Accordion: React.FC<AccordionProps> = ({ title, children, defaultOpen = fa
     useEffect(() => {
         if (isOpen) {
             setHeight(contentRef.current?.scrollHeight || 'auto');
+            // Set to auto after transition to allow content to resize dynamically
+            const timer = setTimeout(() => {
+                setHeight('auto');
+            }, 300); // Match transition duration
+            return () => clearTimeout(timer);
         } else {
-            setHeight(0);
+            setHeight(contentRef.current?.scrollHeight || 'auto');
+            // Force reflow
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            contentRef.current?.scrollHeight;
+
+            requestAnimationFrame(() => {
+                setHeight(0);
+            });
         }
     }, [isOpen, children]);
 

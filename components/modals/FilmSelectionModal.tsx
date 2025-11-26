@@ -75,7 +75,7 @@ const FilmListItem: React.FC<{
                 setIsPressing(false);
                 isDraggingCard.current = false;
             }
-        }, 500); // 500ms para ativar o long press
+        }, 800); // 800ms para ativar o long press (aumentado para evitar acidentes)
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
@@ -84,8 +84,8 @@ const FilmListItem: React.FC<{
         const deltaX = e.touches[0].clientX - touchStartX.current;
         const deltaY = e.touches[0].clientY - touchStartY.current;
 
-        // Se moveu mais de 10px, cancela o long press
-        if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+        // Se moveu mais de 5px, cancela o long press (mais sensível para detectar scroll)
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
             hasMoved.current = true;
             if (longPressTimer.current) {
                 clearTimeout(longPressTimer.current);

@@ -15,7 +15,7 @@ self.addEventListener('install', (event) => {
 
 // Precache and route
 precacheAndRoute([
-    { url: '/index.html', revision: '47' },
+    { url: '/index.html', revision: '48' },
     // Aumentar a revisão para forçar o cache
     { url: '/offline.html', revision: '1' }
 ]);

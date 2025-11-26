@@ -24,9 +24,13 @@ const ClientItem: React.FC<{
     const [isPressing, setIsPressing] = useState(false);
     const longPressTimer = useRef<NodeJS.Timeout | null>(null);
     const touchStartTime = useRef<number>(0);
+    const touchStartX = useRef<number>(0);
+    const touchStartY = useRef<number>(0);
 
     const handleTouchStart = (e: React.TouchEvent) => {
         touchStartTime.current = Date.now();
+        touchStartX.current = e.touches[0].clientX;
+        touchStartY.current = e.touches[0].clientY;
         setIsPressing(true);
 
         longPressTimer.current = setTimeout(() => {
@@ -36,17 +40,33 @@ const ClientItem: React.FC<{
             }
             onTogglePin(client.id!);
             setIsPressing(false);
-        }, 500); // 500ms para ativar o long press
+        }, 800); // Aumentado para 800ms para evitar ativação acidental
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!longPressTimer.current) return;
+
+        const deltaX = Math.abs(e.touches[0].clientX - touchStartX.current);
+        const deltaY = Math.abs(e.touches[0].clientY - touchStartY.current);
+
+        // Se mover mais que 5px, cancela o long press (considera como scroll)
+        if (deltaX > 5 || deltaY > 5) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+            setIsPressing(false);
+        }
     };
 
     const handleTouchEnd = () => {
         if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
         }
 
         const pressDuration = Date.now() - touchStartTime.current;
-        if (pressDuration < 500) {
+        if (pressDuration < 800 && isPressing) {
             // Foi um toque rápido, seleciona o cliente
+            // Verifica isPressing para garantir que não foi cancelado pelo move
             onSelect(client.id!);
         }
 
@@ -56,23 +76,34 @@ const ClientItem: React.FC<{
     const handleTouchCancel = () => {
         if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
         }
         setIsPressing(false);
     };
 
     const handleClick = () => {
-        onSelect(client.id!);
+        // Fallback para mouse events se necessário, mas touchEnd já lida com seleção
     };
 
     return (
         <button
-            onClick={handleClick}
+            // onClick removido para evitar dupla chamada, touchEnd gerencia a seleção em touch devices
+            // Mantemos onClick apenas se não for touch, mas como é híbrido, melhor confiar no touch logic para mobile
+            // Para desktop (mouse), o onClick ainda é útil. Vamos manter mas prevenir default no touchEnd se necessário.
+            // Simplificação: Vamos usar onClick apenas para seleção via mouse, e touchEnd para touch.
+            onClick={() => {
+                // Pequeno hack: se não foi um toque (touchStartTime é 0 ou muito antigo), é um clique de mouse
+                if (Date.now() - touchStartTime.current > 1000) {
+                    onSelect(client.id!);
+                }
+            }}
             onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onTouchCancel={handleTouchCancel}
             className={`w-full text-left p-4 bg-white dark:bg-slate-800 border rounded-lg shadow-sm transition-all duration-150 flex items-center justify-between ${isPressing
-                    ? 'scale-95 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600'
-                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                ? 'scale-95 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600'
+                : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                 } ${client.pinned ? 'border-l-4 border-l-blue-500' : ''}`}
         >
             <div className="flex-grow">

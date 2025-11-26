@@ -196,16 +196,22 @@ const PdfHistoryItem: React.FC<{
                             />
                         </div>
                         <div className="flex-grow min-w-0">
-                            {pdf.proposalOptionName && pdf.proposalOptionId && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onNavigateToOption(pdf.clienteId, pdf.proposalOptionId);
-                                    }}
-                                    className="font-bold text-slate-900 dark:text-slate-100 text-lg truncate hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left w-full"
-                                >
-                                    {pdf.proposalOptionName}
-                                </button>
+                            {pdf.proposalOptionName && (
+                                pdf.proposalOptionId ? (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onNavigateToOption(pdf.clienteId, pdf.proposalOptionId);
+                                        }}
+                                        className="font-bold text-slate-900 dark:text-slate-100 text-lg truncate hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left w-full"
+                                    >
+                                        {pdf.proposalOptionName}
+                                    </button>
+                                ) : (
+                                    <p className="font-bold text-slate-900 dark:text-slate-100 text-lg truncate">
+                                        {pdf.proposalOptionName}
+                                    </p>
+                                )
                             )}
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                                 {new Date(pdf.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}

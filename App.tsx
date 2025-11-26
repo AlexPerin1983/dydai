@@ -756,7 +756,8 @@ const App: React.FC = () => {
                 nomeArquivo: filename,
                 measurements: activeMeasurements.map(({ isNew, ...rest }) => rest),
                 status: 'pending',
-                proposalOptionName: activeOption!.name
+                proposalOptionName: activeOption!.name,
+                proposalOptionId: activeOption!.id
             };
             await db.savePDF(pdfToSave);
 
@@ -1753,6 +1754,17 @@ const App: React.FC = () => {
         setSelectedClientId(clients[prevIndex].id!);
     }, [clients, selectedClientId]);
 
+    const handleNavigateToOption = useCallback((clientId: number, optionId: number) => {
+        // Muda para a aba de cliente
+        setActiveTab('client');
+        // Seleciona o cliente
+        setSelectedClientId(clientId);
+        // Aguarda um momento para garantir que o cliente foi carregado, então seleciona a opção
+        setTimeout(() => {
+            setActiveOptionId(optionId);
+        }, 100);
+    }, []);
+
 
     const renderContent = () => {
         if (isLoading) {
@@ -1793,6 +1805,7 @@ const App: React.FC = () => {
                         onUpdateStatus={handleUpdatePdfStatus}
                         onSchedule={handleOpenAgendamentoModal}
                         onGenerateCombinedPdf={handleGenerateCombinedPdf}
+                        onNavigateToOption={handleNavigateToOption}
                     />
                 </Suspense>
             );

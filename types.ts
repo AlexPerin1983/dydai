@@ -138,4 +138,5 @@ export interface SavedPDF {
     status?: 'pending' | 'approved' | 'revised';
     agendamentoId?: number;
     proposalOptionName?: string;
+    proposalOptionId?: number; // ID da opção de proposta para navegação
 }

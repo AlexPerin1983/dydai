@@ -9,7 +9,8 @@ interface PdfHistoryViewProps {
     onDownload: (blob: Blob, filename: string) => void;
     onUpdateStatus: (pdfId: number, status: SavedPDF['status']) => void;
     onSchedule: (info: { pdf: SavedPDF; agendamento?: Agendamento } | { agendamento: Agendamento; pdf?: SavedPDF }) => void;
-    onGenerateCombinedPdf: (pdfs: SavedPDF[]) => void; // Nova prop
+    onGenerateCombinedPdf: (pdfs: SavedPDF[]) => void;
+    onNavigateToOption: (clientId: number, optionId: number) => void; // Nova prop para navegação
 }
 
 const formatNumberBR = (number: number) => {
@@ -29,9 +30,10 @@ const PdfHistoryItem: React.FC<{
     onSchedule: (info: { pdf: SavedPDF; agendamento?: Agendamento } | { agendamento: Agendamento; pdf?: SavedPDF }) => void;
     swipedItemId: number | null;
     onSetSwipedItem: (id: number | null) => void;
-    isSelected: boolean; // Nova prop
-    onToggleSelect: (id: number) => void; // Nova prop
-}> = React.memo(({ pdf, clientName, agendamento, onDownload, onDelete, onUpdateStatus, onSchedule, swipedItemId, onSetSwipedItem, isSelected, onToggleSelect }) => {
+    isSelected: boolean;
+    onToggleSelect: (id: number) => void;
+    onNavigateToOption: (clientId: number, optionId: number) => void; // Nova prop
+}> = React.memo(({ pdf, clientName, agendamento, onDownload, onDelete, onUpdateStatus, onSchedule, swipedItemId, onSetSwipedItem, isSelected, onToggleSelect, onNavigateToOption }) => {
     const [translateX, setTranslateX] = useState(0);
     const touchStartX = useRef(0);
     const touchStartY = useRef(0);
@@ -194,10 +196,16 @@ const PdfHistoryItem: React.FC<{
                             />
                         </div>
                         <div className="flex-grow min-w-0">
-                            {pdf.proposalOptionName && (
-                                <p className="font-bold text-slate-900 dark:text-slate-100 text-lg truncate">
+                            {pdf.proposalOptionName && pdf.proposalOptionId && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onNavigateToOption(pdf.clienteId, pdf.proposalOptionId);
+                                    }}
+                                    className="font-bold text-slate-900 dark:text-slate-100 text-lg truncate hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left w-full"
+                                >
                                     {pdf.proposalOptionName}
-                                </p>
+                                </button>
                             )}
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                                 {new Date(pdf.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -264,7 +272,7 @@ const PdfHistoryItem: React.FC<{
 });
 
 
-const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendamentos, onDelete, onDownload, onUpdateStatus, onSchedule, onGenerateCombinedPdf }) => {
+const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendamentos, onDelete, onDownload, onUpdateStatus, onSchedule, onGenerateCombinedPdf, onNavigateToOption }) => {
     const [swipedItemId, setSwipedItemId] = useState<number | null>(null);
     const [expandedClientId, setExpandedClientId] = useState<number | null>(null);
     const [selectedPdfIds, setSelectedPdfIds] = useState<Set<number>>(new Set());
@@ -439,6 +447,7 @@ const PdfHistoryView: React.FC<PdfHistoryViewProps> = ({ pdfs, clients, agendame
                                 onSetSwipedItem={setSwipedItemId}
                                 isSelected={selectedPdfIds.has(pdf.id!)}
                                 onToggleSelect={handleToggleSelect}
+                                onNavigateToOption={onNavigateToOption}
                             />
                         ))}
                     </div>

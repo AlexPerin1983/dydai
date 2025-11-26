@@ -9,6 +9,7 @@ interface FilmSelectionModalProps {
     onAddNewFilm: (filmName: string) => void;
     onEditFilm: (film: Film) => void;
     onDeleteFilm: (filmName: string) => void;
+    onTogglePin: (filmName: string) => void; // Nova prop para fixar/desfixar
 }
 
 const FilmListItem: React.FC<{
@@ -18,7 +19,8 @@ const FilmListItem: React.FC<{
     onDelete: (filmName: string) => void;
     swipedItemName: string | null;
     onSetSwipedItem: (name: string | null) => void;
-}> = ({ film, onSelect, onEdit, onDelete, swipedItemName, onSetSwipedItem }) => {
+    onTogglePin: (filmName: string) => void; // Nova prop
+}> = ({ film, onSelect, onEdit, onDelete, swipedItemName, onSetSwipedItem, onTogglePin }) => {
     const [translateX, setTranslateX] = useState(0);
     const touchStartX = useRef(0);
     const touchStartY = useRef(0);
@@ -27,6 +29,12 @@ const FilmListItem: React.FC<{
     const swipeableRef = useRef<HTMLDivElement>(null);
     const currentTranslateX = useRef(0);
     const ACTIONS_WIDTH = 160;
+
+    // Estados para long press
+    const [isPressing, setIsPressing] = useState(false);
+    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+    const touchStartTime = useRef<number>(0);
+    const hasMoved = useRef(false);
 
     const pricePerM2 = film.preco || film.maoDeObra || 0;
     const priceLabel = film.preco > 0 ? 'Preço' : (film.maoDeObra > 0 ? 'Mão de Obra' : 'Preço');
@@ -46,11 +54,28 @@ const FilmListItem: React.FC<{
         }
         isDraggingCard.current = true;
         gestureDirection.current = null;
+        hasMoved.current = false;
         touchStartX.current = e.touches[0].clientX;
         touchStartY.current = e.touches[0].clientY;
+        touchStartTime.current = Date.now();
+        setIsPressing(true);
+
         if (swipeableRef.current) {
             swipeableRef.current.style.transition = 'none';
         }
+
+        // Inicia timer para long press
+        longPressTimer.current = setTimeout(() => {
+            if (!hasMoved.current) {
+                // Vibração de feedback (se disponível)
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+                onTogglePin(film.nome);
+                setIsPressing(false);
+                isDraggingCard.current = false;
+            }
+        }, 500); // 500ms para ativar o long press
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
@@ -58,6 +83,16 @@ const FilmListItem: React.FC<{
 
         const deltaX = e.touches[0].clientX - touchStartX.current;
         const deltaY = e.touches[0].clientY - touchStartY.current;
+
+        // Se moveu mais de 10px, cancela o long press
+        if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+            hasMoved.current = true;
+            if (longPressTimer.current) {
+                clearTimeout(longPressTimer.current);
+                longPressTimer.current = null;
+            }
+            setIsPressing(false);
+        }
 
         if (gestureDirection.current === null) {
             if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
@@ -79,6 +114,13 @@ const FilmListItem: React.FC<{
     };
 
     const handleTouchEnd = () => {
+        // Limpa o timer de long press
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+        setIsPressing(false);
+
         if (!isDraggingCard.current || !swipeableRef.current) return;
         isDraggingCard.current = false;
         if (gestureDirection.current === 'vertical') {
@@ -123,7 +165,10 @@ const FilmListItem: React.FC<{
     };
 
     return (
-        <div className="relative rounded-lg overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className={`relative rounded-lg overflow-hidden bg-white dark:bg-slate-800 border shadow-sm transition-all ${isPressing
+            ? 'scale-95 border-slate-300 dark:border-slate-600'
+            : 'border-slate-200 dark:border-slate-700'
+            } ${film.pinned ? 'border-l-4 border-l-blue-500' : ''}`}>
             <div className="absolute inset-y-0 right-0 flex">
                 <button
                     onClick={handleEditClick}
@@ -176,7 +221,12 @@ const FilmListItem: React.FC<{
                     className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-150 flex items-center justify-between gap-4 cursor-pointer"
                 >
                     <div className="flex-grow min-w-0">
-                        <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{film.nome}</p>
+                        <div className="flex items-center gap-2">
+                            {film.pinned && (
+                                <i className="fas fa-thumbtack text-blue-500 text-sm"></i>
+                            )}
+                            <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{film.nome}</p>
+                        </div>
                     </div>
                     <div className="flex-shrink-0 text-right">
                         <p className="font-bold text-slate-800 dark:text-slate-200">
@@ -203,7 +253,7 @@ const useDebounce = (value: string, delay: number) => {
     return debouncedValue;
 };
 
-const FilmSelectionModal: React.FC<FilmSelectionModalProps> = ({ isOpen, onClose, films, onSelect, onAddNewFilm, onEditFilm, onDeleteFilm }) => {
+const FilmSelectionModal: React.FC<FilmSelectionModalProps> = ({ isOpen, onClose, films, onSelect, onAddNewFilm, onEditFilm, onDeleteFilm, onTogglePin }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [swipedItemName, setSwipedItemName] = useState<string | null>(null);
     const debouncedSearchTerm = useDebounce(searchTerm, 200);
@@ -217,12 +267,18 @@ const FilmSelectionModal: React.FC<FilmSelectionModalProps> = ({ isOpen, onClose
     }, [isOpen]);
 
     const filteredFilms = useMemo(() => {
-        if (!debouncedSearchTerm) {
-            return films;
+        let result = films;
+        if (debouncedSearchTerm) {
+            result = films.filter(film =>
+                film.nome.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+            );
         }
-        return films.filter(film =>
-            film.nome.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-        );
+        // Ordenar: fixados primeiro, depois por nome
+        return result.sort((a, b) => {
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
+            return a.nome.localeCompare(b.nome);
+        });
     }, [films, debouncedSearchTerm]);
 
     if (!isOpen) return null;
@@ -294,6 +350,7 @@ const FilmSelectionModal: React.FC<FilmSelectionModalProps> = ({ isOpen, onClose
                             onDelete={handleDeleteFilm}
                             swipedItemName={swipedItemName}
                             onSetSwipedItem={setSwipedItemName}
+                            onTogglePin={onTogglePin}
                         />
                     ))}
                     {filteredFilms.length === 0 && debouncedSearchTerm && (

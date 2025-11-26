@@ -15,6 +15,82 @@ const useDebounce = (value: string, delay: number) => {
     return debouncedValue;
 };
 
+// Componente para item de cliente com long press para fixar
+const ClientItem: React.FC<{
+    client: Client;
+    onSelect: (id: number) => void;
+    onTogglePin: (id: number) => void;
+}> = ({ client, onSelect, onTogglePin }) => {
+    const [isPressing, setIsPressing] = useState(false);
+    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+    const touchStartTime = useRef<number>(0);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        touchStartTime.current = Date.now();
+        setIsPressing(true);
+
+        longPressTimer.current = setTimeout(() => {
+            // Vibração de feedback (se disponível)
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+            onTogglePin(client.id!);
+            setIsPressing(false);
+        }, 500); // 500ms para ativar o long press
+    };
+
+    const handleTouchEnd = () => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+        }
+
+        const pressDuration = Date.now() - touchStartTime.current;
+        if (pressDuration < 500) {
+            // Foi um toque rápido, seleciona o cliente
+            onSelect(client.id!);
+        }
+
+        setIsPressing(false);
+    };
+
+    const handleTouchCancel = () => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+        }
+        setIsPressing(false);
+    };
+
+    const handleClick = () => {
+        onSelect(client.id!);
+    };
+
+    return (
+        <button
+            onClick={handleClick}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchCancel}
+            className={`w-full text-left p-4 bg-white dark:bg-slate-800 border rounded-lg shadow-sm transition-all duration-150 flex items-center justify-between ${isPressing
+                    ? 'scale-95 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600'
+                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                } ${client.pinned ? 'border-l-4 border-l-blue-500' : ''}`}
+        >
+            <div className="flex-grow">
+                <div className="flex items-center gap-2">
+                    {client.pinned && (
+                        <i className="fas fa-thumbtack text-blue-500 text-sm"></i>
+                    )}
+                    <p className="font-semibold text-slate-800 dark:text-slate-200">{client.nome}</p>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{client.telefone || 'Sem telefone'}</p>
+            </div>
+            <i className="fas fa-chevron-right text-slate-400"></i>
+        </button>
+    );
+};
+
+
+
 
 interface ClientSelectionModalProps {
     isOpen: boolean;
@@ -23,6 +99,7 @@ interface ClientSelectionModalProps {
     onClientSelect: (id: number | null) => void;
     isLoading: boolean;
     onAddNewClient: (clientName: string) => void;
+    onTogglePin: (id: number) => void; // Nova prop para fixar/desfixar
 }
 
 const ClientSelectionModal: React.FC<ClientSelectionModalProps> = ({
@@ -31,7 +108,8 @@ const ClientSelectionModal: React.FC<ClientSelectionModalProps> = ({
     clients,
     onClientSelect,
     isLoading,
-    onAddNewClient
+    onAddNewClient,
+    onTogglePin
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 200);
@@ -52,12 +130,18 @@ const ClientSelectionModal: React.FC<ClientSelectionModalProps> = ({
 
     const filteredClients = useMemo(() => {
         if (isLoading) return [];
-        if (!debouncedSearchTerm) {
-            return clients;
+        let result = clients;
+        if (debouncedSearchTerm) {
+            result = clients.filter(client =>
+                client.nome.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+            );
         }
-        return clients.filter(client =>
-            client.nome.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-        );
+        // Ordenar: fixados primeiro, depois por nome
+        return result.sort((a, b) => {
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
+            return a.nome.localeCompare(b.nome);
+        });
     }, [clients, debouncedSearchTerm, isLoading]);
 
     const displayedClients = useMemo(() => {
@@ -133,17 +217,12 @@ const ClientSelectionModal: React.FC<ClientSelectionModalProps> = ({
                         <>
 
                             {displayedClients.map(client => (
-                                <button
+                                <ClientItem
                                     key={client.id}
-                                    onClick={() => handleSelectClient(client.id!)}
-                                    className="w-full text-left p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-150 flex items-center justify-between"
-                                >
-                                    <div>
-                                        <p className="font-semibold text-slate-800 dark:text-slate-200">{client.nome}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{client.telefone || 'Sem telefone'}</p>
-                                    </div>
-                                    <i className="fas fa-chevron-right text-slate-400"></i>
-                                </button>
+                                    client={client}
+                                    onSelect={handleSelectClient}
+                                    onTogglePin={onTogglePin}
+                                />
                             ))}
 
                             {visibleCount < filteredClients.length && (

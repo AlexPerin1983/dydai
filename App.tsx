@@ -694,6 +694,7 @@ const App: React.FC = () => {
             await db.deleteCustomFilm(originalFilm.nome);
         }
 
+
         await db.saveCustomFilm(newFilmData);
         await loadFilms();
         setIsFilmModalOpen(false);
@@ -707,6 +708,24 @@ const App: React.FC = () => {
             setEditingMeasurementIdForFilm(null);
         }
     }, [loadFilms, editingMeasurementIdForFilm, measurements, handleMeasurementsChange]);
+
+    const handleToggleClientPin = useCallback(async (clientId: number) => {
+        const client = clients.find(c => c.id === clientId);
+        if (client) {
+            const updatedClient = { ...client, pinned: !client.pinned };
+            await db.saveClient(updatedClient);
+            await loadClients();
+        }
+    }, [clients, loadClients]);
+
+    const handleToggleFilmPin = useCallback(async (filmName: string) => {
+        const film = films.find(f => f.nome === filmName);
+        if (film) {
+            const updatedFilm = { ...film, pinned: !film.pinned };
+            await db.saveCustomFilm(updatedFilm);
+            await loadFilms();
+        }
+    }, [films, loadFilms]);
 
     const handleDeleteFilm = useCallback(async (filmName: string) => {
         setFilmToDeleteName(filmName);
@@ -886,7 +905,7 @@ const App: React.FC = () => {
             setPdfGenerationStatus('success');
         } catch (error) {
             console.error("Erro ao gerar PDF combinado:", error);
-            handleShowInfo(`Ocorreu um erro ao gerar o PDF combinado: ${error instanceof Error ? error.message : String(error)}`);
+            handleShowInfo(`Ocorreu um erro ao gerar o PDF combinado: ${error instanceof Error ? error.message : String(error)} `);
             setPdfGenerationStatus('idle');
         }
     }, [userInfo, clients, films, downloadBlob]);
@@ -926,28 +945,28 @@ const App: React.FC = () => {
             });
 
             const prompt = `
-                Você é um assistente especialista em extração de dados de clientes. Sua tarefa é extrair o máximo de informações de contato, endereço completo (incluindo CEP, logradouro, número, bairro, cidade e UF) e documento (CPF ou CNPJ) de um cliente a partir da entrada fornecida (texto, imagem ou áudio).
+                Você é um assistente especialista em extração de dados de clientes.Sua tarefa é extrair o máximo de informações de contato, endereço completo(incluindo CEP, logradouro, número, bairro, cidade e UF) e documento(CPF ou CNPJ) de um cliente a partir da entrada fornecida(texto, imagem ou áudio).
                 
-                **Instrução Principal:** Analise todo o texto de entrada em busca de dados. Não pare no primeiro dado encontrado.
+                ** Instrução Principal:** Analise todo o texto de entrada em busca de dados.Não pare no primeiro dado encontrado.
                 
-                **Regra para Nome:** Identifique o nome do cliente. Se a entrada for apenas "Nome Telefone", separe-os.
+                ** Regra para Nome:** Identifique o nome do cliente.Se a entrada for apenas "Nome Telefone", separe - os.
                 
-                **Regra de Extração de Números (CRÍTICO):**
-                Varra o texto procurando por sequências numéricas. Use palavras-chave como "cep", "cpf", "cnpj", "tel", "cel" como dicas fortes, mas identifique também números soltos baseando-se na contagem de dígitos (ignorando símbolos):
-                  - **CNPJ:** 14 dígitos. (Ex: 28533595000160). Se encontrar, preencha o campo 'cpfCnpj'.
-                  - **CPF:** 11 dígitos. (Ex: 12345678900). Se encontrar, preencha o campo 'cpfCnpj'.
-                  - **Telefone:** 10 ou 11 dígitos (DDD + Número). (Ex: 83999998888).
-                  - **CEP:** 8 dígitos. (Ex: 58056170).
+                ** Regra de Extração de Números(CRÍTICO):**
+            Varra o texto procurando por sequências numéricas.Use palavras - chave como "cep", "cpf", "cnpj", "tel", "cel" como dicas fortes, mas identifique também números soltos baseando - se na contagem de dígitos(ignorando símbolos):
+                  - ** CNPJ:** 14 dígitos. (Ex: 28533595000160).Se encontrar, preencha o campo 'cpfCnpj'.
+                  - ** CPF:** 11 dígitos. (Ex: 12345678900).Se encontrar, preencha o campo 'cpfCnpj'.
+                  - ** Telefone:** 10 ou 11 dígitos(DDD + Número). (Ex: 83999998888).
+                  - ** CEP:** 8 dígitos. (Ex: 58056170).
                 
-                **Regra Crítica para Telefone:** Remova código de país (+55). Mantenha apenas DDD + Número.
+                ** Regra Crítica para Telefone:** Remova código de país(+55).Mantenha apenas DDD + Número.
                 
-                **Formatação de Saída:** Retorne TODOS os campos numéricos (Telefone, CPF, CNPJ, CEP) APENAS com dígitos (string pura de números), removendo qualquer formatação original (pontos, traços, espaços).
+                ** Formatação de Saída:** Retorne TODOS os campos numéricos(Telefone, CPF, CNPJ, CEP) APENAS com dígitos(string pura de números), removendo qualquer formatação original(pontos, traços, espaços).
                 
-                **Endereço:** Tente separar inteligentemente o logradouro, número, bairro e cidade se estiverem misturados.
+                ** Endereço:** Tente separar inteligentemente o logradouro, número, bairro e cidade se estiverem misturados.
                 
-                **Regra para UF:** O campo UF deve conter APENAS a sigla do estado (2 letras). **SE NÃO ENCONTRAR, RETORNE UMA STRING VAZIA "". JAMAIS RETORNE A PALAVRA "string".**
-                
-                Responda APENAS com um objeto JSON válido, sem markdown, contendo os campos: nome, telefone, email, cpfCnpj, cep, logradouro, numero, complemento, bairro, cidade, uf.
+                ** Regra para UF:** O campo UF deve conter APENAS a sigla do estado(2 letras). ** SE NÃO ENCONTRAR, RETORNE UMA STRING VAZIA "".JAMAIS RETORNE A PALAVRA "string".**
+
+            Responda APENAS com um objeto JSON válido, sem markdown, contendo os campos: nome, telefone, email, cpfCnpj, cep, logradouro, numero, complemento, bairro, cidade, uf.
             `;
 
             const parts: any[] = [prompt];
@@ -1032,7 +1051,7 @@ const App: React.FC = () => {
 
         } catch (error) {
             console.error("Erro ao processar dados do cliente com IA:", error);
-            showError(`Ocorreu um erro com a IA: ${error instanceof Error ? error.message : String(error)}`);
+            showError(`Ocorreu um erro com a IA: ${error instanceof Error ? error.message : String(error)} `);
         } finally {
             setIsProcessingAI(false);
         }
@@ -1076,7 +1095,7 @@ const App: React.FC = () => {
             const prompt = `
                 Você é um assistente especialista para uma empresa de instalação de películas de vidro.Sua tarefa é extrair dados de medidas de uma entrada fornecida pelo usuário.
                 A entrada pode ser texto, imagem(de uma lista, rascunho ou foto) ou áudio.
-            Extraia as seguintes informações para cada medida: largura, altura, quantidade e uma descrição do ambiente / local(ex: "sala", "quarto", "janela da cozinha").
+        Extraia as seguintes informações para cada medida: largura, altura, quantidade e uma descrição do ambiente / local(ex: "sala", "quarto", "janela da cozinha").
                 As medidas estão em metros.Se o usuário disser '1 e meio por 2', interprete como 1, 50m por 2,00m.Sempre formate as medidas com duas casas decimais e vírgula como separador.
                 O ambiente deve ser uma descrição curta e útil.
                 Responda APENAS com um objeto JSON válido que corresponda ao schema fornecido.Não inclua nenhuma outra explicação ou texto.
@@ -1252,7 +1271,7 @@ const App: React.FC = () => {
             }
         } catch (error) {
             console.error("Erro ao processar com IA:", error);
-            showError(`Ocorreu um erro com a IA: ${error instanceof Error ? error.message : String(error)}`);
+            showError(`Ocorreu um erro com a IA: ${error instanceof Error ? error.message : String(error)} `);
         } finally {
             setIsProcessingAI(false);
         }
@@ -2143,6 +2162,7 @@ const App: React.FC = () => {
                     onClientSelect={setSelectedClientId}
                     isLoading={isLoading}
                     onAddNewClient={handleAddNewClientFromSelection}
+                    onTogglePin={handleToggleClientPin}
                 />
             )}
             {isPaymentModalOpen && userInfo && (
@@ -2209,6 +2229,7 @@ const App: React.FC = () => {
                     onAddNewFilm={handleAddNewFilmFromSelection}
                     onEditFilm={handleEditFilmFromSelection}
                     onDeleteFilm={handleRequestDeleteFilm}
+                    onTogglePin={handleToggleFilmPin}
                 />
             )}
             {isApplyFilmToAllModalOpen && (
@@ -2220,6 +2241,7 @@ const App: React.FC = () => {
                     onAddNewFilm={handleAddNewFilmFromSelection}
                     onEditFilm={handleEditFilmFromSelection}
                     onDeleteFilm={handleRequestDeleteFilm}
+                    onTogglePin={handleToggleFilmPin}
                 />
             )}
             {schedulingInfo && (

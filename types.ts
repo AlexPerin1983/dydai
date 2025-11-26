@@ -13,6 +13,7 @@ export interface Client {
     cidade?: string;
     uf?: string;
     lastUpdated?: string; // Novo campo para rastrear a última modificação
+    pinned?: boolean; // Fixar cliente no topo da lista
 }
 
 export interface Measurement {
@@ -55,6 +56,7 @@ export interface Film {
     espessura?: number;
     tser?: number;
     imagens?: string[]; // Alterado para array de strings (Base64)
+    pinned?: boolean; // Fixar película no topo da lista
 }
 
 export type PaymentMethodType = 'pix' | 'boleto' | 'parcelado_sem_juros' | 'parcelado_com_juros' | 'adiantamento' | 'observacao';

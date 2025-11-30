@@ -93,11 +93,11 @@ export class CuttingOptimizer {
         if (rowResult) {
             bestResult = rowResult;
             bestMethod = 'Row-based';
-            console.log('Row-based packing:', {
+            /* console.log('Row-based packing:', {
                 height: rowResult.totalHeight,
                 efficiency: rowResult.efficiency.toFixed(2),
                 itemsWithRotation: rowResult.placedItems.filter(i => i.rotated).length
-            });
+            }); */
         }
 
         // Try Skyline packing
@@ -147,7 +147,7 @@ export class CuttingOptimizer {
 
         // Deep Search (Randomized / Genetic-lite)
         if (useDeepSearch) {
-            console.log('Starting Deep Search...');
+            // console.log('Starting Deep Search...');
             const iterations = 50; // Number of random tries
 
             for (let i = 0; i < iterations; i++) {
@@ -186,7 +186,7 @@ export class CuttingOptimizer {
             }
         }
 
-        console.log('Selected method:', bestMethod, '| Height:', bestResult?.totalHeight, 'cm | Efficiency:', bestResult?.efficiency.toFixed(2) + '%');
+        // console.log('Selected method:', bestMethod, '| Height:', bestResult?.totalHeight, 'cm | Efficiency:', bestResult?.efficiency.toFixed(2) + '%');
         return bestResult!;
     }
 

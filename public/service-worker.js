@@ -1,90 +1,99 @@
-importScripts('https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js');
-
-const { registerRoute } = workbox.routing;
-const { CacheFirst, NetworkFirst, StaleWhileRevalidate } = workbox.strategies;
-const { CacheableResponsePlugin } = workbox.cacheableResponse;
-const { ExpirationPlugin } = workbox.expiration;
-const { precacheAndRoute } = workbox.precaching;
+// Simple Service Worker without Workbox CDN
+const CACHE_NAME = 'app-cache-v69';
+const urlsToCache = [
+    '/',
+    '/offline.html'
+];
 
 // Força o Service Worker a assumir o controle imediatamente após a instalação
-// O Service Worker NÃO deve pular a espera automaticamente.
-// Ele deve aguardar a ação do usuário para chamar skipWaiting().
 self.addEventListener('install', (event) => {
-    console.log('[SW] Instalado. Aguardando ativação pelo usuário.');
+    console.log('[SW] Installing version 69...');
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => {
+            console.log('[SW] Caching app shell');
+            return cache.addAll(urlsToCache);
+        })
+    );
 });
 
-// Precache and route
-precacheAndRoute([
-    // Removido index.html do precache para evitar problemas de cache preso.
-    // O HTML será tratado pela estratégia NetworkFirst abaixo.
-    { url: '/offline.html', revision: '1' }
-]);
+// Ativa imediatamente quando houver uma nova versão
+self.addEventListener('activate', (event) => {
+    console.log('[SW] Activating version 69...');
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    if (cacheName !== CACHE_NAME) {
+                        console.log('[SW] Deleting old cache:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        })
+    );
+    return self.clients.claim();
+});
 
-console.log('[Service Worker] Version 68 - Standard Update Flow');
+// Network First strategy for HTML, Cache First for assets
+self.addEventListener('fetch', (event) => {
+    const { request } = event;
+    const url = new URL(request.url);
 
-// Cache page navigations (HTML) with a Network First strategy
-registerRoute(
-    ({ request }) => request.mode === 'navigate',
-    new NetworkFirst({
-        cacheName: 'pages-cache',
-        plugins: [
-            new CacheableResponsePlugin({
-                statuses: [0, 200],
-            }),
-        ],
-    })
-);
+    // Skip non-GET requests
+    if (request.method !== 'GET') return;
 
-// Cache CSS, JS, and Web Worker requests with a Stale While Revalidate strategy
-registerRoute(
-    ({ request }) =>
-        request.destination === 'style' ||
-        request.destination === 'script' ||
-        request.destination === 'worker',
-    new StaleWhileRevalidate({
-        cacheName: 'assets-cache',
-        plugins: [
-            new CacheableResponsePlugin({
-                statuses: [0, 200],
-            }),
-        ],
-    })
-);
+    // Skip chrome extensions and other origins
+    if (url.origin !== location.origin) return;
 
-// Cache images with a Cache First strategy
-registerRoute(
-    ({ request }) => request.destination === 'image',
-    new CacheFirst({
-        cacheName: 'images-cache',
-        plugins: [
-            new CacheableResponsePlugin({
-                statuses: [0, 200],
-            }),
-            new ExpirationPlugin({
-                maxEntries: 60,
-                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
-            }),
-        ],
-    })
-);
+    // Network First for HTML/navigation
+    if (request.mode === 'navigate' || request.destination === 'document') {
+        event.respondWith(
+            fetch(request)
+                .then((response) => {
+                    // Clone and cache the response
+                    const responseToCache = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(request, responseToCache);
+                    });
+                    return response;
+                })
+                .catch(() => {
+                    // Fallback to cache, then offline page
+                    return caches.match(request).then((response) => {
+                        return response || caches.match('/offline.html');
+                    });
+                })
+        );
+        return;
+    }
 
-// Listener para a mensagem 'SKIP_WAITING'
+    // Cache First for assets (CSS, JS, images)
+    event.respondWith(
+        caches.match(request).then((response) => {
+            if (response) {
+                return response;
+            }
+            return fetch(request).then((response) => {
+                // Don't cache if not a success response
+                if (!response || response.status !== 200 || response.type === 'error') {
+                    return response;
+                }
+                const responseToCache = response.clone();
+                caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(request, responseToCache);
+                });
+                return response;
+            });
+        })
+    );
+});
+
+// Listen for skip waiting message
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
+        console.log('[SW] Skip waiting message received');
         self.skipWaiting();
-        console.log('[SW] Mensagem SKIP_WAITING recebida. Forçando ativação.');
     }
 });
 
-// Offline fallback
-self.addEventListener('fetch', (event) => {
-    if (event.request.mode === 'navigate') {
-        event.respondWith(
-            fetch(event.request).catch(() => {
-                return caches.match('/offline.html');
-            })
-        );
-    }
-});
-
-console.log('[SW] Workbox Service Worker loaded');
+console.log('[SW] Service Worker v69 loaded');

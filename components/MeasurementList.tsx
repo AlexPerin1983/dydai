@@ -527,7 +527,7 @@ const MeasurementList: React.FC<MeasurementListProps> = ({
                             <div className="text-left">
                                 <div className="flex items-center gap-2">
                                     <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Otimizador de Corte</h3>
-                                    <span className="px-1.5 py-0.5 text-[10px] font-semibold tracking-wide bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded border border-blue-200 dark:border-blue-800">BETA</span>
+                                    <span className="px-1.5 py-0.5 text-[10px] font-semibold tracking-wide bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded border border-green-200 dark:border-green-800">BETA v2</span>
                                 </div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">Gere o plano de corte otimizado</p>
                             </div>

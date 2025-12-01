@@ -1,5 +1,5 @@
 
-console.log('App Version: 70 - Auto-Update Service Worker');
+console.log('App Version: 71 - Auto-Update Service Worker');
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';

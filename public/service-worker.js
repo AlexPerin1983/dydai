@@ -15,12 +15,12 @@ self.addEventListener('install', (event) => {
 
 // Precache and route
 precacheAndRoute([
-    { url: '/index.html', revision: '65' },
-    // Aumentar a revisão para forçar o cache
+    // Removido index.html do precache para evitar problemas de cache preso.
+    // O HTML será tratado pela estratégia NetworkFirst abaixo.
     { url: '/offline.html', revision: '1' }
 ]);
 
-console.log('[Service Worker] Version 65 loaded');
+console.log('[Service Worker] Version 66 - NetworkFirst for HTML');
 
 // Cache page navigations (HTML) with a Network First strategy
 registerRoute(

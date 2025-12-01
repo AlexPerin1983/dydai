@@ -1,5 +1,5 @@
 
-console.log('App Version: 65 - Check Update');
+console.log('App Version: 66 - Network First Fix');
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';

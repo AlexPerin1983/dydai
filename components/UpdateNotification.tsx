@@ -22,7 +22,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ onUpdate }) => 
                     Atualizar Agora
                 </button>
             </div>
-            <style jsx>{`
+            <style>{`
                 @keyframes fade-in-up {
                     from {
                         opacity: 0;

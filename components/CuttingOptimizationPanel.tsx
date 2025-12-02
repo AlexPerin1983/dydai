@@ -10,9 +10,43 @@ interface CuttingOptimizationPanelProps {
 }
 
 const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ measurements, clientId, optionId }) => {
-    const [rollWidth, setRollWidth] = useState<string>('152');
-    const [bladeWidth, setBladeWidth] = useState<string>('0');
-    const [respectGrain, setRespectGrain] = useState<boolean>(false);
+    const uniqueFilms = useMemo(() => {
+        const films = new Set(measurements.filter(m => m.active).map(m => m.pelicula));
+        const sorted = Array.from(films).sort();
+        return sorted.length > 0 ? sorted : ['Padrão'];
+    }, [measurements]);
+
+    const [activeFilm, setActiveFilm] = useState<string>(uniqueFilms[0]);
+    const [filmSettings, setFilmSettings] = useState<Record<string, { rollWidth: string, bladeWidth: string, respectGrain: boolean }>>({});
+
+    // Initialize settings for new films
+    useEffect(() => {
+        setFilmSettings(prev => {
+            const newSettings = { ...prev };
+            let changed = false;
+            uniqueFilms.forEach(film => {
+                if (!newSettings[film]) {
+                    newSettings[film] = { rollWidth: '152', bladeWidth: '0', respectGrain: false };
+                    changed = true;
+                }
+            });
+            return changed ? newSettings : prev;
+        });
+
+        // Ensure activeFilm is valid
+        if (!uniqueFilms.includes(activeFilm) && uniqueFilms.length > 0) {
+            setActiveFilm(uniqueFilms[0]);
+        }
+    }, [uniqueFilms, activeFilm]);
+
+    const currentSettings = filmSettings[activeFilm] || { rollWidth: '152', bladeWidth: '0', respectGrain: false };
+
+    const updateCurrentSettings = (key: keyof typeof currentSettings, value: any) => {
+        setFilmSettings(prev => ({
+            ...prev,
+            [activeFilm]: { ...(prev[activeFilm] || { rollWidth: '152', bladeWidth: '0', respectGrain: false }), [key]: value }
+        }));
+    };
     const [result, setResult] = useState<OptimizationResult | null>(null);
     const [isOptionsOpen, setIsOptionsOpen] = useState(false);
     const [zoomLevel, setZoomLevel] = useState<number>(1);
@@ -25,6 +59,7 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
         result: OptimizationResult;
         manualRotations: { [key: string]: boolean };
         methodName: string;
+        filmName?: string;
     }[]>([]);
     const [historyToDelete, setHistoryToDelete] = useState<string | null>(null);
     const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
@@ -125,8 +160,8 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
     }, [result]);
 
     const handleOptimize = React.useCallback((saveToHistory: boolean = false) => {
-        const width = parseFloat(rollWidth);
-        const spacing = parseFloat(bladeWidth);
+        const width = parseFloat(currentSettings.rollWidth);
+        const spacing = parseFloat(currentSettings.bladeWidth);
 
         if (isNaN(width) || width <= 0) {
             return;
@@ -136,8 +171,9 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
         const currentParams = JSON.stringify({
             width,
             spacing,
-            respectGrain,
-            measurements: measurements.map(m => ({
+            respectGrain: currentSettings.respectGrain,
+            activeFilm,
+            measurements: measurements.filter(m => m.pelicula === activeFilm || (uniqueFilms.length === 1 && uniqueFilms[0] === 'Padrão')).map(m => ({
                 id: m.id,
                 largura: m.largura,
                 altura: m.altura,
@@ -156,7 +192,8 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                     timestamp: Date.now(),
                     result: resultRef.current!,
                     manualRotations: { ...manualRotations },
-                    methodName: useDeepSearch ? 'Otimização Profunda' : 'Automático'
+                    methodName: useDeepSearch ? 'Otimização Profunda' : 'Automático',
+                    filmName: activeFilm
                 },
                 ...prev
             ].slice(0, 10));
@@ -170,12 +207,14 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
             const optimizer = new CuttingOptimizer({
                 rollWidth: width,
                 bladeWidth: isNaN(spacing) ? 0 : spacing / 10, // mm to cm
-                allowRotation: !respectGrain
+                allowRotation: !currentSettings.respectGrain
             });
 
-            measurements.forEach(m => {
-                if (!m.active) return; // Skip inactive measurements
+            const relevantMeasurements = measurements.filter(m =>
+                (m.pelicula === activeFilm || (uniqueFilms.length === 1 && uniqueFilms[0] === 'Padrão')) && m.active
+            );
 
+            relevantMeasurements.forEach(m => {
                 const qty = Math.max(1, Math.floor(m.quantidade || 1));
                 // Assumes input is in meters, converts to cm
                 const w = parseFloat(String(m.largura).replace(',', '.')) * 100;
@@ -201,13 +240,14 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                         timestamp: Date.now(),
                         result: newResult,
                         manualRotations: { ...manualRotations },
-                        methodName: useDeepSearch ? 'Otimização Profunda' : 'Automático'
+                        methodName: useDeepSearch ? 'Otimização Profunda' : 'Automático',
+                        filmName: activeFilm
                     },
                     ...prev
                 ].slice(0, 10)); // Keep last 10
             }
         }, 50);
-    }, [rollWidth, bladeWidth, respectGrain, measurements, manualRotations, useDeepSearch]);
+    }, [currentSettings, measurements, manualRotations, useDeepSearch, activeFilm, uniqueFilms]);
 
     // Auto-optimize when dependencies change
     useEffect(() => {
@@ -215,7 +255,7 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
             handleOptimize(false);
         }, 500); // Debounce slightly
         return () => clearTimeout(timer);
-    }, [handleOptimize]);
+    }, [handleOptimize, activeFilm]);
 
     // Calculate dynamic scale
     const availableWidth = Math.max(0, containerWidth - 48);
@@ -241,8 +281,8 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
     return (
         <div className="mt-8 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
             {/* Header */}
-            <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-                <div className="flex items-center justify-between">
+            <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+                <div className="p-3 sm:p-4 flex items-center justify-between">
                     <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         Otimizador de Corte
                         <span className="text-[9px] sm:text-[10px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded-full border border-blue-100 dark:border-blue-800 font-semibold">BETA</span>
@@ -257,6 +297,24 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                         {isSettingsOpen ? 'Ocultar' : 'Configurar'}
                     </button>
                 </div>
+
+                {/* Film Tabs */}
+                {uniqueFilms.length > 1 && (
+                    <div className="flex overflow-x-auto px-3 sm:px-4 pb-0 gap-1 no-scrollbar">
+                        {uniqueFilms.map(film => (
+                            <button
+                                key={film}
+                                onClick={() => setActiveFilm(film)}
+                                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeFilm === film
+                                        ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                    }`}
+                            >
+                                {film}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div className="p-3 sm:p-6">
@@ -268,8 +326,8 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                             <input
                                 type="number"
                                 inputMode="decimal"
-                                value={rollWidth}
-                                onChange={e => setRollWidth(e.target.value)}
+                                value={currentSettings.rollWidth}
+                                onChange={e => updateCurrentSettings('rollWidth', e.target.value)}
                                 placeholder="Largura (cm)"
                                 className="border border-slate-300 dark:border-slate-600 p-2.5 sm:p-2 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 outline-none w-full sm:w-32 text-base sm:text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                             />
@@ -281,8 +339,8 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                 <input
                                     type="number"
                                     inputMode="decimal"
-                                    value={bladeWidth}
-                                    onChange={e => setBladeWidth(e.target.value)}
+                                    value={currentSettings.bladeWidth}
+                                    onChange={e => updateCurrentSettings('bladeWidth', e.target.value)}
                                     placeholder="0"
                                     className="border border-slate-300 dark:border-slate-600 p-2.5 sm:p-2 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 outline-none w-full sm:w-32 pr-8 text-base sm:text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                                 />
@@ -292,13 +350,13 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
 
                         <div className="col-span-1 flex items-center justify-center sm:justify-start h-12 sm:h-10 pb-0 sm:pb-1">
                             <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <div className={`w-10 h-6 sm:w-10 sm:h-6 rounded-full p-1 transition-colors ${respectGrain ? 'bg-blue-600' : 'bg-slate-300'}`}>
-                                    <div className={`bg-white w-4 h-4 sm:w-4 sm:h-4 rounded-full shadow-sm transform transition-transform ${respectGrain ? 'translate-x-4 sm:translate-x-4' : 'translate-x-0'}`} />
+                                <div className={`w-10 h-6 sm:w-10 sm:h-6 rounded-full p-1 transition-colors ${currentSettings.respectGrain ? 'bg-blue-600' : 'bg-slate-300'}`}>
+                                    <div className={`bg-white w-4 h-4 sm:w-4 sm:h-4 rounded-full shadow-sm transform transition-transform ${currentSettings.respectGrain ? 'translate-x-4 sm:translate-x-4' : 'translate-x-0'}`} />
                                 </div>
                                 <input
                                     type="checkbox"
-                                    checked={respectGrain}
-                                    onChange={e => setRespectGrain(e.target.checked)}
+                                    checked={currentSettings.respectGrain}
+                                    onChange={e => updateCurrentSettings('respectGrain', e.target.checked)}
                                     className="hidden"
                                 />
                                 <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">Resp. Veio</span>

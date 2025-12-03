@@ -23,6 +23,7 @@ import DiscountModal from './components/modals/DiscountModal';
 import GeneralDiscountModal from './components/modals/GeneralDiscountModal';
 import AIMeasurementModal from './components/modals/AIMeasurementModal';
 import AIClientModal from './components/modals/AIClientModal';
+import AIFilmModal from './components/modals/AIFilmModal';
 import ApiKeyModal from './components/modals/ApiKeyModal';
 import ProposalOptionsCarousel from './components/ProposalOptionsCarousel';
 import ImageGalleryModal from './components/modals/ImageGalleryModal';
@@ -129,6 +130,8 @@ const App: React.FC = () => {
     const [isAIMeasurementModalOpen, setIsAIMeasurementModalOpen] = useState(false);
     const [isAIClientModalOpen, setIsAIClientModalOpen] = useState(false);
     const [aiClientData, setAiClientData] = useState<Partial<Client> | undefined>(undefined);
+    const [isAIFilmModalOpen, setIsAIFilmModalOpen] = useState(false);
+    const [aiFilmData, setAiFilmData] = useState<Partial<Film> | undefined>(undefined);
     const [isProcessingAI, setIsProcessingAI] = useState(false);
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
     const [apiKeyModalProvider, setApiKeyModalProvider] = useState<'gemini' | 'openai'>('gemini');
@@ -1067,6 +1070,61 @@ const App: React.FC = () => {
         } catch (error) {
             console.error("Erro ao processar dados do cliente com IA:", error);
             showError(`Ocorreu um erro com a IA: ${error instanceof Error ? error.message : String(error)} `);
+        } finally {
+            setIsProcessingAI(false);
+        }
+    }, [userInfo, showError]);
+
+    const handleProcessAIFilmInput = useCallback(async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
+        if (!userInfo?.aiConfig?.apiKey || !userInfo?.aiConfig?.provider) {
+            showError("Por favor, configure seu provedor e chave de API na aba 'Empresa' para usar esta funcionalidade.");
+            return;
+        }
+
+        setIsProcessingAI(true);
+
+        try {
+            const genAI = new GoogleGenerativeAI(userInfo.aiConfig.apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+
+            const prompt = `Você é um assistente especialista em extração de dados de películas automotivas (insulfilm). Sua tarefa é extrair o máximo de informações técnicas de películas a partir da entrada fornecida (texto ou imagem). Retorne APENAS um objeto JSON válido, sem markdown. Campos: nome, preco (apenas números), uv (%), ir (%), vtl (%), tser (%), espessura (micras), garantiaFabricante (anos), precoMetroLinear. Se algum campo não for encontrado, NÃO inclua no JSON.`;
+
+            const parts: any[] = [prompt];
+
+            if (input.type === 'text') {
+                parts.push(input.data as string);
+            } else if (input.type === 'image') {
+                for (const file of input.data as File[]) {
+                    const reader = new FileReader();
+                    const base64Promise = new Promise<string>((resolve) => {
+                        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+                        reader.readAsDataURL(file);
+                    });
+                    const base64Data = await base64Promise;
+                    parts.push({ inlineData: { mimeType: file.type, data: base64Data } });
+                }
+            } else {
+                showError("Entrada de áudio ainda não é suportada para películas.");
+                setIsProcessingAI(false);
+                return;
+            }
+
+            const result = await model.generateContent(parts);
+            const responseText = result.response.text();
+            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+
+            if (jsonMatch) {
+                const filmData = JSON.parse(jsonMatch[0]);
+                setAiFilmData(filmData);
+                setIsAIFilmModalOpen(false);
+                setNewFilmName(filmData.nome || '');
+                setIsFilmModalOpen(true);
+            } else {
+                showError("Não foi possível extrair dados da película. Tente reformular a entrada.");
+            }
+        } catch (error) {
+            console.error("Erro ao processar dados da película com IA:", error);
+            showError(`Ocorreu um erro com a IA: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsProcessingAI(false);
         }
@@ -2227,11 +2285,14 @@ const App: React.FC = () => {
                         setEditingFilm(null);
                         setEditingMeasurementIdForFilm(null);
                         setNewFilmName('');
+                        setAiFilmData(undefined);
                     }}
                     onSave={handleSaveFilm}
                     onDelete={handleDeleteFilm}
                     film={editingFilm}
                     initialName={newFilmName}
+                    aiData={aiFilmData}
+                    onOpenAIModal={() => setIsAIFilmModalOpen(true)}
                 />
             )}
             {isFilmSelectionModalOpen && (
@@ -2430,6 +2491,15 @@ const App: React.FC = () => {
                     isOpen={isAIClientModalOpen}
                     onClose={() => setIsAIClientModalOpen(false)}
                     onProcess={handleProcessAIClientInput}
+                    isProcessing={isProcessingAI}
+                    provider={userInfo?.aiConfig?.provider || 'gemini'}
+                />
+            )}
+            {isAIFilmModalOpen && (
+                <AIFilmModal
+                    isOpen={isAIFilmModalOpen}
+                    onClose={() => setIsAIFilmModalOpen(false)}
+                    onProcess={handleProcessAIFilmInput}
                     isProcessing={isProcessingAI}
                     provider={userInfo?.aiConfig?.provider || 'gemini'}
                 />

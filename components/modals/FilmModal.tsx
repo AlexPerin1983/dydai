@@ -2,6 +2,7 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import { Film } from '../../types';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
+import Tooltip from '../ui/Tooltip';
 import InfoModal from './InfoModal';
 
 interface FilmModalProps {
@@ -11,11 +12,13 @@ interface FilmModalProps {
     onDelete: (filmName: string) => void;
     film: Film | null;
     initialName?: string; // New prop
+    aiData?: Partial<Film>;
+    onOpenAIModal: () => void;
 }
 
 const MAX_IMAGES = 3;
 
-const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete, film, initialName }) => {
+const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete, film, initialName, aiData, onOpenAIModal }) => {
     const [formData, setFormData] = useState<Film>({
         nome: '',
         preco: 0,
@@ -54,6 +57,24 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
             // Converter customFields de objeto para array para edição
             const fieldsArray = Object.entries(film.customFields || {}).map(([key, value]) => ({ key, value }));
             setCustomFields(fieldsArray);
+        } else if (aiData) {
+            setFormData({
+                nome: aiData.nome || initialName || '',
+                preco: aiData.preco || 0,
+                precoMetroLinear: aiData.precoMetroLinear || 0,
+                maoDeObra: aiData.maoDeObra || 0,
+                garantiaFabricante: aiData.garantiaFabricante || 0,
+                garantiaMaoDeObra: aiData.garantiaMaoDeObra || 30,
+                uv: aiData.uv || 0,
+                ir: aiData.ir || 0,
+                vtl: aiData.vtl || 0,
+                espessura: aiData.espessura || 0,
+                tser: aiData.tser || 0,
+                imagens: aiData.imagens || [],
+                customFields: aiData.customFields || {},
+            });
+            const fieldsArray = Object.entries(aiData.customFields || {}).map(([key, value]) => ({ key, value }));
+            setCustomFields(fieldsArray);
         } else {
             setFormData({
                 nome: initialName || '', // Use initialName if provided
@@ -72,7 +93,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
             });
             setCustomFields([]);
         }
-    }, [film, isOpen, initialName]);
+    }, [film, isOpen, initialName, aiData]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { id, value } = e.target;
@@ -195,22 +216,43 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
     const currentImages = formData.imagens || [];
     const canAddMore = currentImages.length < MAX_IMAGES;
 
+    const modalTitle = (
+        <div className="flex justify-between items-center w-full">
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-white">
+                {film ? 'Editar Película' : (aiData ? 'Confirmar Dados da IA' : 'Nova Película')}
+            </h2>
+            {!film && !aiData && (
+                <Tooltip text="Preencher com IA">
+                    <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); onOpenAIModal(); }}
+                        className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center gap-2 text-sm"
+                        aria-label="Preencher formulário com Inteligência Artificial"
+                    >
+                        <i className="fas fa-robot"></i>
+                        <span className="hidden sm:inline">com IA</span>
+                    </button>
+                </Tooltip>
+            )}
+        </div>
+    );
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={film ? 'Editar Película' : 'Adicionar Nova Película'} footer={footer}>
+        <Modal isOpen={isOpen} onClose={onClose} title={modalTitle} footer={footer}>
             <form id="filmForm" onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-4">
-                    <div>
-                        <Input
-                            id="nome"
-                            label="Nome da Película"
-                            type="text"
-                            value={formData.nome}
-                            onChange={handleChange}
-                            onFocus={handleFocus}
-                            required
-                        />
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 items-start">
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg space-y-4">
+                    <Input
+                        id="nome"
+                        label="Nome da Película"
+                        type="text"
+                        value={formData.nome}
+                        onChange={handleChange}
+                        onFocus={handleFocus}
+                        required
+                        placeholder="Ex: G5 Profissional"
+                    />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <Input
                             id="preco"
                             label="Preço por m² (R$)"
@@ -224,14 +266,13 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                         />
                         <Input
                             id="precoMetroLinear"
-                            label="Custo Metro Linear (R$)"
+                            label="Preço Metro Linear (R$)"
                             type="number"
                             value={formData.precoMetroLinear}
                             onChange={handleChange}
                             onFocus={handleFocus}
                             min="0"
                             step="0.01"
-                            placeholder="Opcional"
                         />
                         <Input
                             id="maoDeObra"
@@ -242,48 +283,37 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                             onFocus={handleFocus}
                             min="0"
                             step="0.01"
-                            placeholder="Opcional"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input
+                            id="garantiaFabricante"
+                            label="Garantia Fabricante (Anos)"
+                            type="number"
+                            value={formData.garantiaFabricante}
+                            onChange={handleChange}
+                            onFocus={handleFocus}
+                            min="0"
+                        />
+                        <Input
+                            id="garantiaMaoDeObra"
+                            label="Garantia Mão de Obra (Dias)"
+                            type="number"
+                            value={formData.garantiaMaoDeObra}
+                            onChange={handleChange}
+                            onFocus={handleFocus}
+                            min="0"
                         />
                     </div>
                 </div>
 
-                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
-                    <h3 className="text-base font-semibold leading-6 text-slate-800 dark:text-slate-200 mb-2">
-                        Garantias
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4 items-start">
-                        <Input
-                            as="select"
-                            id="garantiaFabricante"
-                            label="Fabricante (Anos)"
-                            value={formData.garantiaFabricante}
-                            onChange={handleChange}
-                            required
-                        >
-                            {[0, 1, 2, 3, 5, 7, 10, 15].map(v => <option key={v} value={v}>{v === 0 ? 'N/A' : v}</option>)}
-                        </Input>
-                        <Input
-                            as="select"
-                            id="garantiaMaoDeObra"
-                            label="Mão de Obra (Dias)"
-                            value={formData.garantiaMaoDeObra}
-                            onChange={handleChange}
-                            required
-                        >
-                            {[30, 60, 90, 120, 180, 360].map(v => <option key={v} value={v}>{v}</option>)}
-                        </Input>
-                    </div>
-                </div>
-
-                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
-                    <h3 className="text-base font-semibold leading-6 text-slate-800 dark:text-slate-200 mb-2">
-                        Dados Técnicos
-                    </h3>
-                    {/* Grid de Dados Técnicos - 2 colunas em mobile, 3 em desktop */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 items-start">
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
+                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Especificações Técnicas</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         <Input
                             id="uv"
-                            label="UV (%)"
+                            label="Proteção UV (%)"
                             type="number"
                             value={formData.uv}
                             onChange={handleChange}
@@ -293,7 +323,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                         />
                         <Input
                             id="ir"
-                            label="IR (%)"
+                            label="Rejeição IR (%)"
                             type="number"
                             value={formData.ir}
                             onChange={handleChange}
@@ -303,7 +333,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                         />
                         <Input
                             id="vtl"
-                            label="VTL (%)"
+                            label="VLT (%)"
                             type="number"
                             value={formData.vtl}
                             onChange={handleChange}
@@ -313,7 +343,7 @@ const FilmModal: React.FC<FilmModalProps> = ({ isOpen, onClose, onSave, onDelete
                         />
                         <Input
                             id="espessura"
-                            label="Espessura (mc)"
+                            label="Espessura (micras)"
                             type="number"
                             value={formData.espessura}
                             onChange={handleChange}

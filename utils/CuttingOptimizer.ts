@@ -210,12 +210,14 @@ export class CuttingOptimizer {
                     const item = remainingItems[i];
 
                     // Try normal orientation
-                    const itemWidth = item.w + this.bladeWidth;
+                    // Blade width is only added if this is NOT the first item in the row (spacing BETWEEN items)
+                    const spacingNeeded = row.items.length > 0 ? this.bladeWidth : 0;
+                    const itemWidth = item.w + spacingNeeded;
                     const heightTolerance = 0.5;
                     let canFitNormal = Math.abs(item.h - row.itemHeight) <= heightTolerance && itemWidth <= row.remainingWidth;
 
                     // Try rotated orientation
-                    const itemWidthRotated = item.h + this.bladeWidth;
+                    const itemWidthRotated = item.h + spacingNeeded;
                     let canFitRotated = this.allowRotation && Math.abs(item.w - row.itemHeight) <= heightTolerance && itemWidthRotated <= row.remainingWidth && !item.locked;
 
                     if (canFitNormal || canFitRotated) {
@@ -291,7 +293,7 @@ export class CuttingOptimizer {
                 }
 
                 const newY = rows.length > 0 ? rows[rows.length - 1].y + rows[rows.length - 1].height : 0;
-                const rowWidthWithSpacing = rowItemWidth + this.bladeWidth;
+                // First item in a row doesn't need horizontal spacing, only vertical spacing between rows
                 const rowHeightWithSpacing = rowItemHeight + this.bladeWidth;
 
                 placed.push({
@@ -308,7 +310,7 @@ export class CuttingOptimizer {
                     y: newY,
                     height: rowHeightWithSpacing,
                     itemHeight: rowItemHeight,
-                    remainingWidth: this.rollWidth - rowWidthWithSpacing,
+                    remainingWidth: this.rollWidth - rowItemWidth, // No spacing for first item
                     items: [item]
                 });
             }

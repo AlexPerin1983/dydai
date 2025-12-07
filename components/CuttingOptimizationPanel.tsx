@@ -865,6 +865,14 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     if (item.id) {
+                                                        // Check if rotation is possible within roll width
+                                                        // The dimension that will become the width is currently the height (item.h)
+                                                        // We need to check if this height fits in the roll width
+                                                        if (item.h > result.rollWidth) {
+                                                            alert(`Não é possível girar esta peça. A dimensão de ${(item.h / 100).toFixed(2)}m é maior que a largura da bobina (${(result.rollWidth / 100).toFixed(2)}m).`);
+                                                            return;
+                                                        }
+
                                                         const currentRotated = item.rotated || false;
                                                         setManualRotations(prev => ({
                                                             ...prev,

@@ -214,9 +214,87 @@ export const useAIProcessing = (
         }
     }, [userInfo, showError]);
 
+    // Processa dados de medidas com IA
+    const processMeasurementsWithAI = useCallback(async (
+        input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }
+    ): Promise<Array<{ local: string; largura: string; altura: string; quantidade: number }> | null> => {
+        if (!userInfo?.aiConfig?.apiKey || !userInfo?.aiConfig?.provider) {
+            showError("Por favor, configure seu provedor e chave de API na aba 'Empresa' para usar esta funcionalidade.");
+            return null;
+        }
+
+        setIsProcessingAI(true);
+
+        try {
+            const genAI = new GoogleGenerativeAI(userInfo.aiConfig.apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+
+            const prompt = `Você é um assistente especialista em extração de medidas de janelas/vidros para instalação de películas automotivas (insulfilm).
+
+Sua tarefa é extrair TODAS as medidas mencionadas no texto/imagem/áudio e retornar um array JSON com cada medida individual.
+
+**REGRAS CRÍTICAS:**
+1. Separe cada medida individual em um item do array
+2. Se for mencionado "5 janelas de 1.20 x 2.10", crie 5 itens separados
+3. Largura e Altura devem ser strings com vírgula como decimal (ex: "1,20")
+4. Quantidade é sempre 1 para cada item individual
+5. Local deve ser descritivo (ex: "Janela da Sala", "Vidro Fixo do Escritório")
+6. Se apenas um número for mencionado para largura/altura, use o mesmo para ambos
+
+**FORMATO DE SAÍDA:**
+Retorne APENAS um array JSON válido, sem markdown, no formato:
+[
+  { "local": "Janela da Sala", "largura": "1,20", "altura": "2,10", "quantidade": 1 },
+  { "local": "Janela da Sala", "largura": "1,20", "altura": "2,10", "quantidade": 1 }
+]
+
+Se não conseguir extrair medidas válidas, retorne um array vazio: []`;
+
+            const parts: any[] = [prompt];
+
+            if (input.type === 'text') {
+                parts.push(input.data as string);
+            } else if (input.type === 'image') {
+                for (const file of input.data as File[]) {
+                    const { mimeType, data } = await blobToBase64(file);
+                    parts.push({ inlineData: { mimeType, data } });
+                }
+            } else if (input.type === 'audio') {
+                const { mimeType, data } = await blobToBase64(input.data as Blob);
+                parts.push({ inlineData: { mimeType, data } });
+            }
+
+            const result = await model.generateContent(parts);
+            const responseText = result.response.text();
+
+            // Tenta fazer parse do JSON
+            try {
+                // Remove markdown se houver
+                const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+                if (jsonMatch) {
+                    const measurements = JSON.parse(jsonMatch[0]);
+                    return Array.isArray(measurements) ? measurements : [];
+                } else {
+                    throw new Error("Resposta não contém um array JSON válido");
+                }
+            } catch (parseError) {
+                console.error("Erro ao fazer parse da resposta:", parseError);
+                showError("Não foi possível extrair medidas. Tente reformular a entrada.");
+                return null;
+            }
+        } catch (error) {
+            console.error("Erro ao processar medidas com IA:", error);
+            showError(`Ocorreu um erro com a IA: ${error instanceof Error ? error.message : String(error)}`);
+            return null;
+        } finally {
+            setIsProcessingAI(false);
+        }
+    }, [userInfo, showError, blobToBase64]);
+
     return {
         processClientWithAI,
         processFilmWithAI,
+        processMeasurementsWithAI,
         isProcessingAI
     };
 };

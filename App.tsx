@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from 'react';
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { Client, Measurement, UserInfo, Film, PaymentMethods, SavedPDF, Agendamento, ProposalOption, SchedulingInfo, ExtractedClientData } from './types';
 import * as db from './services/db';
@@ -191,40 +191,40 @@ const App: React.FC = () => {
         }
     }, []);
 
-    // Intercepta o botÃ£o voltar do navegador/Android
+    // Intercepta o botão voltar do navegador/Android
     useEffect(() => {
         const handleBackButton = (event: PopStateEvent) => {
-            // Se o teclado numÃ©rico estiver aberto, fecha ele primeiro
+            // Se o teclado numérico estiver aberto, fecha ele primeiro
             if (numpadConfig.isOpen) {
                 event.preventDefault();
                 handleNumpadClose();
-                // Adiciona um estado ao histÃ³rico para manter o usuÃ¡rio na pÃ¡gina
+                // Adiciona um estado ao histórico para manter o usuário na página
                 window.history.pushState(null, '', window.location.pathname);
                 return;
             }
 
-            // Se algum modal estiver aberto, nÃ£o mostra confirmaÃ§Ã£o de saÃ­da
+            // Se algum modal estiver aberto, não mostra confirmação de saída
             if (isClientModalOpen || isFilmModalOpen || editingMeasurement ||
                 isFilmSelectionModalOpen || isGalleryOpen || schedulingInfo) {
                 return;
             }
 
-            // Previne a navegaÃ§Ã£o padrÃ£o
+            // Previne a navegação padrão
             event.preventDefault();
 
-            // Se jÃ¡ pressionou uma vez recentemente, mostra o modal
+            // Se já pressionou uma vez recentemente, mostra o modal
             if (backButtonPressedOnce.current) {
                 setIsExitConfirmModalOpen(true);
                 window.history.pushState(null, '', window.location.pathname);
             } else {
-                // Primeira vez, apenas marca e adiciona estado ao histÃ³rico
+                // Primeira vez, apenas marca e adiciona estado ao histórico
                 backButtonPressedOnce.current = true;
                 window.history.pushState(null, '', window.location.pathname);
 
                 // Mostra um toast informando
                 handleShowInfo('Pressione voltar novamente para sair');
 
-                // Reseta apÃ³s 2 segundos
+                // Reseta após 2 segundos
                 if (backButtonTimeout.current) {
                     clearTimeout(backButtonTimeout.current);
                 }
@@ -234,7 +234,7 @@ const App: React.FC = () => {
             }
         };
 
-        // Adiciona um estado inicial ao histÃ³rico
+        // Adiciona um estado inicial ao histórico
         window.history.pushState(null, '', window.location.pathname);
 
         window.addEventListener('popstate', handleBackButton);
@@ -339,7 +339,7 @@ const App: React.FC = () => {
             await loadClients();
             await loadFilms();
 
-            // MigraÃ§Ã£o automÃ¡tica de PDFs (roda apenas uma vez)
+            // Migração automática de PDFs (roda apenas uma vez)
             const migrationKey = 'pdf_migration_v1_completed';
             const migrationCompleted = localStorage.getItem(migrationKey);
 
@@ -350,7 +350,7 @@ const App: React.FC = () => {
 
                     localStorage.setItem(migrationKey, 'true');
                 } catch (error) {
-                    console.error('Erro na migraÃ§Ã£o automÃ¡tica:', error);
+                    console.error('Erro na migração automática:', error);
                 }
             }
 
@@ -376,7 +376,7 @@ const App: React.FC = () => {
                 if (savedOptions.length === 0) {
                     const defaultOption: ProposalOption = {
                         id: Date.now(),
-                        name: 'Opção 1',
+                        name: 'Op��o 1',
                         measurements: [],
                         generalDiscount: { value: '', type: 'percentage' }
                     };
@@ -453,7 +453,7 @@ const App: React.FC = () => {
         setSwipeDistance(distance);
     }, []);
 
-    const handleShowInfo = useCallback((message: string, title: string = "Atenção") => {
+    const handleShowInfo = useCallback((message: string, title: string = "Aten��o") => {
         setInfoModalConfig({ isOpen: true, title, message });
     }, []);
 
@@ -493,7 +493,7 @@ const App: React.FC = () => {
 
         const newOption: ProposalOption = {
             id: Date.now(),
-            name: `Opção ${proposalOptions.length + 1}`,
+            name: `Op��o ${proposalOptions.length + 1}`,
             measurements: activeOption.measurements.map((m, index) => ({
                 ...m,
                 id: Date.now() + index,
@@ -512,7 +512,7 @@ const App: React.FC = () => {
         setProposalOptions(prevOptions => {
             const newOption: ProposalOption = {
                 id: Date.now(),
-                name: `Opção 1`,
+                name: `Op��o 1`,
                 measurements: [],
                 generalDiscount: { value: '', type: 'percentage' }
             };
@@ -564,7 +564,7 @@ const App: React.FC = () => {
         return clients.find(c => c.id === selectedClientId) || null;
     }, [clients, selectedClientId]);
 
-    // FunÃ§Ã£o auxiliar para salvar o valor atual do Numpad no Measurement
+    // Função auxiliar para salvar o valor atual do Numpad no Measurement
     const saveCurrentNumpadValue = useCallback((config: NumpadConfig, currentMeasurements: UIMeasurement[]) => {
         const { measurementId, field, currentValue } = config;
         if (measurementId === null || field === null) return currentMeasurements;
@@ -573,7 +573,7 @@ const App: React.FC = () => {
         if (field === 'quantidade') {
             finalValue = parseInt(String(currentValue), 10) || 1;
         } else {
-            // Garante que o valor seja salvo com vÃ­rgula, se for numÃ©rico
+            // Garante que o valor seja salvo com vírgula, se for numérico
             finalValue = (String(currentValue) === '' || String(currentValue) === '.') ? '0' : String(currentValue).replace('.', ',');
         }
 
@@ -832,13 +832,13 @@ const App: React.FC = () => {
     const executePdfGeneration = useCallback(async () => {
         const activeMeasurements = measurements.filter(m => m.active && parseFloat(String(m.largura).replace(',', '.')) > 0 && parseFloat(String(m.altura).replace(',', '.')) > 0);
         if (activeMeasurements.length === 0) {
-            handleShowInfo("NÃ£o hÃ¡ medidas vÃ¡lidas para gerar um orÃ§amento.");
+            handleShowInfo("Não há medidas válidas para gerar um orçamento.");
             return;
         }
 
         setPdfGenerationStatus('generating');
         try {
-            // Passando o nome da opÃ§Ã£o de proposta para o gerador de PDF
+            // Passando o nome da opção de proposta para o gerador de PDF
             const pdfBlob = await generatePDF(selectedClient!, userInfo!, activeMeasurements, films, generalDiscount, totals, activeOption!.name);
             const filename = `orcamento_${selectedClient!.nome.replace(/\s+/g, '_').toLowerCase()}_${activeOption!.name.replace(/\s+/g, '_').toLowerCase()}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
 
@@ -887,7 +887,7 @@ const App: React.FC = () => {
 
     const handleGeneratePdf = useCallback(async () => {
         if (!selectedClient || !userInfo || !activeOption) {
-            handleShowInfo("Selecione um cliente e preencha as informaÃ§Ãµes da empresa antes de gerar o PDF.");
+            handleShowInfo("Selecione um cliente e preencha as informações da empresa antes de gerar o PDF.");
             return;
         }
         if (isDirty) {
@@ -909,7 +909,7 @@ const App: React.FC = () => {
         setPdfGenerationStatus('generating');
         try {
             const client = clients.find(c => c.id === selectedPdfs[0].clienteId);
-            if (!client) throw new Error("Cliente nÃ£o encontrado para os orÃ§amentos selecionados.");
+            if (!client) throw new Error("Cliente não encontrado para os orçamentos selecionados.");
 
             const pdfBlob = await generateCombinedPDF(client, userInfo, selectedPdfs, films);
 
@@ -951,7 +951,7 @@ const App: React.FC = () => {
 
     const processClientDataWithGemini = async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }): Promise<ExtractedClientData | null> => {
         if (!userInfo?.aiConfig?.apiKey) {
-            throw new Error("Chave de API do Gemini nÃ£o configurada.");
+            throw new Error("Chave de API do Gemini não configurada.");
         }
 
         try {
@@ -961,28 +961,28 @@ const App: React.FC = () => {
             });
 
             const prompt = `
-                VocÃª Ã© um assistente especialista em extraÃ§Ã£o de dados de clientes.Sua tarefa Ã© extrair o mÃ¡ximo de informaÃ§Ãµes de contato, endereÃ§o completo(incluindo CEP, logradouro, nÃºmero, bairro, cidade e UF) e documento(CPF ou CNPJ) de um cliente a partir da entrada fornecida(texto, imagem ou Ã¡udio).
+                Você é um assistente especialista em extração de dados de clientes.Sua tarefa é extrair o máximo de informações de contato, endereço completo(incluindo CEP, logradouro, número, bairro, cidade e UF) e documento(CPF ou CNPJ) de um cliente a partir da entrada fornecida(texto, imagem ou áudio).
                 
-                ** InstruÃ§Ã£o Principal:** Analise todo o texto de entrada em busca de dados.NÃ£o pare no primeiro dado encontrado.
+                ** Instrução Principal:** Analise todo o texto de entrada em busca de dados.Não pare no primeiro dado encontrado.
                 
                 ** Regra para Nome:** Identifique o nome do cliente.Se a entrada for apenas "Nome Telefone", separe - os.
                 
-                ** Regra de ExtraÃ§Ã£o de NÃºmeros(CRÃTICO):**
-            Varra o texto procurando por sequÃªncias numÃ©ricas.Use palavras - chave como "cep", "cpf", "cnpj", "tel", "cel" como dicas fortes, mas identifique tambÃ©m nÃºmeros soltos baseando - se na contagem de dÃ­gitos(ignorando sÃ­mbolos):
-                  - ** CNPJ:** 14 dÃ­gitos. (Ex: 28533595000160).Se encontrar, preencha o campo 'cpfCnpj'.
-                  - ** CPF:** 11 dÃ­gitos. (Ex: 12345678900).Se encontrar, preencha o campo 'cpfCnpj'.
-                  - ** Telefone:** 10 ou 11 dÃ­gitos(DDD + NÃºmero). (Ex: 83999998888).
-                  - ** CEP:** 8 dÃ­gitos. (Ex: 58056170).
+                ** Regra de Extração de Números(CRÍTICO):**
+            Varra o texto procurando por sequências numéricas.Use palavras - chave como "cep", "cpf", "cnpj", "tel", "cel" como dicas fortes, mas identifique também números soltos baseando - se na contagem de dígitos(ignorando símbolos):
+                  - ** CNPJ:** 14 dígitos. (Ex: 28533595000160).Se encontrar, preencha o campo 'cpfCnpj'.
+                  - ** CPF:** 11 dígitos. (Ex: 12345678900).Se encontrar, preencha o campo 'cpfCnpj'.
+                  - ** Telefone:** 10 ou 11 dígitos(DDD + Número). (Ex: 83999998888).
+                  - ** CEP:** 8 dígitos. (Ex: 58056170).
                 
-                ** Regra CrÃ­tica para Telefone:** Remova cÃ³digo de paÃ­s(+55).Mantenha apenas DDD + NÃºmero.
+                ** Regra Crítica para Telefone:** Remova código de país(+55).Mantenha apenas DDD + Número.
                 
-                ** FormataÃ§Ã£o de SaÃ­da:** Retorne TODOS os campos numÃ©ricos(Telefone, CPF, CNPJ, CEP) APENAS com dÃ­gitos(string pura de nÃºmeros), removendo qualquer formataÃ§Ã£o original(pontos, traÃ§os, espaÃ§os).
+                ** Formatação de Saída:** Retorne TODOS os campos numéricos(Telefone, CPF, CNPJ, CEP) APENAS com dígitos(string pura de números), removendo qualquer formatação original(pontos, traços, espaços).
                 
-                ** EndereÃ§o:** Tente separar inteligentemente o logradouro, nÃºmero, bairro e cidade se estiverem misturados.
+                ** Endereço:** Tente separar inteligentemente o logradouro, número, bairro e cidade se estiverem misturados.
                 
-                ** Regra para UF:** O campo UF deve conter APENAS a sigla do estado(2 letras). ** SE NÃƒO ENCONTRAR, RETORNE UMA STRING VAZIA "".JAMAIS RETORNE A PALAVRA "string".**
+                ** Regra para UF:** O campo UF deve conter APENAS a sigla do estado(2 letras). ** SE NÃO ENCONTRAR, RETORNE UMA STRING VAZIA "".JAMAIS RETORNE A PALAVRA "string".**
 
-            Responda APENAS com um objeto JSON vÃ¡lido, sem markdown, contendo os campos: nome, telefone, email, cpfCnpj, cep, logradouro, numero, complemento, bairro, cidade, uf.
+            Responda APENAS com um objeto JSON válido, sem markdown, contendo os campos: nome, telefone, email, cpfCnpj, cep, logradouro, numero, complemento, bairro, cidade, uf.
             `;
 
             const parts: any[] = [prompt];
@@ -1020,12 +1020,12 @@ const App: React.FC = () => {
 
                         return extractedData as ExtractedClientData;
                     } catch (e2) {
-                        // Se a correÃ§Ã£o falhar, lanÃ§a o erro original
-                        throw new Error(`A resposta da IA nÃ£o Ã© um JSON vÃ¡lido.Erro: ${e instanceof Error ? e.message : 'JSON malformado'} `);
+                        // Se a correção falhar, lança o erro original
+                        throw new Error(`A resposta da IA não é um JSON válido.Erro: ${e instanceof Error ? e.message : 'JSON malformado'} `);
                     }
                 }
 
-                throw new Error(`A resposta da IA nÃ£o Ã© um JSON vÃ¡lido.Erro: ${e instanceof Error ? e.message : 'JSON malformado'} `);
+                throw new Error(`A resposta da IA não é um JSON válido.Erro: ${e instanceof Error ? e.message : 'JSON malformado'} `);
             }
 
         } catch (error) {
@@ -1035,7 +1035,7 @@ const App: React.FC = () => {
     };
 
     const processClientDataWithOpenAI = async (input: { type: 'text' | 'image'; data: string | File[] }): Promise<ExtractedClientData | null> => {
-        showError("O preenchimento de dados do cliente com OpenAI ainda nÃ£o estÃ¡ totalmente implementado. Por favor, use o Gemini ou preencha manualmente.");
+        showError("O preenchimento de dados do cliente com OpenAI ainda não está totalmente implementado. Por favor, use o Gemini ou preencha manualmente.");
         return null;
     };
 
@@ -1053,7 +1053,7 @@ const App: React.FC = () => {
                 extractedData = await processClientDataWithGemini(input);
             } else if (userInfo.aiConfig.provider === 'openai') {
                 if (input.type === 'audio') {
-                    showError("O provedor OpenAI nÃ£o suporta entrada de Ã¡udio para esta funcionalidade.");
+                    showError("O provedor OpenAI não suporta entrada de áudio para esta funcionalidade.");
                     return;
                 }
                 extractedData = await processClientDataWithOpenAI(input as { type: 'text' | 'image'; data: string | File[] });
@@ -1085,7 +1085,7 @@ const App: React.FC = () => {
             const genAI = new GoogleGenerativeAI(userInfo.aiConfig.apiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
-            const prompt = `VocÃª Ã© um assistente especialista em extraÃ§Ã£o de dados de pelÃ­culas automotivas (insulfilm). Sua tarefa Ã© extrair o mÃ¡ximo de informaÃ§Ãµes tÃ©cnicas de pelÃ­culas a partir da entrada fornecida (texto ou imagem). Retorne APENAS um objeto JSON vÃ¡lido, sem markdown. Campos: nome, preco (apenas nÃºmeros), uv (%), ir (%), vtl (%), tser (%), espessura (micras), garantiaFabricante (anos), precoMetroLinear. Se algum campo nÃ£o for encontrado, NÃƒO inclua no JSON.`;
+            const prompt = `Você é um assistente especialista em extração de dados de películas automotivas (insulfilm). Sua tarefa é extrair o máximo de informações técnicas de películas a partir da entrada fornecida (texto ou imagem). Retorne APENAS um objeto JSON válido, sem markdown. Campos: nome, preco (apenas números), uv (%), ir (%), vtl (%), tser (%), espessura (micras), garantiaFabricante (anos), precoMetroLinear. Se algum campo não for encontrado, NÃO inclua no JSON.`;
 
             const parts: any[] = [prompt];
 
@@ -1102,7 +1102,7 @@ const App: React.FC = () => {
                     parts.push({ inlineData: { mimeType: file.type, data: base64Data } });
                 }
             } else {
-                showError("Entrada de Ã¡udio ainda nÃ£o Ã© suportada para pelÃ­culas.");
+                showError("Entrada de áudio ainda não é suportada para películas.");
                 setIsProcessingAI(false);
                 return;
             }
@@ -1118,10 +1118,10 @@ const App: React.FC = () => {
                 setNewFilmName(filmData.nome || '');
                 setIsFilmModalOpen(true);
             } else {
-                showError("NÃ£o foi possÃ­vel extrair dados da pelÃ­cula. Tente reformular a entrada.");
+                showError("Não foi possível extrair dados da película. Tente reformular a entrada.");
             }
         } catch (error) {
-            console.error("Erro ao processar dados da pelÃ­cula com IA:", error);
+            console.error("Erro ao processar dados da película com IA:", error);
             showError(`Ocorreu um erro com a IA: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsProcessingAI(false);
@@ -1142,11 +1142,11 @@ const App: React.FC = () => {
                             properties: {
                                 largura: {
                                     type: SchemaType.STRING,
-                                    description: 'Largura em metros, com vÃ­rgula como separador decimal. Ex: "1,50"'
+                                    description: 'Largura em metros, com vírgula como separador decimal. Ex: "1,50"'
                                 },
                                 altura: {
                                     type: SchemaType.STRING,
-                                    description: 'Altura em metros, com vÃ­rgula como separador decimal. Ex: "2,10"'
+                                    description: 'Altura em metros, com vírgula como separador decimal. Ex: "2,10"'
                                 },
                                 quantidade: {
                                     type: SchemaType.NUMBER,
@@ -1154,7 +1154,7 @@ const App: React.FC = () => {
                                 },
                                 ambiente: {
                                     type: SchemaType.STRING,
-                                    description: 'O local ou descriÃ§Ã£o do item. Ex: "Janela da Sala", "Porta do Quarto"'
+                                    description: 'O local ou descrição do item. Ex: "Janela da Sala", "Porta do Quarto"'
                                 },
                             },
                             required: ['largura', 'altura', 'quantidade', 'ambiente'],
@@ -1164,12 +1164,12 @@ const App: React.FC = () => {
             });
 
             const prompt = `
-                VocÃª Ã© um assistente especialista para uma empresa de instalaÃ§Ã£o de pelÃ­culas de vidro.Sua tarefa Ã© extrair dados de medidas de uma entrada fornecida pelo usuÃ¡rio.
-                A entrada pode ser texto, imagem(de uma lista, rascunho ou foto) ou Ã¡udio.
-        Extraia as seguintes informaÃ§Ãµes para cada medida: largura, altura, quantidade e uma descriÃ§Ã£o do ambiente / local(ex: "sala", "quarto", "janela da cozinha").
-                As medidas estÃ£o em metros.Se o usuÃ¡rio disser '1 e meio por 2', interprete como 1, 50m por 2,00m.Sempre formate as medidas com duas casas decimais e vÃ­rgula como separador.
-                O ambiente deve ser uma descriÃ§Ã£o curta e Ãºtil.
-                Responda APENAS com um objeto JSON vÃ¡lido que corresponda ao schema fornecido.NÃ£o inclua nenhuma outra explicaÃ§Ã£o ou texto.
+                Você é um assistente especialista para uma empresa de instalação de películas de vidro.Sua tarefa é extrair dados de medidas de uma entrada fornecida pelo usuário.
+                A entrada pode ser texto, imagem(de uma lista, rascunho ou foto) ou áudio.
+        Extraia as seguintes informações para cada medida: largura, altura, quantidade e uma descrição do ambiente / local(ex: "sala", "quarto", "janela da cozinha").
+                As medidas estão em metros.Se o usuário disser '1 e meio por 2', interprete como 1, 50m por 2,00m.Sempre formate as medidas com duas casas decimais e vírgula como separador.
+                O ambiente deve ser uma descrição curta e útil.
+                Responda APENAS com um objeto JSON válido que corresponda ao schema fornecido.Não inclua nenhuma outra explicação ou texto.
             `;
 
             const parts: any[] = [prompt];
@@ -1210,14 +1210,14 @@ const App: React.FC = () => {
                         handleMeasurementsChange([...measurements.map(m => ({ ...m, isNew: false })), ...newMeasurements]);
                         setIsAIMeasurementModalOpen(false);
                     } else {
-                        showError("Nenhuma medida foi extraÃ­da. Tente novamente com mais detalhes.");
+                        showError("Nenhuma medida foi extraída. Tente novamente com mais detalhes.");
                     }
                 } else {
-                    throw new Error("A resposta da IA nÃ£o estÃ¡ no formato de array esperado.");
+                    throw new Error("A resposta da IA não está no formato de array esperado.");
                 }
             } catch (e) {
                 console.error("Erro de JSON.parse:", e);
-                throw new Error(`A resposta da IA nÃ£o Ã© um JSON vÃ¡lido.Erro: ${e instanceof Error ? e.message : 'JSON malformado'} `);
+                throw new Error(`A resposta da IA não é um JSON válido.Erro: ${e instanceof Error ? e.message : 'JSON malformado'} `);
             }
         } catch (error) {
             console.error("Erro ao processar com Gemini:", error);
@@ -1227,19 +1227,19 @@ const App: React.FC = () => {
 
     const processWithOpenAI = async (input: { type: 'text' | 'image'; data: string | File[] }) => {
         try {
-            const prompt = `VocÃª Ã© um assistente especialista para uma empresa de instalaÃ§Ã£o de pelÃ­culas de vidro.Sua tarefa Ã© extrair dados de medidas da entrada fornecida pelo usuÃ¡rio.Extraia as seguintes informaÃ§Ãµes para cada medida: largura, altura, quantidade e uma descriÃ§Ã£o do ambiente / local(ex: "sala", "quarto", "janela da cozinha").As medidas estÃ£o em metros.Se o usuÃ¡rio disser '1 e meio por 2', interprete como 1, 50m por 2,00m.Sempre formate as medidas com duas casas decimais e vÃ­rgula como separador.O ambiente deve ser uma descriÃ§Ã£o curta e Ãºtil.`;
+            const prompt = `Você é um assistente especialista para uma empresa de instalação de películas de vidro.Sua tarefa é extrair dados de medidas da entrada fornecida pelo usuário.Extraia as seguintes informações para cada medida: largura, altura, quantidade e uma descrição do ambiente / local(ex: "sala", "quarto", "janela da cozinha").As medidas estão em metros.Se o usuário disser '1 e meio por 2', interprete como 1, 50m por 2,00m.Sempre formate as medidas com duas casas decimais e vírgula como separador.O ambiente deve ser uma descrição curta e útil.`;
 
             const tools = [
                 {
                     type: "function" as const,
                     function: {
                         name: "extract_measurements",
-                        description: "Extrai os dados de medidas da entrada do usuÃ¡rio.",
+                        description: "Extrai os dados de medidas da entrada do usuário.",
                         parameters: {
                             type: "object",
                             properties: {
-                                largura: { type: "string", description: "Largura em metros, com vÃ­rgula. Ex: '1,50'" },
-                                altura: { type: "string", description: "Altura em metros, com vÃ­rgula. Ex: '2,10'" },
+                                largura: { type: "string", description: "Largura em metros, com vírgula. Ex: '1,50'" },
+                                altura: { type: "string", description: "Altura em metros, com vírgula. Ex: '2,10'" },
                                 quantidade: { type: "number", description: "Quantidade de itens." },
                                 ambiente: { type: "string", description: "Local do item. Ex: 'Janela da Sala'" }
                             },
@@ -1288,7 +1288,7 @@ const App: React.FC = () => {
             const toolCall = data.choices[0].message.tool_calls?.[0];
 
             if (!toolCall || toolCall.type !== 'function') {
-                throw new Error("A resposta da IA (OpenAI) nÃ£o continha os dados esperados.");
+                throw new Error("A resposta da IA (OpenAI) não continha os dados esperados.");
             }
 
             const extractedData = JSON.parse(toolCall.function.arguments);
@@ -1311,7 +1311,7 @@ const App: React.FC = () => {
                 handleMeasurementsChange([...measurements.map(m => ({ ...m, isNew: false })), ...newMeasurements]);
                 setIsAIMeasurementModalOpen(false);
             } else {
-                showError("Nenhuma medida foi extraÃ­da com OpenAI. Tente novamente com mais detalhes.");
+                showError("Nenhuma medida foi extraída com OpenAI. Tente novamente com mais detalhes.");
             }
 
         } catch (error) {
@@ -1333,7 +1333,7 @@ const App: React.FC = () => {
                 await processWithGemini(input);
             } else if (userInfo.aiConfig.provider === 'openai') {
                 if (input.type === 'audio') {
-                    showError("O provedor OpenAI nÃ£o suporta entrada de Ã¡udio nesta aplicaÃ§Ã£o.");
+                    showError("O provedor OpenAI não suporta entrada de áudio nesta aplicação.");
                     return;
                 }
                 await processWithOpenAI(input as { type: 'text' | 'image'; data: string | File[] });
@@ -1372,7 +1372,7 @@ const App: React.FC = () => {
             }
         } catch (error) {
             console.error("Failed to update PDF status", error);
-            handleShowInfo("NÃ£o foi possÃ­vel atualizar o status do orÃ§amento.");
+            handleShowInfo("Não foi possível atualizar o status do orçamento.");
         }
     }, [loadAllPdfs]);
 
@@ -1393,7 +1393,7 @@ const App: React.FC = () => {
         setNumpadConfig(prev => {
             const isSameButton = prev.isOpen && prev.measurementId === measurementId && prev.field === field;
 
-            // 1. Se o Numpad jÃ¡ estava aberto em um campo diferente, salve o valor anterior.
+            // 1. Se o Numpad já estava aberto em um campo diferente, salve o valor anterior.
             if (prev.isOpen && (prev.measurementId !== measurementId || prev.field !== field)) {
                 const updatedMeasurements = saveCurrentNumpadValue(prev, measurements);
                 handleMeasurementsChange(updatedMeasurements);
@@ -1496,7 +1496,7 @@ const App: React.FC = () => {
                         shouldClearOnNextInput: true,
                     };
                 } else {
-                    // Se for o Ãºltimo campo, salva e fecha
+                    // Se for o último campo, salva e fecha
                     return { isOpen: false, measurementId: null, field: null, currentValue: '', shouldClearOnNextInput: false };
                 }
             }
@@ -1625,7 +1625,7 @@ const App: React.FC = () => {
         );
         handleMeasurementsChange(updatedMeasurements);
 
-        // Se a medida sendo editada for a mesma que recebeu a nova pelÃ­cula, atualiza o estado da modal tambÃ©m
+        // Se a medida sendo editada for a mesma que recebeu a nova película, atualiza o estado da modal também
         if (editingMeasurement && editingMeasurement.id === editingMeasurementIdForFilm) {
             setEditingMeasurement(prev => prev ? { ...prev, pelicula: filmName } : null);
         }
@@ -1762,7 +1762,7 @@ const App: React.FC = () => {
             handleCloseAgendamentoModal();
         } catch (error) {
             console.error("Erro ao salvar agendamento:", error);
-            handleShowInfo("Não foi possível salvar o agendamento. Tente novamente.");
+            handleShowInfo("N�o foi poss�vel salvar o agendamento. Tente novamente.");
         }
     }, [handleCloseAgendamentoModal, loadAgendamentos, loadAllPdfs]);
 
@@ -1790,7 +1790,7 @@ const App: React.FC = () => {
             await Promise.all([loadAgendamentos(), loadAllPdfs()]);
         } catch (error) {
             console.error("Erro ao excluir agendamento:", error);
-            handleShowInfo("Não foi possível excluir o agendamento. Tente novamente.");
+            handleShowInfo("N�o foi poss�vel excluir o agendamento. Tente novamente.");
         } finally {
             setAgendamentoToDelete(null);
         }
@@ -1891,20 +1891,103 @@ const App: React.FC = () => {
     const handleProcessAIMeasurementInput = useCallback(async (
         input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }
     ) => {
+        if (!userInfo?.aiConfig?.apiKey) {
+            handleShowInfo("Por favor, configure sua chave de API na aba 'Empresa' para usar esta funcionalidade.");
+            return;
+        }
+
         setIsProcessingAI(true);
         try {
-            // TODO: Implementar processamento de IA para medidas
-            // Por enquanto, mostra mensagem informativa
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            handleShowInfo("Esta funcionalidade está temporariamente indisponível. Por favor, adicione as medidas manualmente.");
+            const genAI = new GoogleGenerativeAI(userInfo.aiConfig.apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+
+            const prompt = `Voc� � um assistente especialista em extra��o de medidas de janelas/vidros para instala��o de pel�culas.
+
+Sua tarefa � extrair TODAS as medidas mencionadas e retornar um array JSON com cada medida individual.
+
+**REGRAS:**
+1. Separe cada medida individual em um item do array
+2. Se for "5 janelas de 1.20 x 2.10", crie 5 itens separados
+3. Largura e Altura devem ser strings com v�rgula como decimal (ex: "1,20")
+4. Quantidade � sempre 1 para cada item
+5. Local deve ser descritivo (ex: "Janela da Sala", "Vidro Fixo")
+
+FORMATO:
+[
+  { "local": "Janela da Sala", "largura": "1,20", "altura": "2,10", "quantidade": 1 }
+]
+
+Se n�o conseguir extrair, retorne: []`;
+
+            const parts: any[] = [prompt];
+
+            if (input.type === 'text') {
+                parts.push(input.data as string);
+            } else if (input.type === 'image') {
+                for (const file of input.data as File[]) {
+                    const reader = new FileReader();
+                    const base64Promise = new Promise<string>((resolve) => {
+                        reader.onloadend = () => {
+                            const base64 = (reader.result as string).split(',')[1];
+                            resolve(base64);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                    const base64Data = await base64Promise;
+                    parts.push({ inlineData: { mimeType: file.type, data: base64Data } });
+                }
+            } else if (input.type === 'audio') {
+                const blob = input.data as Blob;
+                const reader = new FileReader();
+                const base64Promise = new Promise<string>((resolve) => {
+                    reader.onloadend = () => {
+                        const base64 = (reader.result as string).split(',')[1];
+                        resolve(base64);
+                    };
+                    reader.readAsDataURL(blob);
+                });
+                const base64Data = await base64Promise;
+                parts.push({ inlineData: { mimeType: blob.type, data: base64Data } });
+            }
+
+            const result = await model.generateContent(parts);
+            const responseText = result.response.text();
+
+            // Parse JSON
+            const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+            if (!jsonMatch) {
+                handleShowInfo("N�o foi poss�vel extrair medidas. Tente reformular.");
+                return;
+            }
+
+            const extractedMeasurements = JSON.parse(jsonMatch[0]);
+
+            if (!Array.isArray(extractedMeasurements) || extractedMeasurements.length === 0) {
+                handleShowInfo("Nenhuma medida foi encontrada. Tente novamente.");
+                return;
+            }
+
+            // Adiciona as medidas extra�das
+            const newMeasurements = extractedMeasurements.map((m: any) => ({
+                ...createEmptyMeasurement(),
+                local: m.local || '',
+                largura: m.largura || '',
+                altura: m.altura || '',
+                quantidade: m.quantidade || 1,
+                isNew: false
+            }));
+
+            handleMeasurementsChange([...measurements, ...newMeasurements]);
             setIsAIMeasurementModalOpen(false);
+            handleShowInfo(`${newMeasurements.length} medida(s) adicionada(s) com sucesso!`);
+
         } catch (error) {
             console.error("Erro ao processar medidas com IA:", error);
-            handleShowInfo("Ocorreu um erro ao processar. Tente novamente.");
+            handleShowInfo(`Erro: ${error instanceof Error ? error.message : 'Tente novamente'}`);
         } finally {
             setIsProcessingAI(false);
         }
-    }, []);
+    }, [userInfo, measurements, handleMeasurementsChange, createEmptyMeasurement]);
 
 
     const LoadingSpinner = () => (
@@ -1918,7 +2001,7 @@ const App: React.FC = () => {
         if (deferredPrompt) {
             promptInstall();
         } else {
-            alert("Para instalar, use o menu 'Compartilhar' do seu navegador e selecione 'Adicionar à Tela de Início'.");
+            alert("Para instalar, use o menu 'Compartilhar' do seu navegador e selecione 'Adicionar � Tela de In�cio'.");
         }
     }, [deferredPrompt, promptInstall]);
 
@@ -1943,7 +2026,7 @@ const App: React.FC = () => {
         setActiveTab('client');
         // Seleciona o cliente
         setSelectedClientId(clientId);
-        // Aguarda um momento para garantir que o cliente foi carregado, entÃ£o seleciona a opÃ§Ã£o
+        // Aguarda um momento para garantir que o cliente foi carregado, então seleciona a opção
         setTimeout(() => {
             setActiveOptionId(optionId);
         }, 100);
@@ -2038,7 +2121,7 @@ const App: React.FC = () => {
                         <i className="fas fa-users fa-2x text-slate-500 dark:text-slate-400"></i>
                     </div>
                     <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200">Crie seu Primeiro Cliente</h3>
-                    <p className="mt-2 text-slate-600 dark:text-slate-400 max-w-xs mx-auto">Tudo começa com um cliente. Adicione os dados para começar a gerar orçamentos.</p>
+                    <p className="mt-2 text-slate-600 dark:text-slate-400 max-w-xs mx-auto">Tudo come�a com um cliente. Adicione os dados para come�ar a gerar or�amentos.</p>
                     <button
                         onClick={() => handleOpenClientModal('add')}
                         className="mt-6 px-6 py-3 bg-slate-800 dark:bg-slate-700 text-white font-semibold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition duration-300 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 flex items-center gap-2"
@@ -2085,7 +2168,7 @@ const App: React.FC = () => {
                     </div>
                     <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Nenhuma Medida Ainda</h3>
                     <p className="text-slate-600 dark:text-slate-400 max-w-xs mx-auto leading-relaxed mb-8 text-sm">
-                        Adicione as dimensões das janelas para começar o orçamento.
+                        Adicione as dimens�es das janelas para come�ar o or�amento.
                     </p>
                     <button
                         onClick={addMeasurement}
@@ -2376,7 +2459,7 @@ const App: React.FC = () => {
             )}
             {showUndoToast && deletedMeasurement && (
                 <Toast
-                    message="Medida excluída"
+                    message="Medida exclu�da"
                     onUndo={handleUndoDelete}
                     onDismiss={handleDismissUndo}
                     duration={5000}

@@ -181,20 +181,18 @@ export class CuttingOptimizer {
     }
 
     private runRowBasedPacking(items: Rect[]): OptimizationResult | null {
-        // Clone items and sort intelligently for row packing
+        // Clone items and sort by area descending
+        // This allows better mixing of different sizes for optimal row packing
         const sortedItems = [...items].sort((a, b) => {
-            // When rotation is allowed, group by minimum dimension (height after rotation)
-            const aMinDim = Math.min(a.w, a.h);
-            const bMinDim = Math.min(b.w, b.h);
-            const aMaxDim = Math.max(a.w, a.h);
-            const bMaxDim = Math.max(b.w, b.h);
+            const areaA = a.w * a.h;
+            const areaB = b.w * b.h;
 
-            // Primary sort: by minimum dimension (ascending - smallest height first)
-            const minDiff = aMinDim - bMinDim;
-            if (minDiff !== 0) return minDiff;
+            // Primary sort: by area (descending - largest first)
+            const areaDiff = areaB - areaA;
+            if (areaDiff !== 0) return areaDiff;
 
-            // Secondary sort: by maximum dimension (descending - largest width first)
-            return bMaxDim - aMaxDim;
+            // Secondary sort: by width (descending - widest first)
+            return b.w - a.w;
         });
 
         const rows: Row[] = [];
@@ -202,10 +200,13 @@ export class CuttingOptimizer {
         const remainingItems = [...sortedItems];
 
         while (remainingItems.length > 0) {
-            // Try to find an item that fits in an existing row
+            // Try to find the BEST item that fits in an existing row
             let foundFit = false;
+            let bestFit: { rowIndex: number, itemIndex: number, useRotated: boolean, wastedSpace: number } | null = null;
 
-            for (const row of rows) {
+            for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+                const row = rows[rowIndex];
+
                 for (let i = 0; i < remainingItems.length; i++) {
                     const item = remainingItems[i];
 
@@ -221,28 +222,41 @@ export class CuttingOptimizer {
                     let canFitRotated = this.allowRotation && Math.abs(item.w - row.itemHeight) <= heightTolerance && itemWidthRotated <= row.remainingWidth && !item.locked;
 
                     if (canFitNormal || canFitRotated) {
-                        // Prefer normal orientation if both fit, but choose rotated if it uses less height
+                        // Choose the orientation that wastes less space
                         const useRotated = canFitRotated && (!canFitNormal || item.w < item.h);
-                        const xPos = this.rollWidth - row.remainingWidth;
+                        const usedWidth = useRotated ? itemWidthRotated : itemWidth;
+                        const wastedSpace = row.remainingWidth - usedWidth;
 
-                        placed.push({
-                            x: xPos,
-                            y: row.y,
-                            w: useRotated ? item.h : item.w,
-                            h: useRotated ? item.w : item.h,
-                            id: item.id,
-                            label: item.label,
-                            rotated: (item.rotated ? !useRotated : useRotated)
-                        });
-
-                        row.items.push(item);
-                        row.remainingWidth -= useRotated ? itemWidthRotated : itemWidth;
-                        remainingItems.splice(i, 1);
-                        foundFit = true;
-                        break;
+                        // Track the best fit (least wasted space)
+                        if (!bestFit || wastedSpace < bestFit.wastedSpace) {
+                            bestFit = { rowIndex, itemIndex: i, useRotated, wastedSpace };
+                        }
                     }
                 }
-                if (foundFit) break;
+            }
+
+            // If we found a best fit, place it
+            if (bestFit) {
+                const row = rows[bestFit.rowIndex];
+                const item = remainingItems[bestFit.itemIndex];
+                const spacingNeeded = row.items.length > 0 ? this.bladeWidth : 0;
+                const itemWidth = bestFit.useRotated ? item.h + spacingNeeded : item.w + spacingNeeded;
+                const xPos = this.rollWidth - row.remainingWidth;
+
+                placed.push({
+                    x: xPos,
+                    y: row.y,
+                    w: bestFit.useRotated ? item.h : item.w,
+                    h: bestFit.useRotated ? item.w : item.h,
+                    id: item.id,
+                    label: item.label,
+                    rotated: (item.rotated ? !bestFit.useRotated : bestFit.useRotated)
+                });
+
+                row.items.push(item);
+                row.remainingWidth -= itemWidth;
+                remainingItems.splice(bestFit.itemIndex, 1);
+                foundFit = true;
             }
 
 
@@ -263,11 +277,10 @@ export class CuttingOptimizer {
                     ).length + 1; // +1 for current item
 
                     // Calculate how many would fit in each orientation
-                    const normalWidth = item.w + this.bladeWidth;
-                    const rotatedWidth = item.h + this.bladeWidth;
-
-                    const fitsNormal = Math.floor(this.rollWidth / normalWidth);
-                    const fitsRotated = Math.floor(this.rollWidth / rotatedWidth);
+                    // Formula: n items fit if: item_width * n + blade_width * (n-1) <= roll_width
+                    // Solving for n: n <= (roll_width + blade_width) / (item_width + blade_width)
+                    const fitsNormal = Math.floor((this.rollWidth + this.bladeWidth) / (item.w + this.bladeWidth));
+                    const fitsRotated = Math.floor((this.rollWidth + this.bladeWidth) / (item.h + this.bladeWidth));
 
                     // Prefer rotation if:
                     // 1. It uses less height (item.w < item.h), OR

@@ -26,24 +26,6 @@
     href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@700&display=swap"
     rel="stylesheet">
 
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            slate: {
-              850: '#1e293b', // Custom dark slate
-              950: '#020617', // Custom darker slate
-            }
-          }
-        }
-      }
-    }
-  </script>
-
   <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
@@ -51,177 +33,15 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 
-  <style>
-    body {
-      font-family: 'Roboto', sans-serif;
-    }
-
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-      font-family: 'Montserrat', sans-serif;
-    }
-
-    .loader {
-      border: 8px solid #f3f3f3;
-      border-top: 8px solid #3498db;
-      border-radius: 50%;
-      width: 48px;
-      height: 48px;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-
-    @keyframes blink {
-
-      0%,
-      100% {
-        opacity: 1;
-      }
-
-      50% {
-        opacity: 0;
-      }
-    }
-
-    .animate-blink {
-      animation: blink 1s step-end infinite;
-    }
-
-    .measurement-group:hover {
-      background-color: #f8fafc;
-      --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
-      --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);
-      box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
-      --tw-ring-color: rgba(226, 232, 240, 1);
-    }
-
-    .measurement-group {
-      transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-
-    .additional-fields-content {
-      transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out, padding 0.3s ease-in-out;
-      max-height: 0;
-      opacity: 0;
-      overflow: hidden;
-      padding-top: 0;
-      padding-bottom: 0;
-    }
-
-    .additional-fields-content.visible {
-      max-height: 200px;
-      opacity: 1;
-      padding-top: 0.5rem;
-      padding-bottom: 0.5rem;
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-
-      to {
-        opacity: 1;
-      }
-    }
-
-    @keyframes slideInLeft {
-      from {
-        transform: translateX(-100%);
-        opacity: 0;
-      }
-
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    @keyframes slideInRight {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    .animate-fade-in-up {
-      animation: fadeInUp 0.4s ease-out forwards;
-    }
-
-    .animate-fade-in {
-      animation: fadeIn 0.3s ease-out forwards;
-    }
-
-    .animate-slide-in-left {
-      animation: slideInLeft 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-    }
-
-    .animate-slide-in-right {
-      animation: slideInRight 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-    }
-
-    .tab-transition-enter {
-      opacity: 0;
-      transform: translateX(20px);
-    }
-
-    .tab-transition-enter-active {
-      opacity: 1;
-      transform: translateX(0);
-      transition: opacity 300ms, transform 300ms;
-    }
-
-    .tab-transition-exit {
-      opacity: 1;
-      transform: translateX(0);
-    }
-
-    .tab-transition-exit-active {
-      opacity: 0;
-      transform: translateX(-20px);
-      transition: opacity 300ms, transform 300ms;
-    }
-  </style>
   <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0"
+  {
+    "imports": {
+      "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+      "react/": "https://aistudiocdn.com/react@^19.2.0/",
+      "react": "https://aistudiocdn.com/react@^19.2.0"
+    }
   }
-}
-</script>
-
+  </script>
 </head>
 
 <body class="h-full text-slate-700 dark:text-slate-300 dark:bg-slate-900">

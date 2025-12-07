@@ -221,7 +221,7 @@
   }
 }
 </script>
-  <link rel="stylesheet" href="/index.css">
+
 </head>
 
 <body class="h-full text-slate-700 dark:text-slate-300 dark:bg-slate-900">
@@ -269,7 +269,7 @@
                     // console.log('⏳ Novo Service Worker instalado, enviando S                   // Send skip waiting message
                     newWorker.postMessage({ type: 'SKIP_WAITING' });
 
- / Show notification to user (optional)
+                    // Show notification to user (optional)
                     if (window.showUpdateNotification) {
                       window.showUpdateNotification();
                     }

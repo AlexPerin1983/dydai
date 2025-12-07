@@ -729,11 +729,12 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                             }
                                         }
 
-                                        // Draw horizontal blade gaps (between  items in same row)
+
+                                        // Draw horizontal blade gaps (between items in same row)
                                         result.placedItems.forEach((item, idx) => {
-                                            // Find items to the right in the same row
+                                            // Find items to the right in the same row (tolerance of 0.5cm for Y position)
                                             const itemsInSameRow = result.placedItems.filter(other =>
-                                                Math.abs(other.y - item.y) < 1 && other.x > item.x
+                                                Math.abs(other.y - item.y) < 0.5 && other.x > item.x
                                             );
 
                                             if (itemsInSameRow.length > 0) {
@@ -745,22 +746,39 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                                 const bladeX = item.x + item.w;
                                                 const bladeWidth = nearest.x - bladeX;
 
-                                                if (bladeWidth > 0.1) { // Only draw if there's actual spacing
+                                                console.log(`🔵 Gap horizontal: Peça ${idx + 1} → x=${bladeX}, width=${bladeWidth}cm`);
+
+                                                if (bladeWidth > 0.01) { // Only draw if there's actual spacing (lowered threshold)
                                                     bladeElements.push(
                                                         <div
-                                                            key={`hblade-${idx}`}
+                                                            key={`hblade-${item.id}-${nearest.id}`}
                                                             className="absolute pointer-events-none"
                                                             style={{
                                                                 left: `${bladeX * scale}px`,
                                                                 top: `${item.y * scale}px`,
                                                                 width: `${bladeWidth * scale}px`,
                                                                 height: `${item.h * scale}px`,
-                                                                backgroundColor: 'rgba(239, 68, 68, 0.2)', // red-500 with opacity
-                                                                borderLeft: '1px dashed rgba(239, 68, 68, 0.5)',
-                                                                borderRight: '1px dashed rgba(239, 68, 68, 0.5)'
+                                                                backgroundColor: 'rgba(239, 68, 68, 0.3)',
+                                                                border: '2px solid rgba(239, 68, 68, 0.8)',
+                                                                boxSizing: 'border-box',
+                                                                zIndex: 5
                                                             }}
-                                                            title={`Sangria Horizontal: ${bladeWidth.toFixed(1)}cm`}
-                                                        />
+                                                            title={`Sangria Horizontal: ${bladeWidth.toFixed(2)}cm`}
+                                                        >
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                top: '50%',
+                                                                left: '50%',
+                                                                transform: 'translate(-50%, -50%) rotate(-90deg)',
+                                                                color: 'rgba(239, 68, 68, 0.9)',
+                                                                fontSize: '9px',
+                                                                fontWeight: 'bold',
+                                                                textShadow: '0 0 3px white',
+                                                                whiteSpace: 'nowrap'
+                                                            }}>
+                                                                ↔ {bladeWidth.toFixed(1)}
+                                                            </div>
+                                                        </div>
                                                     );
                                                 }
                                             }

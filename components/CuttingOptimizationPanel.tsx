@@ -70,6 +70,7 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
     }[]>([]);
     const [historyToDelete, setHistoryToDelete] = useState<string | null>(null);
     const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
+    const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
 
     // Storage key for this client/option combination
     const storageKey = clientId && optionId ? `cutting_history_${clientId}_${optionId}` : null;
@@ -145,6 +146,14 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
         }
     };
 
+    const handleSelectHistory = (item: typeof history[0]) => {
+        // Update all states in a single batch to avoid double-click issue
+        setSelectedHistoryId(item.id);
+        setResult(item.result);
+        setManualRotations(item.manualRotations);
+        setLockedItems(item.lockedItems || {});
+    };
+
     // Ref for the container to calculate width
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -215,9 +224,10 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
 
         if (saveToHistory && resultRef.current && coreParams === lastCoreParams) {
             // Just save the current result with the new lockedItems state
+            const newId = Date.now().toString();
             setHistory(prev => [
                 {
-                    id: Date.now().toString(),
+                    id: newId,
                     timestamp: Date.now(),
                     result: resultRef.current!,
                     manualRotations: { ...manualRotations },
@@ -227,6 +237,7 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                 },
                 ...prev
             ].slice(0, 10));
+            setSelectedHistoryId(newId);
 
             // Update lastParamsRef to match current state so subsequent checks are consistent
             lastParamsRef.current = fullParams;
@@ -268,9 +279,10 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
             setIsOptimizing(false);
 
             if (saveToHistory && newResult) {
+                const newId = Date.now().toString();
                 setHistory(prev => [
                     {
-                        id: Date.now().toString(),
+                        id: newId,
                         timestamp: Date.now(),
                         result: newResult,
                         manualRotations: { ...manualRotations },
@@ -280,6 +292,7 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                     },
                     ...prev
                 ].slice(0, 10)); // Keep last 10
+                setSelectedHistoryId(newId);
             }
         }, 50);
     }, [currentSettings, measurements, manualRotations, useDeepSearch, activeFilm, uniqueFilms]);
@@ -477,14 +490,10 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                             {history.map((item) => (
                                 <div
                                     key={item.id}
-                                    className={`relative flex-shrink-0 p-2 sm:p-3 rounded-lg border text-left transition-all min-w-[140px] sm:min-w-[160px] group ${result === item.result ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 ring-1 ring-blue-500 dark:ring-blue-600' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600'}`}
+                                    className={`relative flex-shrink-0 p-2 sm:p-3 rounded-lg border text-left transition-all min-w-[140px] sm:min-w-[160px] group ${selectedHistoryId === item.id ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 ring-1 ring-blue-500 dark:ring-blue-600' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600'}`}
                                 >
                                     <button
-                                        onClick={() => {
-                                            setResult(item.result);
-                                            setManualRotations(item.manualRotations);
-                                            setLockedItems(item.lockedItems || {});
-                                        }}
+                                        onClick={() => handleSelectHistory(item)}
                                         className="w-full text-left"
                                     >
                                         <div className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mb-1">

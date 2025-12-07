@@ -1901,28 +1901,29 @@ const App: React.FC = () => {
             const genAI = new GoogleGenerativeAI(userInfo.aiConfig.apiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
-            const prompt = `VocÃª Ã© um assistente especialista em extraÃ§Ã£o de medidas de janelas/vidros para instalaÃ§Ã£o de pelÃ­culas.
+            const prompt = `Você é um assistente especialista em extração de medidas de janelas/vidros para instalação de películas.
 
-Sua tarefa Ã© extrair TODAS as medidas mencionadas e retornar um array JSON com cada medida individual.
+Sua tarefa é extrair as medidas e retornar um array JSON.
 
-**REGRAS CRÃTICAS DE AMBIENTE:**
+**REGRAS DE AGRUPAMENTO (CRÍTICO):**
+1. AGRUPE medidas idênticas (mesma largura, altura e local) em um único item.
+2. Se a entrada for "5 janelas de 1.20 x 2.10 na sala", retorne UM ÚNICO item com quantidade: 5.
+3. NÃO crie itens separados para a mesma medida repetida.
+
+**REGRAS DE AMBIENTE:**
 1. O campo "local" deve SEMPRE incluir o ambiente mencionado (Sala, Quarto, Cozinha, etc).
-2. Se a entrada for "5 janelas de 1.20 x 2.10 na sala", o local deve ser "Janela da Sala" para TODAS as 5 medidas.
-3. Se a entrada for "2 vidros fixos 0.80x1.50 no escritÃ³rio", o local deve ser "Vidro Fixo do EscritÃ³rio".
-4. Se nÃ£o houver ambiente explÃ­cito, use uma descriÃ§Ã£o genÃ©rica (ex: "Janela", "Vidro").
+2. Ex: "Janela da Sala", "Vidro Fixo do Escritório".
+3. Se não houver ambiente, use genérico (ex: "Janela").
 
 **OUTRAS REGRAS:**
-1. Separe cada medida individual em um item do array (quantidade sempre 1).
-2. Se for "5 janelas...", crie 5 objetos separados no array.
-3. Largura e Altura devem ser strings com vÃ­rgula como decimal (ex: "1,20").
+1. Largura e Altura devem ser strings com vírgula como decimal (ex: "1,20").
 
 FORMATO DE RESPOSTA (JSON PURO):
 [
-  { "local": "Janela da Sala", "largura": "1,20", "altura": "2,10", "quantidade": 1 },
-  { "local": "Janela da Sala", "largura": "1,20", "altura": "2,10", "quantidade": 1 }
+  { "local": "Janela da Sala", "largura": "1,20", "altura": "2,10", "quantidade": 5 }
 ]
 
-Se nÃ£o conseguir extrair, retorne: []`;
+Se não conseguir extrair, retorne: []`;
 
             const parts: any[] = [prompt];
 

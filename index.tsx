@@ -1,5 +1,5 @@
 // PARA FORÇAR UMA NOVA VERSÃO: Altere o número da versão abaixo (ex: 71 -> 72)
-// console.log('App Version: 71 - Auto-Update Service Worker');
+// console.log('App Version: 78 - Auto-Update Service Worker');
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';

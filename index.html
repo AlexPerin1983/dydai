@@ -33,15 +33,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 
-  <script type="importmap">
-  {
-    "imports": {
-      "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-      "react/": "https://aistudiocdn.com/react@^19.2.0/",
-      "react": "https://aistudiocdn.com/react@^19.2.0"
-    }
-  }
-  </script>
 </head>
 
 <body class="h-full text-slate-700 dark:text-slate-300 dark:bg-slate-900">
@@ -86,7 +77,8 @@
 
                   // When the new service worker is installed and waiting
                   if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    // console.log('⏳ Novo Service Worker instalado, enviando S                   // Send skip waiting message
+                    // console.log('⏳ Novo Service Worker instalado, enviando SKIP_WAITING...');
+                    // Send skip waiting message
                     newWorker.postMessage({ type: 'SKIP_WAITING' });
 
                     // Show notification to user (optional)

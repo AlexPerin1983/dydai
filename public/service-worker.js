@@ -1,6 +1,6 @@
 // Simple Service Worker without Workbox CDN
 // PARA FORÇAR UMA NOVA VERSÃO: Altere o número da versão abaixo (ex: v71 -> v72)
-const CACHE_NAME = 'app-cache-v77';
+const CACHE_NAME = 'app-cache-v78';
 const urlsToCache = [
     '/',
     '/offline.html'

@@ -11,8 +11,13 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [theme, setTheme] = useState<Theme>(() => {
-        const savedTheme = localStorage.getItem('theme');
-        return (savedTheme as Theme) || 'light';
+        try {
+            const savedTheme = localStorage.getItem('theme');
+            return (savedTheme as Theme) || 'light';
+        } catch (error) {
+            console.warn('Could not access localStorage for theme:', error);
+            return 'light';
+        }
     });
 
     useEffect(() => {
@@ -22,7 +27,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } else {
             root.classList.remove('dark');
         }
-        localStorage.setItem('theme', theme);
+        try {
+            localStorage.setItem('theme', theme);
+        } catch (error) {
+            console.warn('Could not save theme to localStorage:', error);
+        }
     }, [theme]);
 
     const toggleTheme = () => {

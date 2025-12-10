@@ -73,6 +73,7 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
     const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
     const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
     const [warningMessage, setWarningMessage] = useState<string | null>(null);
+    const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
 
     // Storage key for this client/option combination
     const storageKey = clientId && optionId ? `cutting_history_${clientId}_${optionId}` : null;
@@ -394,24 +395,30 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                 </div>
             </div>
 
-            <div className="p-3 sm:p-6">
+            <div className="p-2 sm:p-6">
                 {/* Inputs - Collapsible on mobile */}
-                <div className={`${isSettingsOpen ? 'block' : 'hidden'} sm:block mb-4 sm:mb-6`}>
-                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 sm:gap-4 items-end">
+                <div className={`${isSettingsOpen ? 'block' : 'hidden'} sm:block mb-3 sm:mb-6`}>
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-4 items-end">
                         <div className="col-span-1">
-                            <label className="block text-xs font-medium text-slate-500 mb-1">Largura Bobina (cm)</label>
+                            <label className="block text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
+                                <span className="sm:hidden">Bobina (cm)</span>
+                                <span className="hidden sm:inline">Largura Bobina (cm)</span>
+                            </label>
                             <input
                                 type="number"
                                 inputMode="decimal"
                                 value={currentSettings.rollWidth}
                                 onChange={e => updateCurrentSettings('rollWidth', e.target.value)}
-                                placeholder="Largura (cm)"
-                                className="border border-slate-300 dark:border-slate-600 p-2.5 sm:p-2 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 outline-none w-full sm:w-32 text-base sm:text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                                placeholder="152"
+                                className="border border-slate-300 dark:border-slate-600 p-2 sm:p-2 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 outline-none w-full sm:w-32 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                             />
                         </div>
 
                         <div className="col-span-1">
-                            <label className="block text-xs font-medium text-slate-500 mb-1">Espaçamento (Corte)</label>
+                            <label className="block text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">
+                                <span className="sm:hidden">Sangria (mm)</span>
+                                <span className="hidden sm:inline">Espaçamento (Corte)</span>
+                            </label>
                             <div className="relative">
                                 <input
                                     type="number"
@@ -419,16 +426,16 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                     value={currentSettings.bladeWidth}
                                     onChange={e => updateCurrentSettings('bladeWidth', e.target.value)}
                                     placeholder="0"
-                                    className="border border-slate-300 dark:border-slate-600 p-2.5 sm:p-2 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 outline-none w-full sm:w-32 pr-8 text-base sm:text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                                    className="border border-slate-300 dark:border-slate-600 p-2 sm:p-2 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 outline-none w-full sm:w-32 pr-8 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                                 />
-                                <span className="absolute right-3 top-2.5 sm:top-2 text-xs text-slate-400 dark:text-slate-500">mm</span>
+                                <span className="absolute right-2 top-2 text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">mm</span>
                             </div>
                         </div>
 
-                        <div className="col-span-1 flex items-center justify-center sm:justify-start h-12 sm:h-10 pb-0 sm:pb-1">
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <div className={`w-10 h-6 sm:w-10 sm:h-6 rounded-full p-1 transition-colors ${currentSettings.respectGrain ? 'bg-blue-600' : 'bg-slate-300'}`}>
-                                    <div className={`bg-white w-4 h-4 sm:w-4 sm:h-4 rounded-full shadow-sm transform transition-transform ${currentSettings.respectGrain ? 'translate-x-4 sm:translate-x-4' : 'translate-x-0'}`} />
+                        <div className="col-span-1 flex items-center justify-start h-10 sm:h-10">
+                            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                                <div className={`w-8 h-5 sm:w-10 sm:h-6 rounded-full p-0.5 sm:p-1 transition-colors ${currentSettings.respectGrain ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                                    <div className={`bg-white w-4 h-4 sm:w-4 sm:h-4 rounded-full shadow-sm transform transition-transform ${currentSettings.respectGrain ? 'translate-x-3 sm:translate-x-4' : 'translate-x-0'}`} />
                                 </div>
                                 <input
                                     type="checkbox"
@@ -436,14 +443,14 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                     onChange={e => updateCurrentSettings('respectGrain', e.target.checked)}
                                     className="hidden"
                                 />
-                                <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">Resp. Veio</span>
+                                <span className="text-[10px] sm:text-sm text-slate-700 dark:text-slate-300 font-medium">Veio</span>
                             </label>
                         </div>
 
-                        <div className="col-span-1 flex items-center justify-center sm:justify-start h-12 sm:h-10 pb-0 sm:pb-1">
-                            <label className="flex items-center gap-2 cursor-pointer select-none" title="Tenta milhares de combinações para encontrar o melhor encaixe (mais lento)">
-                                <div className={`w-10 h-6 sm:w-10 sm:h-6 rounded-full p-1 transition-colors ${useDeepSearch ? 'bg-purple-600' : 'bg-slate-300'}`}>
-                                    <div className={`bg-white w-4 h-4 sm:w-4 sm:h-4 rounded-full shadow-sm transform transition-transform ${useDeepSearch ? 'translate-x-4 sm:translate-x-4' : 'translate-x-0'}`} />
+                        <div className="col-span-1 flex items-center justify-start h-10 sm:h-10">
+                            <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Tenta milhares de combinações para encontrar o melhor encaixe (mais lento)">
+                                <div className={`w-8 h-5 sm:w-10 sm:h-6 rounded-full p-0.5 sm:p-1 transition-colors ${useDeepSearch ? 'bg-purple-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                                    <div className={`bg-white w-4 h-4 sm:w-4 sm:h-4 rounded-full shadow-sm transform transition-transform ${useDeepSearch ? 'translate-x-3 sm:translate-x-4' : 'translate-x-0'}`} />
                                 </div>
                                 <input
                                     type="checkbox"
@@ -451,10 +458,10 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                     onChange={e => setUseDeepSearch(e.target.checked)}
                                     className="hidden"
                                 />
-                                <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium flex items-center gap-1">
-                                    <span className="sm:hidden">Otim. Prof.</span>
+                                <span className="text-[10px] sm:text-sm text-slate-700 dark:text-slate-300 font-medium flex items-center gap-1">
+                                    <span className="sm:hidden">Profunda</span>
                                     <span className="hidden sm:inline">Otimização Profunda</span>
-                                    <span className="text-[9px] sm:text-[10px] text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-1 py-0.5 rounded-full border border-purple-100 dark:border-purple-800">BETA</span>
+                                    <span className="text-[8px] sm:text-[10px] text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-1 py-0.5 rounded-full border border-purple-100 dark:border-purple-800">β</span>
                                 </span>
                             </label>
                         </div>
@@ -462,7 +469,7 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                         <button
                             onClick={() => handleOptimize(true)}
                             disabled={!result || isOptimizing}
-                            className={`col-span-2 sm:col-span-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 sm:py-2 rounded-lg font-medium transition-colors sm:ml-auto text-base sm:text-sm min-h-[48px] sm:min-h-0 flex items-center justify-center gap-2 ${(!result || isOptimizing) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`col-span-2 sm:col-span-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 sm:py-2 rounded-lg font-medium transition-colors sm:ml-auto text-sm min-h-[40px] sm:min-h-0 flex items-center justify-center gap-2 ${(!result || isOptimizing) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             {isOptimizing ? (
                                 <>
@@ -473,41 +480,48 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                     <span>Otimizando...</span>
                                 </>
                             ) : (
-                                'Gerar Plano de Corte'
+                                <>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" />
+                                    </svg>
+                                    <span className="sm:hidden">Salvar Versão</span>
+                                    <span className="hidden sm:inline">Gerar Plano de Corte</span>
+                                </>
                             )}
                         </button>
                     </div>
                 </div>
 
-                {/* History List */}
+                {/* History List - Compact for mobile */}
                 {history.length > 0 && (
-                    <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 sm:mb-3 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-slate-600 dark:text-slate-400">
+                    <div className="mb-2 sm:mb-6 p-2 sm:p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <h4 className="text-[10px] sm:text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5 sm:mb-3 flex items-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600 dark:text-slate-400">
                                 <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clipRule="evenodd" />
                             </svg>
-                            Histórico de Versões
+                            <span className="sm:hidden">Versões</span>
+                            <span className="hidden sm:inline">Histórico de Versões</span>
                         </h4>
-                        <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2">
+                        <div className="flex gap-1.5 sm:gap-3 overflow-x-auto pb-1">
                             {history.map((item) => (
                                 <div
                                     key={item.id}
-                                    className={`relative flex-shrink-0 p-2 sm:p-3 rounded-lg border text-left transition-all min-w-[140px] sm:min-w-[160px] group ${selectedHistoryId === item.id ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 ring-1 ring-blue-500 dark:ring-blue-600' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600'}`}
+                                    className={`relative flex-shrink-0 p-1.5 sm:p-3 rounded-md sm:rounded-lg border text-left transition-all min-w-[90px] sm:min-w-[160px] group ${selectedHistoryId === item.id ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 ring-1 ring-blue-500 dark:ring-blue-600' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600'}`}
                                 >
                                     <button
                                         onClick={() => handleSelectHistory(item)}
                                         className="w-full text-left"
                                     >
-                                        <div className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mb-1">
-                                            {new Date(item.timestamp).toLocaleTimeString()}
+                                        <div className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-400 mb-0.5">
+                                            {new Date(item.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                         </div>
-                                        <div className="font-bold text-slate-800 dark:text-slate-100 text-xs sm:text-sm mb-1">
-                                            {item.result.totalHeight.toFixed(1)} cm
+                                        <div className="font-bold text-slate-800 dark:text-slate-100 text-[11px] sm:text-sm">
+                                            {item.result.totalHeight.toFixed(0)}<span className="text-[9px] sm:text-xs font-normal">cm</span>
                                         </div>
-                                        <div className="flex justify-between items-center text-[10px] sm:text-xs">
-                                            <span className="text-slate-600 dark:text-slate-400">{item.result.efficiency.toFixed(1)}% Efic.</span>
+                                        <div className="flex items-center gap-1 text-[9px] sm:text-xs">
+                                            <span className="text-slate-600 dark:text-slate-400">{item.result.efficiency.toFixed(0)}%</span>
                                             {item.methodName === 'Otimização Profunda' && (
-                                                <span className="w-2 h-2 rounded-full bg-purple-500" title="Otimização Profunda"></span>
+                                                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-purple-500" title="Otimização Profunda"></span>
                                             )}
                                         </div>
                                     </button>
@@ -516,11 +530,11 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                             e.stopPropagation();
                                             setHistoryToDelete(item.id);
                                         }}
-                                        className="absolute top-1 right-1 p-1.5 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors bg-white/50 dark:bg-slate-800/50 rounded-full backdrop-blur-sm"
+                                        className="absolute -top-1 -right-1 p-1 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-600"
                                         title="Excluir versão"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 sm:w-4 sm:h-4">
-                                            <path fillRule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 013.878.512.75.75 0 11-.49 1.478l-.565 9.064a2.625 2.625 0 01-2.622 2.44h-5.402a2.625 2.625 0 01-2.622-2.44L5.11 6.695a48.866 48.866 0 01-3.878-.512.75.75 0 11.49-1.478 48.818 48.818 0 013.878-.512h9.752zM15 9a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0115 9zm-3 0a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0112 9zm-3 0a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 019 9z" clipRule="evenodd" />
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 sm:w-3.5 sm:h-3.5">
+                                            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
                                         </svg>
                                     </button>
                                 </div>
@@ -532,65 +546,79 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                 {/* Visualization */}
                 {result && (
                     <div className="animate-fade-in" ref={containerRef}>
-                        {/* Stats */}
-                        <div className="flex flex-nowrap gap-2 sm:gap-4 mb-4 sm:mb-6 p-3 sm:p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 text-xs sm:text-sm overflow-x-auto no-scrollbar">
-                            <div className="flex flex-col flex-1 min-w-0">
-                                <span className="text-slate-500 dark:text-slate-400 text-[10px] sm:text-xs uppercase tracking-wider truncate" title="Comprimento Total">
-                                    <span className="sm:hidden">Comp.</span>
-                                    <span className="hidden sm:inline">Comprimento Total</span>
-                                </span>
-                                <span className="font-bold text-slate-800 dark:text-slate-100 text-base sm:text-lg whitespace-nowrap">{result.totalHeight.toFixed(1)} cm</span>
+                        {/* Stats - Compact inline for mobile */}
+                        <div className="flex items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-6 p-2 sm:p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                            {/* Stats - distributed evenly */}
+                            <div className="flex items-center gap-2 sm:gap-4 flex-1">
+                                <div className="flex items-baseline gap-1 flex-1 justify-center sm:justify-start">
+                                    <span className="font-bold text-slate-800 dark:text-slate-100 text-base sm:text-lg">{result.totalHeight.toFixed(0)}</span>
+                                    <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">cm</span>
+                                </div>
+                                <div className="w-px h-5 bg-slate-300 dark:bg-slate-600"></div>
+                                <div className="flex items-baseline gap-1 flex-1 justify-center sm:justify-start">
+                                    <span className="font-bold text-slate-800 dark:text-slate-100 text-base sm:text-lg">{result.efficiency.toFixed(0)}</span>
+                                    <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">%</span>
+                                </div>
+                                <div className="w-px h-5 bg-slate-300 dark:bg-slate-600"></div>
+                                <div className="flex items-baseline gap-1 flex-1 justify-center sm:justify-start">
+                                    <span className="font-bold text-slate-800 dark:text-slate-100 text-base sm:text-lg">{result.placedItems.length}</span>
+                                    <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">pçs</span>
+                                </div>
                             </div>
-                            <div className="w-px bg-slate-200 dark:bg-slate-700 mx-1 sm:mx-2 flex-shrink-0"></div>
-                            <div className="flex flex-col flex-1 min-w-0">
-                                <span className="text-slate-500 dark:text-slate-400 text-[10px] sm:text-xs uppercase tracking-wider truncate" title="Eficiência">
-                                    <span className="sm:hidden">Efic.</span>
-                                    <span className="hidden sm:inline">Eficiência</span>
-                                </span>
-                                <span className="font-bold text-slate-800 dark:text-slate-100 text-base sm:text-lg whitespace-nowrap">{result.efficiency.toFixed(1)}%</span>
-                            </div>
-                            <div className="w-px bg-slate-200 dark:bg-slate-700 mx-1 sm:mx-2 flex-shrink-0"></div>
-                            <div className="flex flex-col flex-1 min-w-0">
-                                <span className="text-slate-500 dark:text-slate-400 text-[10px] sm:text-xs uppercase tracking-wider truncate" title="Peças Encaixadas">
-                                    <span className="sm:hidden">Peças</span>
-                                    <span className="hidden sm:inline">Peças Encaixadas</span>
-                                </span>
-                                <span className="font-bold text-slate-800 dark:text-slate-100 text-base sm:text-lg whitespace-nowrap">{result.placedItems.length}</span>
+                            {/* Zoom controls inline on mobile */}
+                            <div className="flex items-center gap-1.5 sm:hidden border-l border-slate-300 dark:border-slate-600 pl-2">
+                                <button
+                                    onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.25))}
+                                    className="p-1.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 active:bg-slate-300"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                        <path fillRule="evenodd" d="M4 10a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75A.75.75 0 014 10z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                                <span className="text-xs font-mono text-slate-600 dark:text-slate-400 min-w-[36px] text-center">{Math.round(zoomLevel * 100)}%</span>
+                                <button
+                                    onClick={() => setZoomLevel(prev => Math.min(3, prev + 0.25))}
+                                    className="p-1.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 active:bg-slate-300"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                        <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
 
-                        {/* Estimated Cost */}
+                        {/* Estimated Cost - Compact */}
                         {(() => {
                             const film = films.find(f => f.nome === activeFilm);
                             if (!film || !film.precoMetroLinear) return null;
                             const cost = (result.totalHeight / 100) * film.precoMetroLinear;
                             return (
-                                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                <div className="mb-2 sm:mb-4 p-2 sm:p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs text-green-700 dark:text-green-400 uppercase tracking-wider font-medium">Custo Estimado de Material</span>
-                                        <span className="font-bold text-green-800 dark:text-green-300 text-lg">R$ {cost.toFixed(2).replace('.', ',')}</span>
-                                    </div>
-                                    <div className="text-[10px] text-green-600/70 dark:text-green-400/70 mt-1">
-                                        {(result.totalHeight / 100).toFixed(2)}m Ã— R$ {film.precoMetroLinear.toFixed(2)}/m
+                                        <span className="text-[10px] sm:text-xs text-green-700 dark:text-green-400 font-medium">
+                                            <span className="sm:hidden">Custo Material</span>
+                                            <span className="hidden sm:inline">Custo Estimado de Material</span>
+                                        </span>
+                                        <span className="font-bold text-green-800 dark:text-green-300 text-sm sm:text-lg">R$ {cost.toFixed(2).replace('.', ',')}</span>
                                     </div>
                                 </div>
                             );
                         })()}
 
-                        {/* Zoom Slider - Positioned above visualization */}
-                        <div className="mb-3 sm:mb-4 flex items-center justify-center gap-3 px-2 sm:px-4 w-full max-w-3xl mx-auto">
+                        {/* Zoom Slider - Desktop only, mobile uses buttons in stats bar */}
+                        <div className="hidden sm:flex mb-4 items-center justify-center gap-3 px-4 w-full max-w-3xl mx-auto">
                             <input
                                 type="range"
                                 min="50"
                                 max="300"
                                 value={zoomLevel * 100}
                                 onChange={(e) => setZoomLevel(parseInt(e.target.value) / 100)}
-                                className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-green-600 hover:accent-green-700 touch-manipulation"
+                                className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-green-600 hover:accent-green-700"
                                 style={{
                                     background: `linear-gradient(to right, #16a34a 0%, #16a34a ${((zoomLevel * 100 - 50) / 250) * 100}%, #e2e8f0 ${((zoomLevel * 100 - 50) / 250) * 100}%, #e2e8f0 100%)`
                                 }}
                             />
-                            <span className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 min-w-[40px] sm:min-w-[45px] text-center">{Math.round(zoomLevel * 100)}%</span>
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 min-w-[45px] text-center">{Math.round(zoomLevel * 100)}%</span>
                         </div>
 
                         {/* Drawing */}
@@ -659,238 +687,173 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                         backgroundPosition: '-1px -1px' // Align grid lines
                                     }}
                                 >
-                                    {/* Blade width visualization (sangria) */}
-                                    {parseFloat(currentSettings.bladeWidth) > 0 && (() => {
-                                        const bladeWidthCm = parseFloat(currentSettings.bladeWidth) / 10;
-                                        const bladeElements: React.ReactNode[] = [];
+                                    {/* 
+                                     * Blade width (sangria) is calculated in the optimization algorithm 
+                                     * but visual rendering was removed for a cleaner interface.
+                                     * The spacing is still applied between pieces during calculation.
+                                     */}
 
-                                        // Find unique Y positions (rows)
-                                        const rows = new Map<number, { minX: number, maxX: number, h: number }>();
-                                        result.placedItems.forEach(item => {
-                                            const key = Math.round(item.y * 10) / 10;
-                                            if (!rows.has(key)) {
-                                                rows.set(key, { minX: item.x, maxX: item.x + item.w, h: item.h });
-                                            } else {
-                                                const row = rows.get(key)!;
-                                                row.minX = Math.min(row.minX, item.x);
-                                                row.maxX = Math.max(row.maxX, item.x + item.w);
-                                                row.h = Math.max(row.h, item.h);
-                                            }
-                                        });
+                                    {/* Items */}
+                                    {result.placedItems.map((item, index) => {
+                                        const isSelected = selectedPieceId === item.id;
+                                        const isLocked = lockedItems[item.id!];
 
-                                        // Draw vertical blade gaps (between rows)
-                                        const sortedRows = Array.from(rows.entries()).sort((a, b) => a[0] - b[0]);
+                                        return (
+                                            <div
+                                                key={index}
+                                                onClick={() => {
+                                                    // Toggle selection
+                                                    if (selectedPieceId === item.id) {
+                                                        setSelectedPieceId(null);
+                                                    } else {
+                                                        setSelectedPieceId(item.id || null);
+                                                    }
+                                                }}
+                                                className={`absolute flex items-center justify-center text-xs font-bold border-2 transition-all cursor-pointer backdrop-blur-[1px] ${isSelected
+                                                    ? 'z-20 shadow-[0_0_20px_rgba(250,204,21,0.5)] scale-[1.02]'
+                                                    : 'hover:z-10 hover:shadow-[0_0_10px_rgba(56,189,248,0.3)]'
+                                                    }`}
+                                                style={{
+                                                    left: `${item.x * scale}px`,
+                                                    top: `${item.y * scale}px`,
+                                                    width: `${item.w * scale}px`,
+                                                    height: `${item.h * scale}px`,
+                                                    backgroundColor: isSelected
+                                                        ? 'rgba(250, 204, 21, 0.25)' // Yellow for selected
+                                                        : isLocked
+                                                            ? 'rgba(239, 68, 68, 0.15)' // Red tint for locked
+                                                            : 'rgba(14, 165, 233, 0.15)', // Sky-500 default
+                                                    borderColor: isSelected
+                                                        ? 'rgba(250, 204, 21, 0.9)' // Yellow border
+                                                        : isLocked
+                                                            ? 'rgba(239, 68, 68, 0.6)' // Red border for locked
+                                                            : 'rgba(56, 189, 248, 0.6)', // Sky-400 default
+                                                    color: 'rgba(224, 242, 254, 0.9)'
+                                                }}
+                                                title={`#${index + 1}: ${item.label} (${item.w.toFixed(1)} x ${item.h.toFixed(1)}) - Clique para selecionar`}
+                                            >
+                                                {/* Large Watermark ID */}
+                                                <div
+                                                    className="absolute inset-0 flex items-center justify-center font-black pointer-events-none select-none"
+                                                    style={{
+                                                        fontSize: `${Math.min(item.w, item.h) * scale * 0.6}px`,
+                                                        color: isSelected ? 'rgba(250, 204, 21, 0.3)' : 'rgba(255, 255, 255, 0.1)'
+                                                    }}
+                                                >
+                                                    {index + 1}
+                                                </div>
 
-                                        for (let idx = 0; idx < sortedRows.length - 1; idx++) {
-                                            const [y1, data1] = sortedRows[idx];
-                                            const [y2, data2] = sortedRows[idx + 1];
-                                            const bladeY = y1 + data1.h;
-                                            const gap = y2 - bladeY;
-
-                                            if (gap > 0.1) {
-                                                bladeElements.push(
-                                                    <div
-                                                        key={`vblade-${idx}`}
-                                                        className="absolute pointer-events-none"
-                                                        style={{
-                                                            left: '0',
-                                                            top: `${bladeY * scale}px`,
-                                                            width: `${result.rollWidth * scale}px`,
-                                                            height: `${gap * scale}px`,
-                                                            backgroundColor: 'rgba(220, 38, 38, 0.4)',
-                                                            border: '2px solid rgba(220, 38, 38, 0.9)',
-                                                            boxSizing: 'border-box',
-                                                            zIndex: 5
-                                                        }}
-                                                        title={`Sangria Vertical: ${gap.toFixed(2)}cm`}
-                                                    >
-                                                        <div style={{
-                                                            position: 'absolute',
-                                                            top: '50%',
-                                                            left: '50%',
-                                                            transform: 'translate(-50%, -50%)',
-                                                            color: 'rgba(220, 38, 38, 0.9)',
-                                                            fontSize: '10px',
-                                                            fontWeight: 'bold',
-                                                            textShadow: '0 0 3px white'
-                                                        }}>
-                                                            SANGRIA {gap.toFixed(1)}cm
+                                                {/* Dimensions - Only show if piece is big enough */}
+                                                {item.w * scale > 40 && item.h * scale > 40 && (
+                                                    <>
+                                                        {/* Width Label (Bottom Right inside) */}
+                                                        <div className={`absolute bottom-1 right-2 text-[10px] sm:text-xs font-mono font-medium px-1 rounded ${isSelected ? 'text-yellow-200 bg-yellow-900/50' : 'text-sky-200 bg-slate-900/40'}`}>
+                                                            {(item.w / 100).toFixed(2)}
                                                         </div>
+
+                                                        {/* Height Label (Left inside) */}
+                                                        <div className="absolute left-1 top-0 h-full flex items-center">
+                                                            <span className={`origin-center -rotate-90 text-[10px] sm:text-xs font-mono font-medium px-1 rounded ${isSelected ? 'text-yellow-200 bg-yellow-900/50' : 'text-sky-200 bg-slate-900/40'}`}>
+                                                                {(item.h / 100).toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                )}
+
+                                                {/* Rotated indicator (small icon when rotated) */}
+                                                {item.rotated && !isSelected && (
+                                                    <div className="absolute top-1 right-1 opacity-60">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 text-sky-400">
+                                                            <path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm15.408 3.352a.75.75 0 00-.919.53 7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-.53-.918z" clipRule="evenodd" />
+                                                        </svg>
                                                     </div>
-                                                );
-                                            }
-                                        }
+                                                )}
 
+                                                {/* Locked indicator (small icon when locked but not selected) */}
+                                                {isLocked && !isSelected && (
+                                                    <div className="absolute top-1 left-1 opacity-80">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 text-red-400">
+                                                            <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </div>
+                                                )}
 
-                                        // Draw horizontal blade gaps (between items in same row)
-                                        result.placedItems.forEach((item, idx) => {
-                                            // Find items to the right in the same row (tolerance of 0.5cm for Y position)
-                                            const itemsInSameRow = result.placedItems.filter(other =>
-                                                Math.abs(other.y - item.y) < 0.5 && other.x > item.x
-                                            );
+                                                {/* Action Buttons - INSIDE the piece, always visible */}
+                                                {isSelected && (() => {
+                                                    // Calculate minimum button scale to ensure readability
+                                                    const pieceScaledWidth = item.w * scale;
+                                                    const pieceScaledHeight = item.h * scale;
+                                                    const minButtonSize = 60; // Minimum total width needed for buttons
 
-                                            if (itemsInSameRow.length > 0) {
-                                                // Find the nearest item to the right
-                                                const nearest = itemsInSameRow.reduce((prev, curr) =>
-                                                    curr.x < prev.x ? curr : prev
-                                                );
+                                                    // Determine if we need to scale buttons up for small pieces
+                                                    const needsLargerButtons = pieceScaledWidth < minButtonSize || pieceScaledHeight < 40;
 
-                                                const bladeX = item.x + item.w;
-                                                const bladeWidth = nearest.x - bladeX;
+                                                    return (
+                                                        <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+                                                            <div className={`flex gap-1 pointer-events-auto ${needsLargerButtons ? 'scale-75' : ''}`}>
+                                                                {/* Rotate Button */}
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (item.id) {
+                                                                            if (item.h > result.rollWidth) {
+                                                                                setWarningMessage(`Não é possível girar esta peça. A dimensão de ${(item.h / 100).toFixed(2)}m é maior que a largura da bobina (${(result.rollWidth / 100).toFixed(2)}m).`);
+                                                                                return;
+                                                                            }
+                                                                            const currentRotated = item.rotated || false;
+                                                                            setManualRotations(prev => ({
+                                                                                ...prev,
+                                                                                [item.id!]: !currentRotated
+                                                                            }));
+                                                                        }
+                                                                    }}
+                                                                    className="flex items-center justify-center w-8 h-8 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white rounded-full shadow-lg transition-colors"
+                                                                    title="Girar peça 90°"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                                                        <path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm-1.373-7.227a.75.75 0 00.75-.75V1.206a.75.75 0 00-1.5 0v2.432l-.31-.31A7 7 0 001.166 6.466a.75.75 0 001.45.388 5.5 5.5 0 019.201-2.466l.312.31H9.696a.75.75 0 000 1.5h4.242z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                </button>
 
-                                                if (bladeWidth > 0.01) { // Only draw if there's actual spacing (lowered threshold)
-                                                    bladeElements.push(
-                                                        <div
-                                                            key={`hblade-${item.id}-${nearest.id}`}
-                                                            className="absolute pointer-events-none"
-                                                            style={{
-                                                                left: `${bladeX * scale}px`,
-                                                                top: `${item.y * scale}px`,
-                                                                width: `${bladeWidth * scale}px`,
-                                                                height: `${item.h * scale}px`,
-                                                                backgroundColor: 'rgba(239, 68, 68, 0.3)',
-                                                                border: '2px solid rgba(239, 68, 68, 0.8)',
-                                                                boxSizing: 'border-box',
-                                                                zIndex: 5
-                                                            }}
-                                                            title={`Sangria Horizontal: ${bladeWidth.toFixed(2)}cm`}
-                                                        >
-                                                            <div style={{
-                                                                position: 'absolute',
-                                                                top: '50%',
-                                                                left: '50%',
-                                                                transform: 'translate(-50%, -50%) rotate(-90deg)',
-                                                                color: 'rgba(239, 68, 68, 0.9)',
-                                                                fontSize: '9px',
-                                                                fontWeight: 'bold',
-                                                                textShadow: '0 0 3px white',
-                                                                whiteSpace: 'nowrap'
-                                                            }}>
-                                                                ↔ {bladeWidth.toFixed(1)}
+                                                                {/* Lock/Unlock Button */}
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (item.id) {
+                                                                            setLockedItems(prev => {
+                                                                                const newLocked = { ...prev };
+                                                                                if (newLocked[item.id!]) {
+                                                                                    delete newLocked[item.id!];
+                                                                                } else {
+                                                                                    newLocked[item.id!] = { ...item, locked: true };
+                                                                                }
+                                                                                return newLocked;
+                                                                            });
+                                                                        }
+                                                                    }}
+                                                                    className={`flex items-center justify-center w-8 h-8 text-white rounded-full shadow-lg transition-colors ${isLocked
+                                                                        ? 'bg-red-600 hover:bg-red-500 active:bg-red-700'
+                                                                        : 'bg-slate-600 hover:bg-slate-500 active:bg-slate-700'
+                                                                        }`}
+                                                                    title={isLocked ? "Destravar peça" : "Travar posição"}
+                                                                >
+                                                                    {isLocked ? (
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                                                            <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+                                                                        </svg>
+                                                                    ) : (
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                                                            <path fillRule="evenodd" d="M14.5 1A4.5 4.5 0 0010 5.5V9H3a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-1.5V5.5a3 3 0 116 0v2.75a.75.75 0 001.5 0V5.5A4.5 4.5 0 0014.5 1z" clipRule="evenodd" />
+                                                                        </svg>
+                                                                    )}
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     );
-                                                }
-                                            }
-                                        });
-
-                                        return bladeElements;
-                                    })()}
-
-                                    {/* Items */}
-                                    {result.placedItems.map((item, index) => (
-                                        <div
-                                            key={index}
-                                            className="absolute flex items-center justify-center text-xs font-bold border transition-all hover:z-10 hover:shadow-[0_0_15px_rgba(56,189,248,0.3)] hover:scale-[1.005] cursor-default group backdrop-blur-[1px]"
-                                            style={{
-                                                left: `${item.x * scale}px`,
-                                                top: `${item.y * scale}px`,
-                                                width: `${item.w * scale}px`,
-                                                height: `${item.h * scale}px`,
-                                                backgroundColor: 'rgba(14, 165, 233, 0.15)', // Sky-500 with low opacity
-                                                borderColor: 'rgba(56, 189, 248, 0.6)', // Sky-400
-                                                color: 'rgba(224, 242, 254, 0.9)' // Sky-100
-                                            }}
-                                            title={`#${index + 1}: ${item.label} (${item.w.toFixed(1)} x ${item.h.toFixed(1)})`}
-                                        >
-                                            {/* Large Watermark ID */}
-                                            <div
-                                                className="absolute inset-0 flex items-center justify-center font-black text-white/10 pointer-events-none select-none"
-                                                style={{ fontSize: `${Math.min(item.w, item.h) * scale * 0.6}px` }}
-                                            >
-                                                {index + 1}
+                                                })()}
                                             </div>
-
-                                            {/* Dimensions - Only show if piece is big enough */}
-                                            {item.w * scale > 40 && item.h * scale > 40 && (
-                                                <>
-                                                    {/* Width Label (Bottom Right inside) */}
-                                                    <div className="absolute bottom-1 right-2 text-[10px] sm:text-xs font-mono text-sky-200 font-medium bg-slate-900/40 px-1 rounded">
-                                                        {(item.w / 100).toFixed(2)}
-                                                    </div>
-
-                                                    {/* Height Label (Left inside) */}
-                                                    <div className="absolute left-1 top-0 h-full flex items-center">
-                                                        <span className="origin-center -rotate-90 text-[10px] sm:text-xs font-mono text-sky-200 font-medium bg-slate-900/40 px-1 rounded">
-                                                            {(item.h / 100).toFixed(2)}
-                                                        </span>
-                                                    </div>
-                                                </>
-                                            )}
-
-                                            {/* Width on the bottom (only for bottom-most items in their column to avoid clutter? Or just all?) 
-                                                Let's stick to the internal label for width as per the reference image having internal numbers.
-                                                Actually reference has internal numbers like 1.00, 0.85.
-                                            */}
-
-                                            {item.rotated && (
-                                                <div className="absolute top-1 right-1 opacity-60">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 text-sky-400">
-                                                        <path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm15.408 3.352a.75.75 0 00-.919.53 7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-.53-.918z" clipRule="evenodd" />
-                                                    </svg>
-                                                </div>
-                                            )}
-
-                                            {/* Lock Toggle Button */}
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (item.id) {
-                                                        setLockedItems(prev => {
-                                                            const newLocked = { ...prev };
-                                                            if (newLocked[item.id!]) {
-                                                                delete newLocked[item.id!];
-                                                            } else {
-                                                                newLocked[item.id!] = { ...item, locked: true };
-                                                            }
-                                                            return newLocked;
-                                                        });
-                                                    }
-                                                }}
-                                                className={`absolute -top-2 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-6 bg-slate-800 border border-slate-600 rounded-full p-1 shadow-md transition-all hover:bg-slate-700 z-20 ${lockedItems[item.id!] ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                                                title={lockedItems[item.id!] ? "Destravar peça" : "Travar peça"}
-                                            >
-                                                {lockedItems[item.id!] ? (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 text-red-500">
-                                                        <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd" />
-                                                    </svg>
-                                                ) : (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 text-slate-400">
-                                                        <path d="M18 1.5c2.9 0 5.25 2.35 5.25 5.25v3.75a.75.75 0 01-1.5 0V6.75a3.75 3.75 0 10-7.5 0v3a.75.75 0 01-1.5 0v-3A5.25 5.25 0 0118 1.5zM12.625 14.75a.75.75 0 00-1.25 0v2.625c0 .414.336.75.75.75h3.5a.75.75 0 00.75-.75v-2.625a.75.75 0 00-1.25 0H12.625z" />
-                                                        <path fillRule="evenodd" d="M12.971 10.286a3 3 0 00-1.942 0A6 6 0 004.5 16.125v2.25a3 3 0 003 3h9a3 3 0 003-3v-2.25a6 6 0 00-6.529-5.839z" clipRule="evenodd" />
-                                                    </svg>
-                                                )}
-                                            </button>
-
-                                            {/* Rotation Toggle Button */}
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (item.id) {
-                                                        // Check if rotation is possible within roll width
-                                                        // The dimension that will become the width is currently the height (item.h)
-                                                        // We need to check if this height fits in the roll width
-                                                        if (item.h > result.rollWidth) {
-                                                            setWarningMessage(`Não é possível girar esta peça. A dimensão de ${(item.h / 100).toFixed(2)}m é maior que a largura da bobina (${(result.rollWidth / 100).toFixed(2)}m).`);
-                                                            return;
-                                                        }
-
-                                                        const currentRotated = item.rotated || false;
-                                                        setManualRotations(prev => ({
-                                                            ...prev,
-                                                            [item.id!]: !currentRotated
-                                                        }));
-                                                    }
-                                                }}
-                                                className="absolute -top-2 -right-2 bg-slate-800 border border-slate-600 rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-700 z-20"
-                                                title="Girar peça"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 text-sky-400">
-                                                    <path fillRule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm15.408 3.352a.75.75 0 00-.919.53 7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-.53-.918z" clipRule="evenodd" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>

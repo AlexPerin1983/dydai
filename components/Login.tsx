@@ -25,12 +25,16 @@ export const Login: React.FC = () => {
                 setMessage({ type: 'success', text: 'Email de redefinição enviado! Verifique sua caixa de entrada.' });
                 setShowForgotPassword(false);
             } else if (isSignUp) {
-                const { error } = await supabase.auth.signUp({
+                const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
                 });
                 if (error) throw error;
-                setMessage({ type: 'success', text: 'Cadastro realizado! Verifique seu email para confirmar.' });
+
+                // Se a confirmação de email estiver desativada, data.session existirá e o login será automático.
+                if (!data.session) {
+                    setMessage({ type: 'success', text: 'Cadastro realizado! Verifique seu email para confirmar.' });
+                }
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,

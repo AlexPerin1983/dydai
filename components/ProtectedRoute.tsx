@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Login } from './Login';
+import { PAYMENT_LINK } from '../constants';
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { session, loading, isApproved, signOut } = useAuth();
@@ -28,8 +29,21 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
                             </svg>
                         </div>
                         <h2 className="text-2xl font-bold text-white mb-2">Aguardando Aprovação</h2>
-                        <p className="text-slate-400">
-                            Sua conta foi criada com sucesso, mas precisa ser aprovada por um administrador para acessar o sistema.
+                        <p className="text-slate-400 mb-6">
+                            Para liberar seu acesso imediato, finalize sua assinatura.
+                        </p>
+
+                        <a
+                            href={PAYMENT_LINK}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors shadow-lg shadow-green-600/20 mb-4"
+                        >
+                            Liberar Acesso Agora
+                        </a>
+
+                        <p className="text-xs text-slate-500">
+                            Após o pagamento, seu acesso será liberado automaticamente em instantes.
                         </p>
                     </div>
 

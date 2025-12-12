@@ -32,6 +32,25 @@ serve(async (req) => {
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SERVICE_ROLE_KEY') ?? ''
         )
+
+        // RE-EXTRACTION LOGIC
+        let email = null;
+        if (payload.data?.customer?.email) {
+            email = payload.data.customer.email;
+        } else if (payload.data?.billing?.customer?.metadata?.email) {
+            email = payload.data.billing.customer.metadata.email;
+        } else if (payload.data?.billing?.customer?.email) {
+            email = payload.data.billing.customer.email;
+        } else {
+            const customerData = payload.data?.customer || payload.customer || payload.data || {}
+            email = customerData.metadata?.email || customerData.email || payload.email
+        }
+
+        console.log("Email extraído:", email)
+
+        if (!email) {
+            return new Response(JSON.stringify({ error: 'Email NÃO encontrado no JSON recebido.' }), { status: 400, headers })
+        }
         const normalizedEmail = email.trim().toLowerCase()
 
         console.log(`Tentando aprovar via RPC: ${normalizedEmail}`)

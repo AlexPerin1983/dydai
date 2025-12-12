@@ -34,7 +34,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
                         </p>
 
                         <a
-                            href="https://www.abacatepay.com/pay/bill_dzGqwnwrBqXbRzWFy2Tuy5aC"
+                            href="https://abacatepay.com/pay/bill_qfdHPCK3zwNzePaE5bRbPL3Q"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg shadow-green-600/20 mb-4"

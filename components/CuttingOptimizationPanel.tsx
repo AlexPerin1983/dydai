@@ -74,6 +74,10 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
     const [warningMessage, setWarningMessage] = useState<string | null>(null);
     const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
 
+    // Virtualização: rastrear posição do scroll para renderizar apenas peças visíveis
+    const [scrollTop, setScrollTop] = useState(0);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
     // Storage key for this client/option combination
     const storageKey = clientId && optionId ? `cutting_history_${clientId}_${optionId}` : null;
 
@@ -307,10 +311,29 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
         return () => clearTimeout(timer);
     }, [handleOptimize, activeFilm]);
 
-    // Calculate dynamic scale
+    // Calculate dynamic scale (sem limite de altura - a virtualização cuida da renderização)
     const availableWidth = Math.max(0, containerWidth - 48);
     const baseScale = result && result.rollWidth > 0 ? availableWidth / result.rollWidth : 2;
     const scale = baseScale * zoomLevel;
+
+    // Virtualização: calcular quais peças estão visíveis na viewport
+    const VIEWPORT_HEIGHT = 600; // Altura aproximada da viewport visível
+    const BUFFER_PX = 500; // Buffer acima/abaixo para scroll suave
+
+    const visibleItems = useMemo(() => {
+        if (!result || !result.placedItems) return [];
+
+        const viewportTop = scrollTop;
+        const viewportBottom = scrollTop + VIEWPORT_HEIGHT + BUFFER_PX * 2;
+
+        // Filtrar apenas peças que estão na área visível (com buffer)
+        return result.placedItems.filter(item => {
+            const itemTop = item.y * scale;
+            const itemBottom = (item.y + item.h) * scale;
+            // Peça está visível se qualquer parte dela está na viewport + buffer
+            return itemBottom >= (viewportTop - BUFFER_PX) && itemTop <= viewportBottom;
+        });
+    }, [result, scrollTop, scale]);
 
 
 
@@ -636,8 +659,12 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                             <span className="text-xs font-medium text-slate-600 dark:text-slate-400 min-w-[45px] text-center">{Math.round(zoomLevel * 100)}%</span>
                         </div>
 
-                        {/* Drawing */}
-                        <div className="relative overflow-x-auto pb-8 border border-slate-800 rounded-lg bg-slate-950 min-h-[400px] text-center shadow-2xl">
+                        {/* Drawing - Container com virtualização */}
+                        <div
+                            ref={scrollContainerRef}
+                            onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+                            className="relative overflow-auto pb-8 border border-slate-800 rounded-lg bg-slate-950 min-h-[400px] max-h-[70vh] text-center shadow-2xl"
+                        >
                             <div className="inline-block relative m-12" style={{ textAlign: 'initial' }}>
 
                                 {/* Horizontal Ruler (Top) */}
@@ -708,14 +735,16 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                      * The spacing is still applied between pieces during calculation.
                                      */}
 
-                                    {/* Items */}
-                                    {result.placedItems.map((item, index) => {
+                                    {/* Items - Virtualizados: apenas peças visíveis são renderizadas */}
+                                    {visibleItems.map((item) => {
                                         const isSelected = selectedPieceId === item.id;
                                         const isLocked = lockedItems[item.id!];
+                                        // Encontrar índice original para exibição
+                                        const originalIndex = result.placedItems.findIndex(p => p.id === item.id);
 
                                         return (
                                             <div
-                                                key={index}
+                                                key={item.id || originalIndex}
                                                 onClick={() => {
                                                     // Toggle selection
                                                     if (selectedPieceId === item.id) {
@@ -745,7 +774,7 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                                             : 'rgba(56, 189, 248, 0.6)', // Sky-400 default
                                                     color: 'rgba(224, 242, 254, 0.9)'
                                                 }}
-                                                title={`#${index + 1}: ${item.label} (${item.w.toFixed(1)} x ${item.h.toFixed(1)}) - Clique para selecionar`}
+                                                title={`#${originalIndex + 1}: ${item.label} (${item.w.toFixed(1)} x ${item.h.toFixed(1)}) - Clique para selecionar`}
                                             >
                                                 {/* Large Watermark ID */}
                                                 <div
@@ -755,7 +784,7 @@ const CuttingOptimizationPanel: React.FC<CuttingOptimizationPanelProps> = ({ mea
                                                         color: isSelected ? 'rgba(250, 204, 21, 0.3)' : 'rgba(255, 255, 255, 0.1)'
                                                     }}
                                                 >
-                                                    {index + 1}
+                                                    {originalIndex + 1}
                                                 </div>
 
                                                 {/* Dimensions - Only show if piece is big enough */}

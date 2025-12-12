@@ -171,3 +171,11 @@ export interface ExtractedClientData {
     cidade?: string;
     uf?: string;
 }
+
+export interface Profile {
+    id: string;
+    email: string;
+    role: 'admin' | 'user';
+    approved: boolean;
+    created_at: string;
+}

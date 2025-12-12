@@ -7,6 +7,7 @@ import './src/index.css';
 import App from './App';
 import { ErrorProvider } from './src/contexts/ErrorContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
+import { AuthProvider } from './contexts/AuthContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -18,7 +19,9 @@ root.render(
   <React.StrictMode>
     <ErrorProvider>
       <ThemeProvider>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </ThemeProvider>
     </ErrorProvider>
   </React.StrictMode>

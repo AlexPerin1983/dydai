@@ -36,6 +36,10 @@ import { usePwaUpdate } from './src/hooks/usePwaUpdate';
 import { useError } from './src/contexts/ErrorContext';
 import { CardSkeleton } from './components/ui/Skeleton';
 import Toast from './components/ui/Toast';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminUsers } from './components/AdminUsers';
+import { useAuth } from './contexts/AuthContext';
+import { UserAccount } from './components/UserAccount';
 
 
 
@@ -47,7 +51,7 @@ const SalesPage = lazy(() => import('./src/components/SalesPage'));
 
 
 type UIMeasurement = Measurement & { isNew?: boolean };
-type ActiveTab = 'client' | 'films' | 'settings' | 'history' | 'agenda' | 'sales';
+type ActiveTab = 'client' | 'films' | 'settings' | 'history' | 'agenda' | 'sales' | 'admin' | 'account';
 
 type NumpadConfig = {
     isOpen: boolean;
@@ -61,6 +65,7 @@ type NumpadConfig = {
 
 
 const App: React.FC = () => {
+    const { isAdmin } = useAuth();
     const { showError } = useError();
     const { deferredPrompt, promptInstall, isInstalled } = usePwaInstallPrompt();
     const { newVersionAvailable, handleUpdate } = usePwaUpdate();
@@ -2061,6 +2066,14 @@ Se não conseguir extrair, retorne: []`;
             return null;
         }
 
+        if (activeTab === 'admin') {
+            return <AdminUsers />;
+        }
+
+        if (activeTab === 'account') {
+            return <UserAccount />;
+        }
+
         if (activeTab === 'history') {
             if (!hasLoadedHistory) {
                 loadAllPdfs();
@@ -2341,132 +2354,135 @@ Se não conseguir extrair, retorne: []`;
 
     return (
         <div className="h-full font-roboto flex flex-col">
-            <main ref={mainRef} className="flex-grow overflow-y-auto pb-36 sm:pb-0">
-                <div className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-10 border-b border-slate-200 dark:border-slate-700">
-                    <div className="container mx-auto px-2 sm:px-4 w-full max-w-2xl">
-                        <div className="pt-2 pb-1 sm:py-3">
-                            <Header
-                                activeTab={activeTab}
-                                onTabChange={handleTabChange}
-                            />
+            <ProtectedRoute>
+                <main ref={mainRef} className="flex-grow overflow-y-auto pb-36 sm:pb-0">
+                    <div className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-10 border-b border-slate-200 dark:border-slate-700">
+                        <div className="container mx-auto px-2 sm:px-4 w-full max-w-2xl">
+                            <div className="pt-2 pb-1 sm:py-3">
+                                <Header
+                                    activeTab={activeTab}
+                                    onTabChange={handleTabChange}
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="container mx-auto px-0.5 sm:px-4 py-4 sm:py-8 w-full max-w-2xl">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-4 sm:p-6">
-                        {deferredPrompt && !isInstalled && (
-                            <div className="mb-4 p-3 bg-blue-100 border border-blue-200 rounded-lg flex justify-between items-center">
-                                <p className="text-sm text-blue-800 font-medium">Instale o app para usar offline!</p>
-                                <button
-                                    onClick={handlePromptPwaInstall}
-                                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-md hover:bg-blue-700 transition-colors"
-                                >
-                                    Instalar
-                                </button>
-                            </div>
-                        )}
+                    <div className="container mx-auto px-0.5 sm:px-4 py-4 sm:py-8 w-full max-w-2xl">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-4 sm:p-6">
+                            {deferredPrompt && !isInstalled && (
+                                <div className="mb-4 p-3 bg-blue-100 border border-blue-200 rounded-lg flex justify-between items-center">
+                                    <p className="text-sm text-blue-800 font-medium">Instale o app para usar offline!</p>
+                                    <button
+                                        onClick={handlePromptPwaInstall}
+                                        className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-md hover:bg-blue-700 transition-colors"
+                                    >
+                                        Instalar
+                                    </button>
+                                </div>
+                            )}
 
-                        {activeTab === 'client' ? (
-                            <>
-                                {clients.length > 0 ? (
-                                    <div className="bg-slate-100 dark:bg-slate-900 p-2 px-2 rounded-xl">
-                                        <div className="relative z-20">
-                                            <ClientBar
-                                                key={clientTransitionKey}
-                                                selectedClient={selectedClient}
-                                                onSelectClientClick={handleOpenClientSelectionModal}
-                                                onAddClient={() => handleOpenClientModal('add')}
-                                                onEditClient={() => handleOpenClientModal('edit')}
-                                                onDeleteClient={handleDeleteClient}
-                                                onSwipeLeft={goToNextClient}
-                                                onSwipeRight={goToPrevClient}
-                                            />
+                            {activeTab === 'client' ? (
+                                <>
+                                    {clients.length > 0 ? (
+                                        <div className="bg-slate-100 dark:bg-slate-900 p-2 px-2 rounded-xl">
+                                            <div className="relative z-20">
+                                                <ClientBar
+                                                    key={clientTransitionKey}
+                                                    selectedClient={selectedClient}
+                                                    onSelectClientClick={handleOpenClientSelectionModal}
+                                                    onAddClient={() => handleOpenClientModal('add')}
+                                                    onEditClient={() => handleOpenClientModal('edit')}
+                                                    onDeleteClient={handleDeleteClient}
+                                                    onSwipeLeft={goToNextClient}
+                                                    onSwipeRight={goToPrevClient}
+                                                />
+                                            </div>
+
+                                            {proposalOptions.length > 0 && activeOptionId && (
+                                                <ProposalOptionsCarousel
+                                                    options={proposalOptions}
+                                                    activeOptionId={activeOptionId}
+                                                    onSelectOption={setActiveOptionId}
+                                                    onRenameOption={handleRenameProposalOption}
+                                                    onDeleteOption={handleRequestDeleteProposalOption}
+                                                    onAddOption={handleAddProposalOption}
+                                                    onSwipeDirectionChange={handleSwipeDirectionChange}
+                                                />
+                                            )}
+
+                                            <div id="contentContainer" className="w-full min-h-[300px]">
+                                                {renderContent()}
+                                            </div>
                                         </div>
-
-                                        {proposalOptions.length > 0 && activeOptionId && (
-                                            <ProposalOptionsCarousel
-                                                options={proposalOptions}
-                                                activeOptionId={activeOptionId}
-                                                onSelectOption={setActiveOptionId}
-                                                onRenameOption={handleRenameProposalOption}
-                                                onDeleteOption={handleRequestDeleteProposalOption}
-                                                onAddOption={handleAddProposalOption}
-                                                onSwipeDirectionChange={handleSwipeDirectionChange}
-                                            />
-                                        )}
-
+                                    ) : (
                                         <div id="contentContainer" className="w-full min-h-[300px]">
                                             {renderContent()}
                                         </div>
-                                    </div>
-                                ) : (
+                                    )}
+                                </>
+                            ) : ['history', 'agenda'].includes(activeTab) ? (
+                                <div className="bg-blue-50 dark:bg-slate-900 -m-4 sm:-m-6 p-4 sm:p-6 rounded-2xl">
                                     <div id="contentContainer" className="w-full min-h-[300px]">
                                         {renderContent()}
                                     </div>
-                                )}
-                            </>
-                        ) : ['history', 'agenda'].includes(activeTab) ? (
-                            <div className="bg-blue-50 dark:bg-slate-900 -m-4 sm:-m-6 p-4 sm:p-6 rounded-2xl">
+                                </div>
+                            ) : (
                                 <div id="contentContainer" className="w-full min-h-[300px]">
                                     {renderContent()}
                                 </div>
-                            </div>
-                        ) : (
-                            <div id="contentContainer" className="w-full min-h-[300px]">
-                                {renderContent()}
-                            </div>
-                        )}
+                            )}
 
 
-                        {activeTab === 'client' && selectedClientId && (
-                            <>
-                                <div className="hidden sm:block mt-6 pt-6 border-t border-slate-200">
-                                    <SummaryBar
+                            {activeTab === 'client' && selectedClientId && (
+                                <>
+                                    <div className="hidden sm:block mt-6 pt-6 border-t border-slate-200">
+                                        <SummaryBar
+                                            totals={totals}
+                                            generalDiscount={generalDiscount}
+                                            onOpenGeneralDiscountModal={() => setIsGeneralDiscountModalOpen(true)}
+                                            isDesktop
+                                        />
+                                        <ActionsBar
+                                            onAddMeasurement={addMeasurement}
+                                            onDuplicateMeasurements={duplicateAllMeasurements}
+                                            onGeneratePdf={handleGeneratePdf}
+                                            isGeneratingPdf={pdfGenerationStatus === 'generating'}
+                                            onOpenAIModal={() => setIsAIMeasurementModalOpen(true)}
+                                        />
+                                    </div>
+                                    <MobileFooter
                                         totals={totals}
                                         generalDiscount={generalDiscount}
                                         onOpenGeneralDiscountModal={() => setIsGeneralDiscountModalOpen(true)}
-                                        isDesktop
-                                    />
-                                    <ActionsBar
+                                        onUpdateGeneralDiscount={handleGeneralDiscountChange}
                                         onAddMeasurement={addMeasurement}
                                         onDuplicateMeasurements={duplicateAllMeasurements}
                                         onGeneratePdf={handleGeneratePdf}
                                         isGeneratingPdf={pdfGenerationStatus === 'generating'}
                                         onOpenAIModal={() => setIsAIMeasurementModalOpen(true)}
                                     />
-                                </div>
-                                <MobileFooter
-                                    totals={totals}
-                                    generalDiscount={generalDiscount}
-                                    onOpenGeneralDiscountModal={() => setIsGeneralDiscountModalOpen(true)}
-                                    onUpdateGeneralDiscount={handleGeneralDiscountChange}
-                                    onAddMeasurement={addMeasurement}
-                                    onDuplicateMeasurements={duplicateAllMeasurements}
-                                    onGeneratePdf={handleGeneratePdf}
-                                    isGeneratingPdf={pdfGenerationStatus === 'generating'}
-                                    onOpenAIModal={() => setIsAIMeasurementModalOpen(true)}
-                                />
-                            </>
-                        )}
+                                </>
+                            )}
+                        </div>
                     </div>
-                </div>
-            </main>
+                </main>
 
 
-            <ModalsContainer {...modalProps} />
-            <CustomNumpad
-                ref={numpadRef}
-                isOpen={numpadConfig.isOpen}
-                onInput={handleNumpadInput}
-                onDelete={handleNumpadDelete}
-                onDone={handleNumpadDone}
-                onClose={handleNumpadClose}
-                onDuplicate={handleNumpadDuplicate}
-                onClear={handleNumpadClear}
-                onAddGroup={handleNumpadAddGroup}
-                activeField={numpadConfig.field}
-            />
+                <ModalsContainer {...modalProps} />
+                <CustomNumpad
+                    ref={numpadRef}
+                    isOpen={numpadConfig.isOpen}
+                    onInput={handleNumpadInput}
+                    onDelete={handleNumpadDelete}
+                    onDone={handleNumpadDone}
+                    onClose={handleNumpadClose}
+                    onDuplicate={handleNumpadDuplicate}
+                    onClear={handleNumpadClear}
+                    onAddGroup={handleNumpadAddGroup}
+                    activeField={numpadConfig.field}
+                />
+            </ProtectedRoute>
+
             {newVersionAvailable && (
                 <UpdateNotification onUpdate={handleUpdate} />
             )}

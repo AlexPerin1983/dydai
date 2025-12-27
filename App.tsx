@@ -47,7 +47,6 @@ const UserSettingsView = lazy(() => import('./components/views/UserSettingsView'
 const PdfHistoryView = lazy(() => import('./components/views/PdfHistoryView'));
 const FilmListView = lazy(() => import('./components/views/FilmListView'));
 const AgendaView = lazy(() => import('./components/views/AgendaView'));
-const SalesPage = lazy(() => import('./src/components/SalesPage'));
 const EstoqueView = lazy(() => import('./components/views/EstoqueView'));
 
 
@@ -98,6 +97,25 @@ const App: React.FC = () => {
     const [editingFilm, setEditingFilm] = useState<Film | null>(null);
     const [pdfGenerationStatus, setPdfGenerationStatus] = useState<'idle' | 'generating' | 'success'>('idle');
     const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
+
+    // Deep Linking State
+    const [initialEstoqueAction, setInitialEstoqueAction] = useState<{ action: 'scan', code: string } | null>(null);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        const action = params.get('action');
+        const code = params.get('code');
+
+        if (tab === 'estoque') {
+            setActiveTab('estoque');
+            if (action === 'scan' && code) {
+                setInitialEstoqueAction({ action: 'scan', code });
+            }
+            // Limpar URL para não reprocessar ao recarregar
+            window.history.replaceState({}, '', '/');
+        }
+    }, []);
     const [filmToDeleteName, setFilmToDeleteName] = useState<string | null>(null);
     const [isDeleteClientModalOpen, setIsDeleteClientModalOpen] = useState(false);
     const [pdfToDeleteId, setPdfToDeleteId] = useState<number | null>(null);
@@ -2305,7 +2323,7 @@ Se não conseguir extrair, retorne: []`;
         if (activeTab === 'estoque') {
             return (
                 <Suspense fallback={<LoadingSpinner />}>
-                    <EstoqueView films={films} />
+                    <EstoqueView films={films} initialAction={initialEstoqueAction} />
                 </Suspense>
             );
         }
@@ -2317,7 +2335,7 @@ Se não conseguir extrair, retorne: []`;
                         <i className="fas fa-users fa-2x text-slate-500 dark:text-slate-400"></i>
                     </div>
                     <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200">Crie seu Primeiro Cliente</h3>
-                    <p className="mt-2 text-slate-600 dark:text-slate-400 max-w-xs mx-auto">Tudo come�a com um cliente. Adicione os dados para come�ar a gerar or�amentos.</p>
+                    <p className="mt-2 text-slate-600 dark:text-slate-400 max-w-xs mx-auto">Tudo comea com um cliente. Adicione os dados para comear a gerar oramentos.</p>
                     <button
                         onClick={() => handleOpenClientModal('add')}
                         className="mt-6 px-6 py-3 bg-slate-800 dark:bg-slate-700 text-white font-semibold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition duration-300 shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 flex items-center gap-2"
@@ -2328,7 +2346,6 @@ Se não conseguir extrair, retorne: []`;
                 </div>
             );
         }
-
 
         if (selectedClientId && measurements.length > 0) {
             return (
@@ -2522,13 +2539,6 @@ Se não conseguir extrair, retorne: []`;
 
 
 
-    if (activeTab === 'sales') {
-        return (
-            <Suspense fallback={<LoadingSpinner />}>
-                <SalesPage />
-            </Suspense>
-        );
-    }
 
     return (
         <div className="h-full font-roboto flex flex-col">

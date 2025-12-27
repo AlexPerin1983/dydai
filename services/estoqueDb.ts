@@ -111,6 +111,7 @@ export const saveBobina = async (bobina: Omit<Bobina, 'id'> | Bobina): Promise<B
         fornecedor: bobina.fornecedor,
         lote: bobina.lote,
         status: bobina.status || 'ativa',
+        localizacao: bobina.localizacao,
         observacao: bobina.observacao,
         data_ultima_atualizacao: new Date().toISOString()
     };
@@ -164,6 +165,7 @@ const mapRowToBobina = (row: any): Bobina => ({
     dataCadastro: row.data_cadastro,
     dataUltimaAtualizacao: row.data_ultima_atualizacao,
     status: row.status,
+    localizacao: row.localizacao,
     observacao: row.observacao
 });
 

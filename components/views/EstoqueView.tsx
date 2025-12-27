@@ -70,9 +70,10 @@ const TrashIcon = () => (
 
 interface EstoqueViewProps {
     films: Film[];
+    initialAction?: { action: 'scan', code: string } | null;
 }
 
-const EstoqueView: React.FC<EstoqueViewProps> = ({ films }) => {
+const EstoqueView: React.FC<EstoqueViewProps> = ({ films, initialAction }) => {
     const [activeTab, setActiveTab] = useState<'bobinas' | 'retalhos'>('bobinas');
     const [bobinas, setBobinas] = useState<Bobina[]>([]);
     const [retalhos, setRetalhos] = useState<Retalho[]>([]);
@@ -128,6 +129,13 @@ const EstoqueView: React.FC<EstoqueViewProps> = ({ films }) => {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    // Handle deep linking action
+    useEffect(() => {
+        if (initialAction?.action === 'scan' && initialAction.code) {
+            setShowScannerModal(true);
+        }
+    }, [initialAction]);
 
     const generateQRCodeImage = async (code: string) => {
         try {
@@ -208,6 +216,7 @@ const EstoqueView: React.FC<EstoqueViewProps> = ({ films }) => {
                 fornecedor: formFornecedor || undefined,
                 lote: formLote || undefined,
                 status: 'ativa',
+                localizacao: formLocalizacao || undefined,
                 observacao: formObservacao || undefined
             };
 
@@ -502,12 +511,16 @@ const EstoqueView: React.FC<EstoqueViewProps> = ({ films }) => {
                                             </span>
                                         </div>
                                     </div>
-                                    {bobina.fornecedor && (
-                                        <div className="info-extra">
-                                            <span>Fornecedor: {bobina.fornecedor}</span>
-                                            {bobina.lote && <span> | Lote: {bobina.lote}</span>}
-                                        </div>
-                                    )}
+                                    <div className="info-extra">
+                                        {bobina.localizacao && <span>📍 {bobina.localizacao}</span>}
+                                        {bobina.fornecedor && (
+                                            <span>
+                                                {bobina.localizacao ? ' | ' : ''}
+                                                Fornecedor: {bobina.fornecedor}
+                                            </span>
+                                        )}
+                                        {bobina.lote && <span> | Lote: {bobina.lote}</span>}
+                                    </div>
                                     <div className="progress-bar">
                                         <div
                                             className="progress-fill"
@@ -746,17 +759,19 @@ const EstoqueView: React.FC<EstoqueViewProps> = ({ films }) => {
                                         </div>
                                     )}
 
-                                    <div className="form-group">
-                                        <label>Localização</label>
-                                        <input
-                                            type="text"
-                                            value={formLocalizacao}
-                                            onChange={e => setFormLocalizacao(e.target.value)}
-                                            placeholder="Ex: Prateleira A, Gaveta 3"
-                                        />
-                                    </div>
+
                                 </>
                             )}
+
+                            <div className="form-group">
+                                <label>Localização</label>
+                                <input
+                                    type="text"
+                                    value={formLocalizacao}
+                                    onChange={e => setFormLocalizacao(e.target.value)}
+                                    placeholder="Ex: Prateleira A, Gaveta 3"
+                                />
+                            </div>
 
                             <div className="form-group">
                                 <label>Observação</label>

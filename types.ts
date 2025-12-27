@@ -197,6 +197,7 @@ export interface Bobina {
     dataCadastro?: string;
     dataUltimaAtualizacao?: string;
     status: 'ativa' | 'finalizada' | 'descartada';
+    localizacao?: string; // Onde está armazenada
     observacao?: string;
 }
 

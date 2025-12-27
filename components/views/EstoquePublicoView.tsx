@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabaseClient';
 
+interface PublicRetalhoData {
+    id: number;
+    codigoQr: string;
+    larguraCm: number;
+    comprimentoCm: number;
+    status: string;
+}
+
 interface PublicEstoqueData {
+    id?: number;
     tipo: 'bobina' | 'retalho';
     filmId: string;
     codigoQr: string;
@@ -11,7 +20,9 @@ interface PublicEstoqueData {
     comprimentoCm?: number;
     areaM2?: number;
     status: string;
+    localizacao?: string;
     dataCadastro: string;
+    retalhosAssociados?: PublicRetalhoData[];
 }
 
 const EstoquePublicoView: React.FC = () => {
@@ -35,20 +46,46 @@ const EstoquePublicoView: React.FC = () => {
     }, []);
 
     const fetchData = async (code: string) => {
+        console.log('--- Debug EstoquePublicoView ---');
+        console.log('Código recebido:', code);
+
         setLoading(true);
         setError(null);
 
         try {
             // Buscar na tabela de bobinas (consulta pública - sem user_id check)
-            // Nota: Isso requer uma policy especial ou service role
+            console.log('Tentando buscar na tabela bobinas...');
             const { data: bobina, error: bobinaError } = await supabase
                 .from('bobinas')
-                .select('film_id, codigo_qr, largura_cm, comprimento_total_m, comprimento_restante_m, status, data_cadastro')
+                .select('id, film_id, codigo_qr, largura_cm, comprimento_total_m, comprimento_restante_m, status, localizacao, data_cadastro')
                 .eq('codigo_qr', code)
-                .single();
+                .limit(1)
+                .maybeSingle();
 
-            if (bobina && !bobinaError) {
+            console.log('Resultado Bobina:', { bobina, bobinaError });
+
+            if (bobinaError) {
+                console.error('Erro Supabase Bobina:', bobinaError);
+            }
+
+            if (bobina) {
+                // Se achou a bobina, busca os retalhos associados
+                const { data: retalhosData } = await supabase
+                    .from('retalhos')
+                    .select('id, codigo_qr, largura_cm, comprimento_cm, status')
+                    .eq('bobina_id', bobina.id)
+                    .order('data_cadastro', { ascending: false });
+
+                const retalhosAssociados: PublicRetalhoData[] = (retalhosData || []).map((r: any) => ({
+                    id: r.id,
+                    codigoQr: r.codigo_qr,
+                    larguraCm: r.largura_cm,
+                    comprimentoCm: r.comprimento_cm,
+                    status: r.status
+                }));
+
                 setData({
+                    id: bobina.id,
                     tipo: 'bobina',
                     filmId: bobina.film_id,
                     codigoQr: bobina.codigo_qr,
@@ -56,7 +93,9 @@ const EstoquePublicoView: React.FC = () => {
                     comprimentoTotalM: bobina.comprimento_total_m,
                     comprimentoRestanteM: bobina.comprimento_restante_m,
                     status: bobina.status,
-                    dataCadastro: bobina.data_cadastro
+                    localizacao: bobina.localizacao,
+                    dataCadastro: bobina.data_cadastro,
+                    retalhosAssociados
                 });
                 setLoading(false);
                 return;
@@ -65,12 +104,14 @@ const EstoquePublicoView: React.FC = () => {
             // Buscar na tabela de retalhos
             const { data: retalho, error: retalhoError } = await supabase
                 .from('retalhos')
-                .select('film_id, codigo_qr, largura_cm, comprimento_cm, area_m2, status, data_cadastro')
+                .select('id, film_id, codigo_qr, largura_cm, comprimento_cm, area_m2, status, localizacao, data_cadastro')
                 .eq('codigo_qr', code)
-                .single();
+                .limit(1)
+                .maybeSingle();
 
             if (retalho && !retalhoError) {
                 setData({
+                    id: retalho.id,
                     tipo: 'retalho',
                     filmId: retalho.film_id,
                     codigoQr: retalho.codigo_qr,
@@ -78,31 +119,44 @@ const EstoquePublicoView: React.FC = () => {
                     comprimentoCm: retalho.comprimento_cm,
                     areaM2: retalho.area_m2,
                     status: retalho.status,
+                    localizacao: retalho.localizacao,
                     dataCadastro: retalho.data_cadastro
                 });
                 setLoading(false);
                 return;
             }
 
-            setError('Material não encontrado. Verifique se o código está correto.');
-        } catch (err) {
-            console.error('Erro ao buscar dados:', err);
-            setError('Erro ao carregar informações');
-        } finally {
+            if (bobinaError || retalhoError) {
+                const errorMsg = `Erro: ${bobinaError?.message || ''} ${retalhoError?.message || ''}`;
+                setError(errorMsg);
+            } else {
+                setError('Item não encontrado no sistema.');
+            }
+            setLoading(false);
+        } catch (err: any) {
+            console.error('Erro geral:', err);
+            setError(`Erro interno: ${err.message}`);
             setLoading(false);
         }
     };
 
     const getStatusInfo = (status: string) => {
-        const statusMap: Record<string, { label: string; color: string; icon: string }> = {
-            'ativa': { label: 'Disponível', color: '#22c55e', icon: '✅' },
-            'disponivel': { label: 'Disponível', color: '#22c55e', icon: '✅' },
-            'finalizada': { label: 'Finalizada', color: '#f59e0b', icon: '⚠️' },
-            'usado': { label: 'Usado', color: '#f59e0b', icon: '⚠️' },
-            'descartada': { label: 'Descartado', color: '#ef4444', icon: '❌' },
-            'descartado': { label: 'Descartado', color: '#ef4444', icon: '❌' }
-        };
-        return statusMap[status] || { label: status, color: '#64748b', icon: '📦' };
+        const s = status?.toLowerCase() || '';
+        switch (s) {
+            case 'ativa':
+            case 'disponivel':
+                return { label: 'Disponível', icon: '✅', color: '#22c55e' };
+            case 'finalizada':
+            case 'usado':
+                return { label: 'Finalizado', icon: '⚠️', color: '#f59e0b' };
+            case 'descartada':
+            case 'descartado':
+                return { label: 'Descartado', icon: '❌', color: '#ef4444' };
+            case 'reservado':
+                return { label: 'Reservado', icon: '🔒', color: '#3b82f6' };
+            default:
+                return { label: status || 'Desconhecido', icon: '📦', color: '#64748b' };
+        }
     };
 
     const formatDate = (dateStr: string) => {
@@ -196,6 +250,13 @@ const EstoquePublicoView: React.FC = () => {
                                 </>
                             )}
 
+                            {data.localizacao && (
+                                <div className="info-item highlight">
+                                    <span className="label">📍 Localização</span>
+                                    <span className="value large">{data.localizacao}</span>
+                                </div>
+                            )}
+
                             <div className="info-item">
                                 <span className="label">Cadastrado em</span>
                                 <span className="value">{formatDate(data.dataCadastro)}</span>
@@ -222,17 +283,101 @@ const EstoquePublicoView: React.FC = () => {
                                 </div>
                             </div>
                         )}
+
+                        {/* Lista de Retalhos Associados */}
+                        {data.retalhosAssociados && data.retalhosAssociados.length > 0 && (
+                            <div className="retalhos-section">
+                                <h3>✂️ Retalhos Associados ({data.retalhosAssociados.length})</h3>
+                                <div className="retalhos-list">
+                                    {data.retalhosAssociados.map(retalho => (
+                                        <div key={retalho.id} className="retalho-item">
+                                            <div className="retalho-info">
+                                                <span className="retalho-dims">{retalho.larguraCm}cm x {retalho.comprimentoCm}cm</span>
+                                                <span className="retalho-qr">{retalho.codigoQr}</span>
+                                            </div>
+                                            <span className={`retalho-status status-${retalho.status}`}>
+                                                {retalho.status}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {/* Footer */}
                 <div className="footer">
+
                     <p>Sistema de Controle de Estoque</p>
                     <a href="/" className="login-link">Fazer login para mais detalhes →</a>
                 </div>
             </div>
 
             <style>{`
+                .retalhos-section {
+                    margin-top: 2rem;
+                    border-top: 1px solid #e2e8f0;
+                    padding-top: 1.5rem;
+                }
+
+                .retalhos-section h3 {
+                    font-size: 1.1rem;
+                    color: #1e293b;
+                    margin-bottom: 1rem;
+                    text-align: center;
+                    font-weight: 600;
+                }
+
+                .retalhos-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.75rem;
+                    max-height: 300px;
+                    overflow-y: auto;
+                }
+
+                .retalho-item {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 0.75rem;
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                }
+
+                .retalho-info {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                }
+
+                .retalho-dims {
+                    font-weight: 600;
+                    color: #334155;
+                    font-size: 0.95rem;
+                }
+
+                .retalho-qr {
+                    font-size: 0.75rem;
+                    color: #94a3b8;
+                    font-family: monospace;
+                }
+
+                .retalho-status {
+                    font-size: 0.75rem;
+                    padding: 0.25rem 0.75rem;
+                    border-radius: 999px;
+                    font-weight: 600;
+                    text-transform: capitalize;
+                }
+
+                .status-disponivel { background: #dcfce7; color: #166534; }
+                .status-usado { background: #ffedd5; color: #9a3412; }
+                .status-descartado { background: #fee2e2; color: #991b1b; }
+                .status-reservado { background: #fef9c3; color: #854d0e; }
+
                 .public-estoque-page {
                     min-height: 100vh;
                     background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -440,6 +585,23 @@ const EstoquePublicoView: React.FC = () => {
 
                 .login-link:hover {
                     text-decoration: underline;
+                }
+
+                .manage-btn {
+                    display: inline-block;
+                    background: #3b82f6;
+                    color: white;
+                    text-decoration: none;
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 12px;
+                    font-weight: 600;
+                    margin-bottom: 1.5rem;
+                    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
+                    transition: transform 0.2s;
+                }
+
+                .manage-btn:active {
+                    transform: scale(0.98);
                 }
             `}</style>
         </div>

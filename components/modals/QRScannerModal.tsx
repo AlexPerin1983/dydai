@@ -47,13 +47,105 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose, onData
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // ... (stopScanner implementation)
+    const stopScanner = async () => {
+        if (scannerRef.current) {
+            try {
+                if (scannerRef.current.isScanning) {
+                    await scannerRef.current.stop();
+                }
+                scannerRef.current = null;
+            } catch (err) {
+                console.error('Erro ao parar scanner:', err);
+            }
+        }
+    };
 
-    // ... (handleQRCodeScanned implementation)
+    const handleQRCodeScanned = async (decodedText: string) => {
+        console.log('QR Code escaneado:', decodedText);
 
-    // ... (startScanner implementation)
+        // Parar scanner imediatamente após leitura bem-sucedida
+        await stopScanner();
+        setScanning(false);
+        setLoadingData(true);
+        setError(null);
 
-    // ... (useEffect hooks)
+        try {
+            // Tentar buscar como bobina primeiro
+            let bobina = await getBobinaByQR(decodedText);
+
+            if (bobina) {
+                setLoadingSecondary(true);
+                const [consumos, retalhos] = await Promise.all([
+                    getConsumosByBobina(bobina.id!),
+                    getRetalhosByBobina(bobina.id!)
+                ]);
+                setResult({ type: 'bobina', data: bobina, consumos, retalhos });
+                setLoadingSecondary(false);
+            } else {
+                // Se não for bobina, tentar buscar como retalho
+                const retalho = await getRetalhoByQR(decodedText);
+                if (retalho) {
+                    let parentBobina: Bobina | undefined;
+                    if (retalho.bobinaId) {
+                        parentBobina = await getBobinaById(retalho.bobinaId) || undefined;
+                    }
+                    setResult({ type: 'retalho', data: retalho, parentBobina });
+                } else {
+                    setError('QR Code não reconhecido ou item não encontrado no estoque.');
+                }
+            }
+        } catch (err) {
+            console.error('Erro ao buscar dados do QR Code:', err);
+            setError('Erro ao buscar informações do item.');
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    const startScanner = async () => {
+        if (!containerRef.current) return;
+
+        try {
+            setError(null);
+            setScanning(true);
+            setResult(null);
+
+            const html5QrCode = new Html5Qrcode("qr-reader");
+            scannerRef.current = html5QrCode;
+
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                handleQRCodeScanned,
+                (errorMessage) => {
+                    // Ignorar erros de "não encontrado" durante a busca contínua
+                }
+            );
+        } catch (err) {
+            console.error('Erro ao iniciar scanner:', err);
+            setError('Não foi possível acessar a câmera. Verifique as permissões.');
+            setScanning(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isOpen) {
+            startScanner();
+            getAllClients().then(setClients);
+        } else {
+            stopScanner();
+        }
+
+        return () => {
+            stopScanner();
+        };
+    }, [isOpen]);
 
     const resetConsumoForm = () => {
         setConsumoMetros('');
@@ -65,7 +157,21 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose, onData
         setConsumoObs('');
     };
 
-    // ... (handleClose, handleScanAgain implementations)
+    const handleClose = async () => {
+        await stopScanner();
+        setResult(null);
+        setError(null);
+        setShowConsumoForm(false);
+        resetConsumoForm();
+        onClose();
+    };
+
+    const handleScanAgain = () => {
+        setResult(null);
+        setError(null);
+        setScanning(true);
+        startScanner();
+    };
 
     const handleRegistrarConsumo = async () => {
         if (!result) return;
@@ -138,9 +244,6 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose, onData
         }
     };
 
-    // ... (formatDate implementation)
-
-    // ... (JSX render)
 
 
     const formatDate = (dateStr?: string) => {

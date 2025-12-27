@@ -23,7 +23,12 @@ const isPublicEstoque = urlParams.has('qr') || urlParams.has('code');
 const pathname = window.location.pathname;
 
 // Se for consulta pública de estoque (ex: ?qr=PBR-XXX ou /consulta?qr=PBR-XXX)
-const isEstoquePublico = isPublicEstoque && (pathname === '/' || pathname === '/consulta' || pathname.includes('estoque'));
+const isEstoquePublico = isPublicEstoque && (
+  pathname === '/' ||
+  pathname === '/consulta' ||
+  pathname.includes('estoque') ||
+  pathname.endsWith('index.html')
+);
 
 const root = ReactDOM.createRoot(rootElement);
 

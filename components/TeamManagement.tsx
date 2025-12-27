@@ -163,15 +163,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ onMemberCountChange }) 
         );
     }
 
-    if (!isOwner) {
-        return (
-            <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg text-center">
-                <p className="text-slate-500 dark:text-slate-400 text-sm">
-                    Apenas o proprietário da conta pode gerenciar a equipe.
-                </p>
-            </div>
-        );
-    }
 
     return (
         <div className="space-y-4">
@@ -227,8 +218,8 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ onMemberCountChange }) 
                                     <button
                                         onClick={() => handleToggleStatus(member)}
                                         className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${member.status === 'blocked'
-                                                ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50'
-                                                : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50'
+                                            ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50'
+                                            : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50'
                                             }`}
                                     >
                                         {member.status === 'blocked' ? 'Ativar' : 'Bloquear'}

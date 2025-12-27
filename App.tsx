@@ -48,10 +48,11 @@ const PdfHistoryView = lazy(() => import('./components/views/PdfHistoryView'));
 const FilmListView = lazy(() => import('./components/views/FilmListView'));
 const AgendaView = lazy(() => import('./components/views/AgendaView'));
 const SalesPage = lazy(() => import('./src/components/SalesPage'));
+const EstoqueView = lazy(() => import('./components/views/EstoqueView'));
 
 
 type UIMeasurement = Measurement & { isNew?: boolean };
-type ActiveTab = 'client' | 'films' | 'settings' | 'history' | 'agenda' | 'sales' | 'admin' | 'account';
+type ActiveTab = 'client' | 'films' | 'settings' | 'history' | 'agenda' | 'sales' | 'admin' | 'account' | 'estoque';
 
 type NumpadConfig = {
     isOpen: boolean;
@@ -1046,6 +1047,51 @@ const App: React.FC = () => {
     };
 
     const handleProcessAIClientInput = useCallback(async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
+        // Modo OCR Local - usa processamento local
+        if (userInfo?.aiConfig?.provider === 'local_ocr') {
+            if (input.type === 'audio') {
+                showError("O modo OCR Local não suporta áudio. Por favor, envie uma imagem ou texto.");
+                return;
+            }
+
+            setIsProcessingAI(true);
+            try {
+                let text = '';
+
+                if (input.type === 'text') {
+                    text = input.data as string;
+                } else {
+                    const files = input.data as File[];
+                    if (!files || files.length === 0) {
+                        throw new Error("Nenhuma imagem fornecida.");
+                    }
+                    const { performOCR } = await import('./src/lib/ocr');
+                    const ocrResult = await performOCR(files[0]);
+                    text = ocrResult.text;
+                }
+
+                console.log("[OCR Local] Texto extraído para cliente:", text);
+
+                const { extractClientFromOCR } = await import('./src/lib/parsePrint');
+                const extractedData = extractClientFromOCR(text, 100);
+
+                if (extractedData) {
+                    setAiClientData(extractedData);
+                    setIsAIClientModalOpen(false);
+                    setIsClientModalOpen(true);
+                } else {
+                    showError("Não foi possível extrair dados do cliente. Tente reformular a entrada.");
+                }
+            } catch (error) {
+                console.error("Erro ao processar cliente com OCR local:", error);
+                showError(`Erro no OCR: ${error instanceof Error ? error.message : String(error)}`);
+            } finally {
+                setIsProcessingAI(false);
+            }
+            return;
+        }
+
+        // Modo Gemini/OpenAI - requer API key
         if (!userInfo?.aiConfig?.apiKey || !userInfo?.aiConfig?.provider) {
             showError("Por favor, configure seu provedor e chave de API na aba 'Empresa' para usar esta funcionalidade.");
             return;
@@ -1080,6 +1126,71 @@ const App: React.FC = () => {
     }, [userInfo, showError]);
 
     const handleProcessAIFilmInput = useCallback(async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
+        // Modo OCR Local - usa processamento local para película
+        if (userInfo?.aiConfig?.provider === 'local_ocr') {
+            if (input.type === 'audio') {
+                showError("O modo OCR Local não suporta áudio. Por favor, envie uma imagem ou texto.");
+                return;
+            }
+
+            setIsProcessingAI(true);
+            try {
+                let text = '';
+
+                if (input.type === 'text') {
+                    text = input.data as string;
+                } else {
+                    const files = input.data as File[];
+                    if (!files || files.length === 0) {
+                        throw new Error("Nenhuma imagem fornecida.");
+                    }
+                    const { performOCR } = await import('./src/lib/ocr');
+                    const ocrResult = await performOCR(files[0]);
+                    text = ocrResult.text;
+                }
+
+                console.log("[OCR Local] Texto extraído para película:", text);
+
+                // Parser simples para dados de película
+                const filmData: Partial<Film> = {};
+                const lines = text.split('\n').filter(l => l.trim().length > 2);
+                if (lines.length > 0) {
+                    filmData.nome = lines[0].trim();
+                }
+
+                const uvMatch = text.match(/UV[:\s]*([\d,\.]+)\s*%?/i);
+                if (uvMatch) filmData.uv = parseFloat(uvMatch[1].replace(',', '.'));
+
+                const irMatch = text.match(/IR[:\s]*([\d,\.]+)\s*%?/i);
+                if (irMatch) filmData.ir = parseFloat(irMatch[1].replace(',', '.'));
+
+                const vtlMatch = text.match(/VTL[:\s]*([\d,\.]+)\s*%?/i);
+                if (vtlMatch) filmData.vtl = parseFloat(vtlMatch[1].replace(',', '.'));
+
+                const tserMatch = text.match(/TSER[:\s]*([\d,\.]+)\s*%?/i);
+                if (tserMatch) filmData.tser = parseFloat(tserMatch[1].replace(',', '.'));
+
+                const precoMatch = text.match(/(?:pre[çc]o|valor|R\$)[:\s]*([\d,\.]+)/i);
+                if (precoMatch) filmData.preco = parseFloat(precoMatch[1].replace(',', '.'));
+
+                if (Object.keys(filmData).length > 0) {
+                    setAiFilmData(filmData);
+                    setIsAIFilmModalOpen(false);
+                    setNewFilmName(filmData.nome || '');
+                    setIsFilmModalOpen(true);
+                } else {
+                    showError("Não foi possível extrair dados da película. Tente reformular a entrada.");
+                }
+            } catch (error) {
+                console.error("Erro ao processar película com OCR local:", error);
+                showError(`Erro no OCR: ${error instanceof Error ? error.message : String(error)}`);
+            } finally {
+                setIsProcessingAI(false);
+            }
+            return;
+        }
+
+        // Modo Gemini/OpenAI - requer API key
         if (!userInfo?.aiConfig?.apiKey || !userInfo?.aiConfig?.provider) {
             showError("Por favor, configure seu provedor e chave de API na aba 'Empresa' para usar esta funcionalidade.");
             return;
@@ -1327,6 +1438,65 @@ const App: React.FC = () => {
     }
 
     const handleProcessAIInput = async (input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }) => {
+        // Modo OCR Local - usa processamento local
+        if (userInfo?.aiConfig?.provider === 'local_ocr') {
+            if (input.type === 'audio') {
+                showError("O modo OCR Local não suporta áudio. Por favor, envie uma imagem ou texto.");
+                return;
+            }
+
+            setIsProcessingAI(true);
+            try {
+                let text = '';
+
+                if (input.type === 'text') {
+                    text = input.data as string;
+                } else {
+                    const files = input.data as File[];
+                    if (!files || files.length === 0) {
+                        throw new Error("Nenhuma imagem fornecida.");
+                    }
+                    // Importar dinamicamente o OCR
+                    const { performOCR } = await import('./src/lib/ocr');
+                    const ocrResult = await performOCR(files[0]);
+                    text = ocrResult.text;
+                }
+
+                console.log("[OCR Local] Texto extraído para medidas:", text);
+
+                // Importar parser dinamicamente
+                const { extractMeasurementsFromOCR } = await import('./src/lib/parsePrint');
+                const extractedData = extractMeasurementsFromOCR(text, 100);
+
+                if (extractedData && extractedData.length > 0) {
+                    const newMeasurements: UIMeasurement[] = extractedData.map((item, index) => ({
+                        id: Date.now() + index,
+                        largura: item.largura || '',
+                        altura: item.altura || '',
+                        quantidade: item.quantidade || 1,
+                        ambiente: item.local || 'Desconhecido',
+                        tipoAplicacao: 'Desconhecido',
+                        pelicula: films[0]?.nome || 'Nenhuma',
+                        active: true,
+                        isNew: index === 0,
+                        discount: { value: '0', type: 'percentage' },
+                    }));
+
+                    handleMeasurementsChange([...measurements.map(m => ({ ...m, isNew: false })), ...newMeasurements]);
+                    setIsAIMeasurementModalOpen(false);
+                } else {
+                    showError("Nenhuma medida foi extraída. Tente novamente com mais detalhes.");
+                }
+            } catch (error) {
+                console.error("Erro ao processar com OCR local:", error);
+                showError(`Erro no OCR: ${error instanceof Error ? error.message : String(error)}`);
+            } finally {
+                setIsProcessingAI(false);
+            }
+            return;
+        }
+
+        // Modo Gemini/OpenAI - requer API key
         if (!userInfo?.aiConfig?.apiKey) {
             showError("Por favor, configure sua chave de API na aba 'Empresa' para usar esta funcionalidade.");
             return;
@@ -2128,6 +2298,14 @@ Se não conseguir extrair, retorne: []`;
                         onDelete={handleRequestDeleteFilm}
                         onOpenGallery={handleOpenGallery}
                     />
+                </Suspense>
+            );
+        }
+
+        if (activeTab === 'estoque') {
+            return (
+                <Suspense fallback={<LoadingSpinner />}>
+                    <EstoqueView films={films} />
                 </Suspense>
             );
         }

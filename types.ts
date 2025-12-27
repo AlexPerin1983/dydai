@@ -112,7 +112,7 @@ export interface UserInfo {
     };
     employees?: Employee[];
     aiConfig?: {
-        provider: 'gemini' | 'openai';
+        provider: 'gemini' | 'openai' | 'local_ocr';
         apiKey: string;
     };
     lastSelectedClientId?: number | null; // Novo campo
@@ -179,3 +179,58 @@ export interface Profile {
     approved: boolean;
     created_at: string;
 }
+
+// ============================================
+// TIPOS PARA CONTROLE DE ESTOQUE
+// ============================================
+
+export interface Bobina {
+    id?: number;
+    filmId: string; // Nome da película
+    codigoQr: string; // Código único para QR Code
+    larguraCm: number; // Largura da bobina em cm
+    comprimentoTotalM: number; // Comprimento total em metros
+    comprimentoRestanteM: number; // Comprimento restante em metros
+    custoTotal?: number; // Custo total da bobina
+    fornecedor?: string;
+    lote?: string; // Lote do fabricante
+    dataCadastro?: string;
+    dataUltimaAtualizacao?: string;
+    status: 'ativa' | 'finalizada' | 'descartada';
+    observacao?: string;
+}
+
+export interface Retalho {
+    id?: number;
+    bobinaId?: number; // Pode ser null se retalho avulso
+    filmId: string; // Nome da película
+    codigoQr: string; // Código único para QR Code
+    larguraCm: number; // Largura em cm
+    comprimentoCm: number; // Comprimento em cm
+    areaM2?: number; // Área calculada automaticamente
+    dataCadastro?: string;
+    dataUtilizacao?: string;
+    status: 'disponivel' | 'reservado' | 'usado' | 'descartado';
+    localizacao?: string; // Onde está armazenado
+    observacao?: string;
+}
+
+export interface Consumo {
+    id?: number;
+    bobinaId?: number;
+    retalhoId?: number;
+    clientId?: number;
+    clientName?: string;
+    pdfId?: number;
+    metrosConsumidos: number;
+    larguraCorteCm?: number;
+    comprimentoCorteCm?: number;
+    areaM2?: number;
+    dataConsumo?: string;
+    tipo: 'corte' | 'perda' | 'amostra' | 'descarte';
+    observacao?: string;
+}
+
+export type BobinaStatus = 'ativa' | 'finalizada' | 'descartada';
+export type RetalhoStatus = 'disponivel' | 'reservado' | 'usado' | 'descartado';
+export type ConsumoTipo = 'corte' | 'perda' | 'amostra' | 'descarte';

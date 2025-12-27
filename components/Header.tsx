@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
-type ActiveTab = 'client' | 'films' | 'settings' | 'history' | 'agenda' | 'sales' | 'admin' | 'account';
+type ActiveTab = 'client' | 'films' | 'settings' | 'history' | 'agenda' | 'sales' | 'admin' | 'account' | 'estoque';
 
 interface HeaderProps {
     activeTab: ActiveTab;
@@ -36,6 +36,7 @@ const Header: React.FC<HeaderProps> = ({
                 <div className="flex space-x-1 p-0.5 bg-slate-100 dark:bg-slate-700 rounded-xl w-full overflow-x-auto">
                     <TabButton tabId="client" icon="fas fa-user-friends">Cliente</TabButton>
                     <TabButton tabId="films" icon="fas fa-layer-group">Películas</TabButton>
+                    <TabButton tabId="estoque" icon="fas fa-boxes">Estoque</TabButton>
                     <TabButton tabId="agenda" icon="fas fa-calendar-alt">Agenda</TabButton>
                     <TabButton tabId="history" icon="fas fa-history">Histórico</TabButton>
                     <TabButton tabId="settings" icon="fas fa-cog">Empresa</TabButton>

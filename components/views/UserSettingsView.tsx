@@ -3,7 +3,8 @@ import { UserInfo } from '../../types';
 import Input from '../ui/Input';
 import ColorPicker from '../ui/ColorPicker';
 import SignatureModal from '../modals/SignatureModal';
-// import PwaQrCode from '../PwaQrCode'; // Removido
+import TeamManagement from '../TeamManagement';
+
 
 interface UserSettingsViewProps {
     userInfo: UserInfo;
@@ -407,38 +408,15 @@ const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, o
             </div>
 
             <div className={sectionClass}>
-                <h3 className={sectionTitleClass}>Equipe ({formData.employees?.length || 0})</h3>
+                <h3 className={sectionTitleClass}>Colaboradores</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                    A quantidade de colaboradores define quantos agendamentos podem ser feitos no mesmo horário.
+                    Convide colaboradores para acessar o sistema. Você pode ativar ou bloquear o acesso a qualquer momento.
                 </p>
-                <div className="mt-4 space-y-3">
-                    {(formData.employees || []).map(employee => (
-                        <div key={employee.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                            <span className="text-slate-800 dark:text-slate-200 font-medium">{employee.nome}</span>
-                            <button type="button" onClick={() => handleRemoveEmployee(employee.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 h-8 w-8 rounded-full flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20">
-                                <i className="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    ))}
-                    <div className="flex items-center gap-2 pt-2">
-                        <Input
-                            id="newEmployee"
-                            label=""
-                            type="text"
-                            value={newEmployeeName}
-                            onChange={(e) => setNewEmployeeName(e.target.value)}
-                            placeholder="Nome do colaborador"
-                        />
-                        <button
-                            type="button"
-                            onClick={handleAddEmployee}
-                            className="px-4 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
-                        >
-                            Adicionar
-                        </button>
-                    </div>
+                <div className="mt-4">
+                    <TeamManagement />
                 </div>
             </div>
+
 
             <div className={sectionClass}>
                 <h3 className={sectionTitleClass}>Inteligência Artificial (IA)</h3>

@@ -178,7 +178,27 @@ export interface Profile {
     role: 'admin' | 'user';
     approved: boolean;
     created_at: string;
+    organization_id?: string;
 }
+
+export interface Organization {
+    id: string;
+    name: string;
+    owner_id: string;
+    created_at: string;
+}
+
+export interface OrganizationMember {
+    id: string;
+    organization_id: string;
+    user_id?: string;
+    email: string;
+    role: 'owner' | 'admin' | 'member';
+    status: 'pending' | 'active' | 'blocked';
+    invited_at: string;
+    joined_at?: string;
+}
+
 
 // ============================================
 // TIPOS PARA CONTROLE DE ESTOQUE

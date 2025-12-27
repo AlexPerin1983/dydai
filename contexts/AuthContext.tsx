@@ -1,14 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../services/supabaseClient';
-import { Profile } from '../types';
-
-// Declaração do Meta Pixel para TypeScript
-declare global {
-    interface Window {
-        fbq: (...args: any[]) => void;
-    }
-}
+import { Profile, OrganizationMember } from '../types';
 
 interface AuthContextType {
     session: Session | null;
@@ -17,7 +10,12 @@ interface AuthContextType {
     loading: boolean;
     isAdmin: boolean;
     isApproved: boolean;
+    isBlocked: boolean;
+    isOwner: boolean;
+    organizationId: string | null;
+    memberStatus: 'pending' | 'active' | 'blocked' | null;
     signOut: () => Promise<void>;
+    refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,24 +24,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [session, setSession] = useState<Session | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<Profile | null>(null);
+    const [memberStatus, setMemberStatus] = useState<'pending' | 'active' | 'blocked' | null>(null);
+    const [isOwner, setIsOwner] = useState(false);
     const [loading, setLoading] = useState(true);
-
-    // Meta Pixel: Dispara evento Purchase quando usuário é aprovado
-    useEffect(() => {
-        const isApproved = profile?.approved ?? false;
-        const alreadyTracked = localStorage.getItem('meta_purchase_tracked');
-
-        if (isApproved && !alreadyTracked) {
-            if (typeof window.fbq === 'function') {
-                window.fbq('track', 'Purchase', {
-                    value: 39.00,
-                    currency: 'BRL',
-                    content_name: 'FilmsPro - Acesso Vitalício'
-                });
-            }
-            localStorage.setItem('meta_purchase_tracked', 'true');
-        }
-    }, [profile?.approved]);
 
     useEffect(() => {
         // Check active sessions and subscribe to auth changes
@@ -64,6 +47,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 fetchProfile(session.user.id, session.user.email!);
             } else {
                 setProfile(null);
+                setMemberStatus(null);
+                setIsOwner(false);
                 setLoading(false);
             }
         });
@@ -85,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     id: userId,
                     email: email,
                     role: 'user',
-                    approved: false, // Default to not approved
+                    approved: false,
                     created_at: new Date().toISOString()
                 };
                 const { data: createdProfile, error: createError } = await supabase
@@ -98,9 +83,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     console.error('Error creating profile:', createError);
                 } else {
                     setProfile(createdProfile);
+                    // Check member status for new profile
+                    await fetchMemberStatus(createdProfile);
                 }
             } else if (data) {
                 setProfile(data);
+                // Check member status
+                await fetchMemberStatus(data);
             }
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -109,11 +98,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const fetchMemberStatus = async (profile: Profile) => {
+        if (!profile.organization_id) {
+            setMemberStatus(null);
+            setIsOwner(false);
+            return;
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('organization_members')
+                .select('*')
+                .eq('organization_id', profile.organization_id)
+                .eq('user_id', profile.id)
+                .single();
+
+            if (error) {
+                console.error('Error fetching member status:', error);
+                setMemberStatus(null);
+                setIsOwner(false);
+                return;
+            }
+
+            if (data) {
+                setMemberStatus(data.status as 'pending' | 'active' | 'blocked');
+                setIsOwner(data.role === 'owner');
+            }
+        } catch (error) {
+            console.error('Error fetching member status:', error);
+        }
+    };
+
+    const refreshProfile = async () => {
+        if (user) {
+            await fetchProfile(user.id, user.email!);
+        }
+    };
+
     const signOut = async () => {
         await supabase.auth.signOut();
         setProfile(null);
         setSession(null);
         setUser(null);
+        setMemberStatus(null);
+        setIsOwner(false);
     };
 
     const value = {
@@ -123,7 +151,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         isAdmin: profile?.role === 'admin',
         isApproved: profile?.approved ?? false,
-        signOut
+        isBlocked: memberStatus === 'blocked',
+        isOwner,
+        organizationId: profile?.organization_id ?? null,
+        memberStatus,
+        signOut,
+        refreshProfile
     };
 
     return (

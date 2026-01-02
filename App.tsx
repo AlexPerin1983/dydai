@@ -30,6 +30,7 @@ import ApiKeyModal from './components/modals/ApiKeyModal';
 import ProposalOptionsCarousel from './components/ProposalOptionsCarousel';
 import ImageGalleryModal from './components/modals/ImageGalleryModal';
 import LocationImportModal from './components/modals/LocationImportModal';
+import ServicoQrModal from './components/modals/ServicoQrModal';
 import UpdateNotification from './components/UpdateNotification';
 import { ModalsContainer } from './components/ModalsContainer';
 import { usePwaInstallPrompt } from './src/hooks/usePwaInstallPrompt';
@@ -148,6 +149,7 @@ const App: React.FC = () => {
     const [isGeneralDiscountModalOpen, setIsGeneralDiscountModalOpen] = useState(false);
     const [isDuplicateAllModalOpen, setIsDuplicateAllModalOpen] = useState(false);
     const [isLocationImportModalOpen, setIsLocationImportModalOpen] = useState(false);
+    const [isServicoQrModalOpen, setIsServicoQrModalOpen] = useState(false);
     const [measurementToDeleteId, setMeasurementToDeleteId] = useState<number | null>(null);
     const [isDeleteProposalOptionModalOpen, setIsDeleteProposalOptionModalOpen] = useState(false);
     const [proposalOptionToDeleteId, setProposalOptionToDeleteId] = useState<number | null>(null);
@@ -2697,6 +2699,18 @@ Se não conseguir extrair, retorne: []`;
                     onAddGroup={handleNumpadAddGroup}
                     activeField={numpadConfig.field}
                 />
+
+                {/* Botão Flutuante - QR Code de Serviços */}
+                {userInfo && (
+                    <button
+                        onClick={() => setIsServicoQrModalOpen(true)}
+                        className="fixed bottom-36 sm:bottom-8 right-4 sm:right-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-4 rounded-full shadow-2xl z-[9999] transition-all duration-300 hover:scale-110 flex items-center justify-center border-2 border-white"
+                        title="Gerar QR Code de Serviço"
+                        style={{ width: '60px', height: '60px' }}
+                    >
+                        <i className="fas fa-qrcode text-2xl"></i>
+                    </button>
+                )}
             </ProtectedRoute>
 
             <LocationImportModal
@@ -2714,12 +2728,19 @@ Se não conseguir extrair, retorne: []`;
             )}
             {showUndoToast && deletedMeasurement && (
                 <Toast
-                    message="Medida exclu�da"
+                    message="Medida excluída"
                     onUndo={handleUndoDelete}
                     onDismiss={handleDismissUndo}
                     duration={5000}
                 />
             )}
+
+            <ServicoQrModal
+                isOpen={isServicoQrModalOpen}
+                onClose={() => setIsServicoQrModalOpen(false)}
+                userInfo={userInfo}
+                films={films}
+            />
         </div>
     );
 };

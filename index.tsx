@@ -1,5 +1,5 @@
 // PARA FORÇAR UMA NOVA VERSÃO: Altere o número da versão abaixo (ex: 71 -> 72)
-// console.log('App Version: 79 - Estoque Público');
+// console.log('App Version: 80 - Serviço QR Code');
 
 import React, { lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
@@ -9,20 +9,21 @@ import { ErrorProvider } from './src/contexts/ErrorContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 
-// Lazy load da página pública
+// Lazy load das páginas públicas
 const EstoquePublicoView = lazy(() => import('./components/views/EstoquePublicoView'));
+const ServicoPublicoView = lazy(() => import('./components/views/ServicoPublicoView'));
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-// Verificar se é uma consulta pública de estoque
+// Verificar se é uma consulta pública
 const urlParams = new URLSearchParams(window.location.search);
-const isPublicEstoque = urlParams.has('qr') || urlParams.has('code');
 const pathname = window.location.pathname;
 
-// Se for consulta pública de estoque (ex: ?qr=PBR-XXX ou /consulta?qr=PBR-XXX)
+// Consulta pública de estoque (ex: ?qr=PBR-XXX ou ?code=XXX)
+const isPublicEstoque = urlParams.has('qr') || urlParams.has('code');
 const isEstoquePublico = isPublicEstoque && (
   pathname === '/' ||
   pathname === '/consulta' ||
@@ -30,25 +31,43 @@ const isEstoquePublico = isPublicEstoque && (
   pathname.endsWith('index.html')
 );
 
+// Consulta pública de serviço prestado (ex: ?servico=SVC-XXX ou ?s=XXX)
+const isPublicServico = urlParams.has('servico') || urlParams.has('s');
+const isServicoPublico = isPublicServico && !isEstoquePublico;
+
 const root = ReactDOM.createRoot(rootElement);
 
-if (isEstoquePublico) {
-  // Renderizar página pública (sem necessidade de login)
+// Fallback de loading para páginas públicas
+const PublicLoadingFallback = (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+    color: 'white'
+  }}>
+    <div>Carregando...</div>
+  </div>
+);
+
+if (isServicoPublico) {
+  // Renderizar página pública de serviço (sem necessidade de login)
   root.render(
     <React.StrictMode>
       <ThemeProvider>
-        <Suspense fallback={
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-            color: 'white'
-          }}>
-            <div>Carregando...</div>
-          </div>
-        }>
+        <Suspense fallback={PublicLoadingFallback}>
+          <ServicoPublicoView />
+        </Suspense>
+      </ThemeProvider>
+    </React.StrictMode>
+  );
+} else if (isEstoquePublico) {
+  // Renderizar página pública de estoque (sem necessidade de login)
+  root.render(
+    <React.StrictMode>
+      <ThemeProvider>
+        <Suspense fallback={PublicLoadingFallback}>
           <EstoquePublicoView />
         </Suspense>
       </ThemeProvider>

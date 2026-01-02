@@ -108,8 +108,38 @@ const ServicoPublicoView: React.FC = () => {
     const handleWhatsApp = () => {
         if (data?.empresa_telefone) {
             const phone = data.empresa_telefone.replace(/\D/g, '');
+
+            // Montar endereço completo
+            const enderecoCompleto = [
+                data.endereco,
+                data.cidade,
+                data.uf
+            ].filter(Boolean).join(', ');
+
+            // Formatar data do serviço
+            const dataServico = data.data_servico
+                ? new Date(data.data_servico).toLocaleDateString('pt-BR')
+                : 'N/A';
+
+            // Área aplicada
+            const area = data.metros_aplicados
+                ? `${data.metros_aplicados.toFixed(2)} m²`
+                : 'N/A';
+
             const message = encodeURIComponent(
-                `Olá! Escaneei o QR Code do serviço realizado em ${data.cliente_nome} e gostaria de solicitar um orçamento para nova aplicação.`
+                `Olá! Escaneei o QR Code de um serviço anterior e gostaria de um novo orçamento.
+
+📋 *DADOS DO SERVIÇO ANTERIOR:*
+━━━━━━━━━━━━━━━━━━━━
+🏠 *Local:* ${data.cliente_nome}
+📍 *Endereço:* ${enderecoCompleto || 'Não informado'}
+🎞️ *Película:* ${data.filme_aplicado}
+📐 *Área aplicada:* ${area}
+📅 *Data:* ${dataServico}
+🔖 *Código:* ${qrCode}
+━━━━━━━━━━━━━━━━━━━━
+
+Gostaria de manter o mesmo padrão ou expandir a aplicação. Aguardo retorno!`
             );
             window.open(`https://wa.me/55${phone}?text=${message}`, '_blank');
         }
@@ -117,9 +147,50 @@ const ServicoPublicoView: React.FC = () => {
 
     const handleEmail = () => {
         if (data?.empresa_email) {
-            const subject = encodeURIComponent('Solicitação de Orçamento - Película');
+            // Montar endereço completo
+            const enderecoCompleto = [
+                data.endereco,
+                data.cidade,
+                data.uf
+            ].filter(Boolean).join(', ');
+
+            // Formatar data do serviço
+            const dataServico = data.data_servico
+                ? new Date(data.data_servico).toLocaleDateString('pt-BR')
+                : 'N/A';
+
+            // Área aplicada
+            const area = data.metros_aplicados
+                ? `${data.metros_aplicados.toFixed(2)} m²`
+                : 'N/A';
+
+            const subject = encodeURIComponent(`Orçamento - Referente ao serviço em ${data.cliente_nome}`);
             const body = encodeURIComponent(
-                `Olá!\n\nEscaneei o QR Code do serviço realizado em ${data.cliente_nome}.\nPelícula aplicada: ${data.filme_aplicado}\n\nGostaria de solicitar um orçamento para nova aplicação.\n\nAguardo retorno.`
+                `Olá!
+
+Escaneei o QR Code de um serviço anterior e gostaria de solicitar um novo orçamento.
+
+═══════════════════════════════════
+DADOS DO SERVIÇO ANTERIOR
+═══════════════════════════════════
+
+Local: ${data.cliente_nome}
+Tipo: ${getTipoLocalInfo(data.tipo_local).label}
+Endereço: ${enderecoCompleto || 'Não informado'}
+
+Película Aplicada: ${data.filme_aplicado}
+Área Aplicada: ${area}
+Data do Serviço: ${dataServico}
+
+Código de Rastreamento: ${qrCode}
+
+═══════════════════════════════════
+
+Gostaria de manter o mesmo padrão de película ou expandir a aplicação para novas áreas.
+
+Aguardo retorno com orçamento.
+
+Atenciosamente.`
             );
             window.open(`mailto:${data.empresa_email}?subject=${subject}&body=${body}`, '_blank');
         }

@@ -1,9 +1,10 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Login } from './Login';
+import { ResetPassword } from './ResetPassword';
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { session, loading, isApproved, isBlocked, signOut } = useAuth();
+    const { session, loading, isApproved, isBlocked, signOut, isPasswordRecovery, clearPasswordRecovery } = useAuth();
 
     if (loading) {
         return (
@@ -11,6 +12,11 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
         );
+    }
+
+    // Mostrar tela de redefinição de senha se o usuário clicou no link de recuperação
+    if (isPasswordRecovery && session) {
+        return <ResetPassword onComplete={clearPasswordRecovery} />;
     }
 
     if (!session) {

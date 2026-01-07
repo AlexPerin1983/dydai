@@ -14,6 +14,8 @@ interface AuthContextType {
     isOwner: boolean;
     organizationId: string | null;
     memberStatus: 'pending' | 'active' | 'blocked' | null;
+    isPasswordRecovery: boolean;
+    clearPasswordRecovery: () => void;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
 }
@@ -27,6 +29,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [memberStatus, setMemberStatus] = useState<'pending' | 'active' | 'blocked' | null>(null);
     const [isOwner, setIsOwner] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+
+    const clearPasswordRecovery = () => {
+        setIsPasswordRecovery(false);
+    };
 
     useEffect(() => {
         // Check active sessions and subscribe to auth changes
@@ -40,7 +47,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log('[AuthContext] Auth event:', event);
+
+            // Detecta o evento de recuperação de senha
+            if (event === 'PASSWORD_RECOVERY') {
+                console.log('[AuthContext] Password recovery mode activated');
+                setIsPasswordRecovery(true);
+            }
+
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
@@ -162,6 +177,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isOwner,
         organizationId: profile?.organization_id ?? null,
         memberStatus,
+        isPasswordRecovery,
+        clearPasswordRecovery,
         signOut,
         refreshProfile
     };

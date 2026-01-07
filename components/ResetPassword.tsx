@@ -18,8 +18,13 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onComplete }) => {
     useEffect(() => {
         // Aguarda o Supabase processar o token da URL e criar a sessão
         const checkSession = async () => {
+            console.log('[ResetPassword] Iniciando verificação de sessão...');
+            console.log('[ResetPassword] URL hash:', window.location.hash);
+            console.log('[ResetPassword] URL search:', window.location.search);
+
             // Primeiro tenta obter a sessão atual
             const { data: { session: currentSession } } = await supabase.auth.getSession();
+            console.log('[ResetPassword] Sessão atual:', currentSession ? 'Encontrada' : 'Não encontrada');
 
             if (currentSession) {
                 setSession(currentSession);
@@ -29,17 +34,26 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onComplete }) => {
 
             // Se não há sessão, escuta por mudanças de autenticação
             const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-                console.log('[ResetPassword] Auth event:', event);
+                console.log('[ResetPassword] Auth event:', event, 'Session:', newSession ? 'Existe' : 'Null');
                 if (newSession) {
                     setSession(newSession);
                     setWaitingForSession(false);
                 }
             });
 
-            // Timeout para não ficar esperando infinitamente
+            // Timeout de 10 segundos para não ficar esperando infinitamente
             setTimeout(() => {
-                setWaitingForSession(false);
-            }, 5000);
+                console.log('[ResetPassword] Timeout atingido, verificando sessão final...');
+                supabase.auth.getSession().then(({ data: { session: finalSession } }) => {
+                    if (finalSession) {
+                        console.log('[ResetPassword] Sessão encontrada no timeout!');
+                        setSession(finalSession);
+                    } else {
+                        console.log('[ResetPassword] Nenhuma sessão após timeout');
+                    }
+                    setWaitingForSession(false);
+                });
+            }, 10000);
 
             return () => subscription.unsubscribe();
         };
@@ -77,7 +91,6 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onComplete }) => {
 
             setMessage({ type: 'success', text: 'Senha atualizada com sucesso! Redirecionando...' });
 
-            // Aguarda um momento para mostrar a mensagem de sucesso
             setTimeout(() => {
                 onComplete();
             }, 2000);

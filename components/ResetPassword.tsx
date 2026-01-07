@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabaseClient';
+import { Session } from '@supabase/supabase-js';
 
 interface ResetPasswordProps {
     onComplete: () => void;
@@ -9,11 +10,50 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onComplete }) => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [waitingForSession, setWaitingForSession] = useState(true);
+    const [session, setSession] = useState<Session | null>(null);
     const [message, setMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
     const [showPassword, setShowPassword] = useState(false);
 
+    useEffect(() => {
+        // Aguarda o Supabase processar o token da URL e criar a sessão
+        const checkSession = async () => {
+            // Primeiro tenta obter a sessão atual
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+
+            if (currentSession) {
+                setSession(currentSession);
+                setWaitingForSession(false);
+                return;
+            }
+
+            // Se não há sessão, escuta por mudanças de autenticação
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+                console.log('[ResetPassword] Auth event:', event);
+                if (newSession) {
+                    setSession(newSession);
+                    setWaitingForSession(false);
+                }
+            });
+
+            // Timeout para não ficar esperando infinitamente
+            setTimeout(() => {
+                setWaitingForSession(false);
+            }, 5000);
+
+            return () => subscription.unsubscribe();
+        };
+
+        checkSession();
+    }, []);
+
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!session) {
+            setMessage({ type: 'error', text: 'Sessão expirada. Por favor, solicite um novo link de redefinição.' });
+            return;
+        }
 
         if (newPassword !== confirmPassword) {
             setMessage({ type: 'error', text: 'As senhas não coincidem' });
@@ -48,6 +88,40 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onComplete }) => {
         }
     };
 
+    // Mostra loading enquanto aguarda a sessão do Supabase
+    if (waitingForSession) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
+                <div className="max-w-md w-full bg-slate-800 rounded-xl shadow-2xl p-8 border border-slate-700 text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                    <h2 className="text-xl font-bold text-white mb-2">Processando...</h2>
+                    <p className="text-slate-400">Validando seu link de redefinição de senha</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Mostra erro se a sessão não foi estabelecida
+    if (!session) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
+                <div className="max-w-md w-full bg-slate-800 rounded-xl shadow-2xl p-8 border border-slate-700 text-center">
+                    <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i className="fas fa-exclamation-triangle text-3xl text-red-400"></i>
+                    </div>
+                    <h2 className="text-xl font-bold text-white mb-2">Link Expirado</h2>
+                    <p className="text-slate-400 mb-6">O link de redefinição de senha expirou ou é inválido. Por favor, solicite um novo link.</p>
+                    <button
+                        onClick={onComplete}
+                        className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
+                    >
+                        Voltar para o Login
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
             <div className="max-w-md w-full bg-slate-800 rounded-xl shadow-2xl p-8 border border-slate-700">
@@ -65,8 +139,8 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onComplete }) => {
 
                 {message && (
                     <div className={`p-4 rounded-lg mb-6 text-sm font-medium ${message.type === 'error'
-                            ? 'bg-red-900/50 text-red-200 border border-red-800'
-                            : 'bg-green-900/50 text-green-200 border border-green-800'
+                        ? 'bg-red-900/50 text-red-200 border border-red-800'
+                        : 'bg-green-900/50 text-green-200 border border-green-800'
                         }`}>
                         {message.text}
                     </div>

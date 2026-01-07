@@ -237,7 +237,18 @@ const App: React.FC = () => {
     }, []);
 
     // Intercepta o botão voltar do navegador/Android
+    // Intercepta o botão voltar do navegador/Android
     useEffect(() => {
+        // Verifica se há parâmetros de autenticação na URL - NÃO fazer pushState se houver
+        const hasAuthParams =
+            window.location.hash.includes('access_token=') ||
+            window.location.hash.includes('refresh_token=') ||
+            window.location.hash.includes('type=') ||
+            window.location.search.includes('access_token=') ||
+            window.location.search.includes('type=') ||
+            window.location.search.includes('code=') ||
+            window.location.search.includes('error=');
+
         const handleBackButton = (event: PopStateEvent) => {
             if (numpadConfig.isOpen) {
                 event.preventDefault();
@@ -270,7 +281,10 @@ const App: React.FC = () => {
             }
         };
 
-        window.history.pushState(null, '', window.location.pathname);
+        // Só faz o pushState inicial se NÃO for um link de autenticação
+        if (!hasAuthParams) {
+            window.history.pushState(null, '', window.location.pathname);
+        }
         window.addEventListener('popstate', handleBackButton);
 
         return () => {

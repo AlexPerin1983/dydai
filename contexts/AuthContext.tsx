@@ -36,6 +36,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     useEffect(() => {
+        // Verificação manual da URL para capturar recuperação de senha/magic link
+        const hash = window.location.hash;
+        const search = window.location.search;
+        if (hash.includes('type=recovery') || search.includes('type=recovery')) {
+            console.log('[AuthContext] Detecção manual de recuperação de senha via URL');
+            setIsPasswordRecovery(true);
+        }
+
         // Check active sessions and subscribe to auth changes
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);

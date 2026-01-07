@@ -213,7 +213,6 @@ const App: React.FC = () => {
         // Handle share target parameters
         const sharedTitle = urlParams.get('title');
         const sharedText = urlParams.get('text');
-        const sharedUrl = urlParams.get('url');
 
         if (sharedText || sharedTitle) {
             // If text was shared, open AI modal with the text
@@ -229,6 +228,13 @@ const App: React.FC = () => {
             window.location.search.includes('access_token=') ||
             window.location.hash.includes('type=recovery') ||
             window.location.search.includes('type=recovery') ||
+            window.location.hash.includes('type=magiclink') ||
+            window.location.search.includes('type=magiclink') ||
+            window.location.hash.includes('type=signup') ||
+            window.location.search.includes('type=signup') ||
+            window.location.hash.includes('type=invite') ||
+            window.location.search.includes('type=invite') ||
+            window.location.search.includes('code=') ||
             window.location.search.includes('error=');
 
         if (urlParams.toString() && !hasAuthParams) {

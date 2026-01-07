@@ -15,7 +15,8 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     // Mostrar tela de redefinição de senha se o usuário clicou no link de recuperação
-    if (isPasswordRecovery && session) {
+    // Não depende de sessão pois o Supabase ainda está processando o token
+    if (isPasswordRecovery) {
         return <ResetPassword onComplete={clearPasswordRecovery} />;
     }
 

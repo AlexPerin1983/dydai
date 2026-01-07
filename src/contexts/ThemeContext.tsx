@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [theme, setTheme] = useState<Theme>(() => {
         try {
-            const savedTheme = localStorage.getItem('theme');
+            const savedTheme = localStorage.getItem('peliculas-br-bd-theme');
             return (savedTheme as Theme) || 'light';
         } catch (error) {
             console.warn('Could not access localStorage for theme:', error);
@@ -28,7 +28,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             root.classList.remove('dark');
         }
         try {
-            localStorage.setItem('theme', theme);
+            localStorage.setItem('peliculas-br-bd-theme', theme);
         } catch (error) {
             console.warn('Could not save theme to localStorage:', error);
         }

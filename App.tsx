@@ -388,7 +388,7 @@ const App: React.FC = () => {
             await loadFilms();
 
             // Migração automática de PDFs (roda apenas uma vez)
-            const migrationKey = 'pdf_migration_v1_completed';
+            const migrationKey = 'peliculas-br-bd-pdf_migration_v1';
             const migrationCompleted = localStorage.getItem(migrationKey);
 
             if (!migrationCompleted) {

@@ -190,15 +190,15 @@ export const UserAccount: React.FC = () => {
                                             <div
                                                 key={module.id}
                                                 className={`p-4 rounded-xl border transition-all ${isActive
-                                                        ? 'bg-green-500/5 border-green-500/30'
-                                                        : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700'
+                                                    ? 'bg-green-500/5 border-green-500/30'
+                                                    : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700'
                                                     }`}
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3">
                                                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isActive
-                                                                ? 'bg-green-500/20 text-green-400'
-                                                                : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
+                                                            ? 'bg-green-500/20 text-green-400'
+                                                            : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
                                                             }`}>
                                                             <Package className="w-5 h-5" />
                                                         </div>
@@ -351,7 +351,7 @@ export const UserAccount: React.FC = () => {
                                 Entre em contato para receber os dados do PIX:
                             </p>
                             <a
-                                href="https://wa.me/5511999999999"
+                                href="https://wa.me/5583996476052"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center justify-center gap-2 w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition-colors"

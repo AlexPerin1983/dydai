@@ -61,6 +61,7 @@ interface ModalsContainerProps {
     aiFilmData: Partial<Film> | undefined;
     setAiFilmData: (value: Partial<Film> | undefined) => void;
     setIsAIFilmModalOpen: (value: boolean) => void;
+    handleOpenAIFilmModal: () => void;
 
     // Film Selection Modal
     isFilmSelectionModalOpen: boolean;
@@ -249,7 +250,7 @@ export const ModalsContainer: React.FC<ModalsContainerProps> = (props) => {
                     film={props.editingFilm}
                     initialName={props.newFilmName}
                     aiData={props.aiFilmData}
-                    onOpenAIModal={() => props.setIsAIFilmModalOpen(true)}
+                    onOpenAIModal={props.handleOpenAIFilmModal}
                 />
             )}
 

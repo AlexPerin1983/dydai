@@ -14,6 +14,7 @@ export interface SubscriptionModule {
     features: string[];
     is_active: boolean;
     sort_order: number;
+    validity_months?: number; // Período de validade em meses (ex: 6 para semestral)
 }
 
 export interface SubscriptionLimits {

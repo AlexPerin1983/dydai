@@ -43,7 +43,8 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminUsers } from './components/AdminUsers';
 import { useAuth } from './contexts/AuthContext';
 import { UserAccount } from './components/UserAccount';
-import { FeatureGate } from './components/subscription/SubscriptionComponents';
+import { FeatureGate, UpgradePrompt } from './components/subscription/SubscriptionComponents';
+import { useSubscription } from './contexts/SubscriptionContext';
 
 
 
@@ -73,6 +74,7 @@ const App: React.FC = () => {
     const { showError } = useError();
     const { deferredPrompt, promptInstall, isInstalled } = usePwaInstallPrompt();
     const { newVersionAvailable, handleUpdate } = usePwaUpdate();
+    const { hasModule, modules } = useSubscription();
 
     const [isLoading, setIsLoading] = useState(true);
     const [clients, setClients] = useState<Client[]>([]);
@@ -154,6 +156,10 @@ const App: React.FC = () => {
     const [measurementToDeleteId, setMeasurementToDeleteId] = useState<number | null>(null);
     const [isDeleteProposalOptionModalOpen, setIsDeleteProposalOptionModalOpen] = useState(false);
     const [proposalOptionToDeleteId, setProposalOptionToDeleteId] = useState<number | null>(null);
+
+    // Estados para modais de upgrade de módulos premium
+    const [showQrUpgradeModal, setShowQrUpgradeModal] = useState(false);
+    const [showIaUpgradeModal, setShowIaUpgradeModal] = useState(false);
 
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [galleryImages, setGalleryImages] = useState<string[]>([]);
@@ -2091,9 +2097,21 @@ const App: React.FC = () => {
     }, []);
 
     const handleOpenAIClientModal = useCallback(() => {
-        setIsClientModalOpen(false);
-        setIsAIClientModalOpen(true);
-    }, []);
+        if (hasModule('ia_ocr')) {
+            setIsClientModalOpen(false);
+            setIsAIClientModalOpen(true);
+        } else {
+            setShowIaUpgradeModal(true);
+        }
+    }, [hasModule]);
+
+    const handleOpenAIFilmModal = useCallback(() => {
+        if (hasModule('ia_ocr')) {
+            setIsAIFilmModalOpen(true);
+        } else {
+            setShowIaUpgradeModal(true);
+        }
+    }, [hasModule]);
 
     const handleProcessAIMeasurementInput = useCallback(async (
         input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }
@@ -2485,6 +2503,7 @@ Se não conseguir extrair, retorne: []`;
         newFilmName,
         aiFilmData,
         setIsAIFilmModalOpen,
+        handleOpenAIFilmModal,
         isFilmSelectionModalOpen,
         setIsFilmSelectionModalOpen,
         handleSelectFilm: handleSelectFilmForMeasurement,
@@ -2668,7 +2687,13 @@ Se não conseguir extrair, retorne: []`;
                                             onDuplicateMeasurements={duplicateAllMeasurements}
                                             onGeneratePdf={handleGeneratePdf}
                                             isGeneratingPdf={pdfGenerationStatus === 'generating'}
-                                            onOpenAIModal={() => setIsAIMeasurementModalOpen(true)}
+                                            onOpenAIModal={() => {
+                                                if (hasModule('ia_ocr')) {
+                                                    setIsAIMeasurementModalOpen(true);
+                                                } else {
+                                                    setShowIaUpgradeModal(true);
+                                                }
+                                            }}
                                         />
                                     </div>
                                     <MobileFooter
@@ -2680,7 +2705,13 @@ Se não conseguir extrair, retorne: []`;
                                         onDuplicateMeasurements={duplicateAllMeasurements}
                                         onGeneratePdf={handleGeneratePdf}
                                         isGeneratingPdf={pdfGenerationStatus === 'generating'}
-                                        onOpenAIModal={() => setIsAIMeasurementModalOpen(true)}
+                                        onOpenAIModal={() => {
+                                            if (hasModule('ia_ocr')) {
+                                                setIsAIMeasurementModalOpen(true);
+                                            } else {
+                                                setShowIaUpgradeModal(true);
+                                            }
+                                        }}
                                     />
                                 </>
                             )}
@@ -2706,12 +2737,26 @@ Se não conseguir extrair, retorne: []`;
                 {/* Botão Flutuante - QR Code de Serviços */}
                 {userInfo && (
                     <button
-                        onClick={() => setIsServicoQrModalOpen(true)}
-                        className="fixed bottom-36 sm:bottom-8 right-4 sm:right-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-4 rounded-full shadow-2xl z-[9999] transition-all duration-300 hover:scale-110 flex items-center justify-center border-2 border-white"
-                        title="Gerar QR Code de Serviço"
+                        onClick={() => {
+                            if (hasModule('qr_servicos')) {
+                                setIsServicoQrModalOpen(true);
+                            } else {
+                                setShowQrUpgradeModal(true);
+                            }
+                        }}
+                        className={`fixed bottom-36 sm:bottom-8 right-4 sm:right-8 ${hasModule('qr_servicos')
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'
+                            : 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600'
+                            } text-white p-4 rounded-full shadow-2xl z-[9999] transition-all duration-300 hover:scale-110 flex items-center justify-center border-2 border-white relative`}
+                        title={hasModule('qr_servicos') ? "Gerar QR Code de Serviço" : "QR Code Serviços (PRO)"}
                         style={{ width: '60px', height: '60px' }}
                     >
                         <i className="fas fa-qrcode text-2xl"></i>
+                        {!hasModule('qr_servicos') && (
+                            <span className="absolute -top-1 -right-1 bg-white text-amber-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md">
+                                PRO
+                            </span>
+                        )}
                     </button>
                 )}
             </ProtectedRoute>
@@ -2744,6 +2789,48 @@ Se não conseguir extrair, retorne: []`;
                 userInfo={userInfo}
                 films={films}
             />
+
+            {/* Modal de Upgrade - QR Code Serviços */}
+            {showQrUpgradeModal && (
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                        <UpgradePrompt
+                            module={modules.find(m => m.id === 'qr_servicos')}
+                            onUpgradeClick={() => {
+                                setShowQrUpgradeModal(false);
+                                setActiveTab('account');
+                            }}
+                        />
+                        <button
+                            onClick={() => setShowQrUpgradeModal(false)}
+                            className="w-full mt-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                        >
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Upgrade - IA/OCR */}
+            {showIaUpgradeModal && (
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                        <UpgradePrompt
+                            module={modules.find(m => m.id === 'ia_ocr')}
+                            onUpgradeClick={() => {
+                                setShowIaUpgradeModal(false);
+                                setActiveTab('account');
+                            }}
+                        />
+                        <button
+                            onClick={() => setShowIaUpgradeModal(false)}
+                            className="w-full mt-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                        >
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

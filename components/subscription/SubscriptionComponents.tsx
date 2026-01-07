@@ -66,12 +66,51 @@ export function UpgradePrompt({ module, onUpgradeClick, compact = false }: Upgra
                 <span>Recurso PRO</span>
                 {module && (
                     <span className="text-amber-400 font-semibold">
-                        R$ {module.price_monthly.toFixed(2)}/mês
+                        R$ {module.price_monthly.toFixed(2)}/{module.validity_months || 1}{(module.validity_months || 1) > 1 ? 'M' : 'mês'}
                     </span>
                 )}
             </div>
         );
     }
+
+    // Benefícios específicos por módulo
+    const moduleBenefits: Record<string, { icon: string, benefit: string }> = {
+        'qr_servicos': {
+            icon: '📱',
+            benefit: 'Seus clientes visualizam o serviço realizado escaneando o QR Code'
+        },
+        'ia_ocr': {
+            icon: '⚡',
+            benefit: 'Economize horas digitando: extraia dados de fotos e áudio automaticamente'
+        },
+        'estoque': {
+            icon: '📦',
+            benefit: 'Controle bobinas, retalhos e nunca mais perca dinheiro com desperdício'
+        },
+        'corte_inteligente': {
+            icon: '✂️',
+            benefit: 'Reduza até 30% o desperdício com otimização inteligente de cortes'
+        },
+        'colaboradores': {
+            icon: '👥',
+            benefit: 'Gerencie sua equipe e acompanhe o trabalho de cada colaborador'
+        },
+        'personalizacao': {
+            icon: '🎨',
+            benefit: 'Deixe suas propostas com a cara da sua empresa'
+        },
+        'ilimitado': {
+            icon: '∞',
+            benefit: 'Trabalhe sem limites: clientes, películas e propostas ilimitados'
+        },
+        'locais_global': {
+            icon: '🏢',
+            benefit: 'Adicione locais à base global e economize tempo em futuros orçamentos'
+        }
+    };
+
+    const moduleId = module?.id || '';
+    const customBenefit = moduleBenefits[moduleId];
 
     return (
         <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-gray-800/50 to-gray-900/80 border border-gray-700 rounded-xl">
@@ -83,24 +122,44 @@ export function UpgradePrompt({ module, onUpgradeClick, compact = false }: Upgra
                 {module?.name || 'Recurso Premium'}
             </h3>
 
-            <p className="text-gray-400 text-center mb-4 max-w-md">
+            {/* Benefício específico do módulo */}
+            {customBenefit && (
+                <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg max-w-md">
+                    <p className="text-blue-300 text-center text-sm flex items-center gap-2 justify-center">
+                        <span className="text-xl">{customBenefit.icon}</span>
+                        <span>{customBenefit.benefit}</span>
+                    </p>
+                </div>
+            )}
+
+            <p className="text-gray-400 text-center mb-4 max-w-md text-sm">
                 {module?.description || 'Este recurso está disponível no plano PRO.'}
             </p>
 
             {module && (
-                <div className="flex items-baseline gap-2 mb-6">
+                <div className="flex items-baseline gap-2 mb-4">
                     <span className="text-3xl font-bold text-white">
                         R$ {module.price_monthly.toFixed(2)}
                     </span>
-                    <span className="text-gray-400">/mês</span>
+                    <span className="text-gray-400">
+                        /{module.validity_months || 1} {(module.validity_months || 1) > 1 ? 'meses' : 'mês'}
+                    </span>
                 </div>
             )}
 
+            {/* Garantia de 7 dias */}
+            <div className="mb-6 px-4 py-2 bg-green-500/10 border border-green-500/30 rounded-lg">
+                <p className="text-green-300 text-sm font-medium flex items-center gap-2">
+                    <span>🛡️</span>
+                    <span>Garantia de 7 dias • Reembolso total se não gostar</span>
+                </p>
+            </div>
+
             {module?.features && module.features.length > 0 && (
-                <ul className="mb-6 space-y-2">
-                    {module.features.slice(0, 4).map((feature, idx) => (
-                        <li key={idx} className="flex items-center gap-2 text-gray-300">
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                <ul className="mb-6 space-y-2 w-full max-w-sm">
+                    {module.features.slice(0, 3).map((feature, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-gray-300 text-sm">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
                             {formatFeatureName(feature)}
                         </li>
                     ))}
@@ -109,12 +168,16 @@ export function UpgradePrompt({ module, onUpgradeClick, compact = false }: Upgra
 
             <button
                 onClick={onUpgradeClick}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-gray-900 font-semibold rounded-lg transition-all shadow-lg shadow-amber-500/20"
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-gray-900 font-semibold rounded-lg transition-all shadow-lg shadow-amber-500/20"
             >
                 <Crown className="w-5 h-5" />
                 Ativar Agora
                 <ArrowRight className="w-5 h-5" />
             </button>
+
+            <p className="text-gray-500 text-xs mt-3 text-center">
+                Sem risco • Cancele quando quiser
+            </p>
         </div>
     );
 }
@@ -242,7 +305,9 @@ export function ModuleCard({ module, isActive = false, expiresAt, onActivate }: 
                     <div className="text-xl font-bold text-white">
                         R$ {module.price_monthly.toFixed(2)}
                     </div>
-                    <div className="text-gray-500 text-xs">/mês</div>
+                    <div className="text-gray-500 text-xs">
+                        /{module.validity_months || 1} {(module.validity_months || 1) > 1 ? 'meses' : 'mês'}
+                    </div>
 
                     {!isActive && onActivate && (
                         <button
@@ -392,36 +457,20 @@ export function ActivateModuleModal({
                     </button>
                 </div>
 
-                {/* Seletor de período */}
-                <div className="flex gap-2 mb-6">
-                    <button
-                        onClick={() => setBillingCycle('monthly')}
-                        className={`flex-1 py-3 px-4 rounded-lg border transition-all ${billingCycle === 'monthly'
-                            ? 'bg-blue-600 border-blue-500 text-white'
-                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
-                            }`}
-                    >
-                        <div className="font-semibold">Mensal</div>
-                        <div className="text-sm opacity-70">R$ {module.price_monthly.toFixed(2)}/mês</div>
-                    </button>
-
-                    <button
-                        onClick={() => setBillingCycle('yearly')}
-                        className={`flex-1 py-3 px-4 rounded-lg border transition-all relative ${billingCycle === 'yearly'
-                            ? 'bg-blue-600 border-blue-500 text-white'
-                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
-                            }`}
-                    >
-                        {discount > 0 && (
-                            <span className="absolute -top-2 -right-2 px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full">
-                                -{discount}%
-                            </span>
-                        )}
-                        <div className="font-semibold">Anual</div>
-                        <div className="text-sm opacity-70">
-                            R$ {(module.price_yearly || module.price_monthly * 10).toFixed(2)}/ano
+                {/* Preço do módulo */}
+                <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-gray-700">
+                    <div className="text-center">
+                        <div className="text-3xl font-bold text-white mb-2">
+                            R$ {module.price_monthly.toFixed(2)}
                         </div>
-                    </button>
+                        <div className="text-gray-400">
+                            por {module.validity_months || 6} meses
+                        </div>
+                        <div className="mt-3 text-sm text-green-400 flex items-center justify-center gap-1">
+                            <span>🛡️</span>
+                            <span>Garantia de 7 dias</span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Total */}

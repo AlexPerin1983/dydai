@@ -203,7 +203,6 @@ const App: React.FC = () => {
         // Handle action parameter
         const actionParam = urlParams.get('action');
         if (actionParam === 'new') {
-            // Open new client modal after loading
             setTimeout(() => {
                 setClientModalMode('add');
                 setIsClientModalOpen(true);
@@ -215,67 +214,53 @@ const App: React.FC = () => {
         const sharedText = urlParams.get('text');
 
         if (sharedText || sharedTitle) {
-            // If text was shared, open AI modal with the text
             setTimeout(() => {
                 setIsAIMeasurementModalOpen(true);
             }, 500);
         }
 
         // Clear URL parameters after processing, but NOT if they are auth-related
-        // Supabase needs these to process Magic Links and Password Resets
         const hasAuthParams =
             window.location.hash.includes('access_token=') ||
+            window.location.hash.includes('refresh_token=') ||
+            window.location.hash.includes('type=') ||
             window.location.search.includes('access_token=') ||
-            window.location.hash.includes('type=recovery') ||
-            window.location.search.includes('type=recovery') ||
-            window.location.hash.includes('type=magiclink') ||
-            window.location.search.includes('type=magiclink') ||
-            window.location.hash.includes('type=signup') ||
-            window.location.search.includes('type=signup') ||
-            window.location.hash.includes('type=invite') ||
-            window.location.search.includes('type=invite') ||
+            window.location.search.includes('type=') ||
             window.location.search.includes('code=') ||
             window.location.search.includes('error=');
 
         if (urlParams.toString() && !hasAuthParams) {
-            window.history.replaceState({}, '', window.location.pathname);
+            setTimeout(() => {
+                window.history.replaceState({}, '', window.location.pathname);
+            }, 1000);
         }
     }, []);
 
     // Intercepta o botão voltar do navegador/Android
     useEffect(() => {
         const handleBackButton = (event: PopStateEvent) => {
-            // Se o teclado numérico estiver aberto, fecha ele primeiro
             if (numpadConfig.isOpen) {
                 event.preventDefault();
                 handleNumpadClose();
-                // Adiciona um estado ao histórico para manter o usuário na página
                 window.history.pushState(null, '', window.location.pathname);
                 return;
             }
 
-            // Se algum modal estiver aberto, não mostra confirmação de saída
             if (isClientModalOpen || isFilmModalOpen || editingMeasurement ||
                 isFilmSelectionModalOpen || isGalleryOpen || schedulingInfo) {
                 return;
             }
 
-            // Previne a navegação padrão
             event.preventDefault();
 
-            // Se já pressionou uma vez recentemente, mostra o modal
             if (backButtonPressedOnce.current) {
                 setIsExitConfirmModalOpen(true);
                 window.history.pushState(null, '', window.location.pathname);
             } else {
-                // Primeira vez, apenas marca e adiciona estado ao histórico
                 backButtonPressedOnce.current = true;
                 window.history.pushState(null, '', window.location.pathname);
-
-                // Mostra um toast informando
                 handleShowInfo('Pressione voltar novamente para sair');
 
-                // Reseta após 2 segundos
                 if (backButtonTimeout.current) {
                     clearTimeout(backButtonTimeout.current);
                 }
@@ -285,9 +270,7 @@ const App: React.FC = () => {
             }
         };
 
-        // Adiciona um estado inicial ao histórico
         window.history.pushState(null, '', window.location.pathname);
-
         window.addEventListener('popstate', handleBackButton);
 
         return () => {
@@ -314,7 +297,6 @@ const App: React.FC = () => {
                         if (activeElement) {
                             const elementRect = activeElement.getBoundingClientRect();
                             const mainRect = mainEl.getBoundingClientRect();
-
                             const targetY = mainRect.top + (mainEl.clientHeight * 0.3);
                             const scrollAmount = elementRect.top - targetY;
 

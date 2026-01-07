@@ -222,8 +222,16 @@ const App: React.FC = () => {
             }, 500);
         }
 
-        // Clear URL parameters after processing
-        if (urlParams.toString()) {
+        // Clear URL parameters after processing, but NOT if they are auth-related
+        // Supabase needs these to process Magic Links and Password Resets
+        const hasAuthParams =
+            window.location.hash.includes('access_token=') ||
+            window.location.search.includes('access_token=') ||
+            window.location.hash.includes('type=recovery') ||
+            window.location.search.includes('type=recovery') ||
+            window.location.search.includes('error=');
+
+        if (urlParams.toString() && !hasAuthParams) {
             window.history.replaceState({}, '', window.location.pathname);
         }
     }, []);

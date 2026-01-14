@@ -79,10 +79,7 @@ export function UpgradePrompt({ module, onUpgradeClick, compact = false }: Upgra
             icon: '📱',
             benefit: 'Seus clientes visualizam o serviço realizado escaneando o QR Code'
         },
-        'ia_ocr': {
-            icon: '⚡',
-            benefit: 'Economize horas digitando: extraia dados de fotos e áudio automaticamente'
-        },
+
         'estoque': {
             icon: '📦',
             benefit: 'Controle bobinas, retalhos e nunca mais perca dinheiro com desperdício'
@@ -95,10 +92,7 @@ export function UpgradePrompt({ module, onUpgradeClick, compact = false }: Upgra
             icon: '👥',
             benefit: 'Gerencie sua equipe e acompanhe o trabalho de cada colaborador'
         },
-        'personalizacao': {
-            icon: '🎨',
-            benefit: 'Deixe suas propostas com a cara da sua empresa'
-        },
+
         'ilimitado': {
             icon: '∞',
             benefit: 'Trabalhe sem limites: clientes, películas e propostas ilimitados'
@@ -139,7 +133,7 @@ export function UpgradePrompt({ module, onUpgradeClick, compact = false }: Upgra
             {module && (
                 <div className="flex items-baseline gap-2 mb-4">
                     <span className="text-3xl font-bold text-white">
-                        R$ {module.price_monthly.toFixed(2)}
+                        R$ 39,90
                     </span>
                     <span className="text-gray-400">
                         /{module.validity_months || 1} {(module.validity_months || 1) > 1 ? 'meses' : 'mês'}
@@ -167,7 +161,12 @@ export function UpgradePrompt({ module, onUpgradeClick, compact = false }: Upgra
             )}
 
             <button
-                onClick={onUpgradeClick}
+                onClick={() => {
+                    const message = module?.id === 'ilimitado'
+                        ? 'Olá, quero ativar o Pacote Completo'
+                        : `Olá, quero ativar o módulo ${module?.name || 'Premium'}`;
+                    window.open(`https://wa.me/5583996476052?text=${encodeURIComponent(message)}`, '_blank');
+                }}
                 className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-gray-900 font-semibold rounded-lg transition-all shadow-lg shadow-amber-500/20"
             >
                 <Crown className="w-5 h-5" />
@@ -303,7 +302,7 @@ export function ModuleCard({ module, isActive = false, expiresAt, onActivate }: 
 
                 <div className="text-right">
                     <div className="text-xl font-bold text-white">
-                        R$ {module.price_monthly.toFixed(2)}
+                        R$ 39,90
                     </div>
                     <div className="text-gray-500 text-xs">
                         /{module.validity_months || 1} {(module.validity_months || 1) > 1 ? 'meses' : 'mês'}
@@ -461,7 +460,7 @@ export function ActivateModuleModal({
                 <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-gray-700">
                     <div className="text-center">
                         <div className="text-3xl font-bold text-white mb-2">
-                            R$ {module.price_monthly.toFixed(2)}
+                            R$ {module.id === 'ilimitado' ? '99,00' : '39,90'}
                         </div>
                         <div className="text-gray-400">
                             por {module.validity_months || 6} meses

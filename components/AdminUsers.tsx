@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { Profile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { Package, Crown, ChevronDown, ChevronUp, Check, X, Zap } from 'lucide-react';
+import { Package, Crown, ChevronDown, ChevronUp, Check, X, Zap, Search } from 'lucide-react';
 
 interface UserWithSubscription extends Profile {
     subscription?: {
@@ -20,13 +20,13 @@ interface UserWithSubscription extends Profile {
 }
 
 const AVAILABLE_MODULES = [
-    { id: 'estoque', name: 'Estoque', price: 29 },
-    { id: 'qr_servicos', name: 'QR Serviços', price: 29 },
-    { id: 'colaboradores', name: 'Colaboradores', price: 29 },
-    { id: 'ia_ocr', name: 'IA/OCR', price: 29 },
-    { id: 'personalizacao', name: 'Personalização', price: 29 },
-    { id: 'locais_global', name: 'Locais PRO', price: 29 },
-    { id: 'corte_inteligente', name: 'Corte Inteligente', price: 29 },
+    { id: 'estoque', name: 'Estoque', price: 39.9 },
+    { id: 'qr_servicos', name: 'QR Serviços', price: 39.9 },
+    { id: 'colaboradores', name: 'Colaboradores', price: 39.9 },
+    { id: 'locais_global', name: 'Locais PRO', price: 39.9 },
+    { id: 'corte_inteligente', name: 'Corte Inteligente', price: 39.9 },
+    { id: 'ia_ocr', name: 'IA & OCR', price: 39.9 },
+    { id: 'personalizacao', name: 'Marca Própria', price: 39.9 },
     { id: 'ilimitado', name: 'Pacote Completo', price: 99 },
 ];
 
@@ -35,7 +35,11 @@ export const AdminUsers: React.FC = () => {
     const [profiles, setProfiles] = useState<UserWithSubscription[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedUser, setExpandedUser] = useState<string | null>(null);
-    const [activatingModule, setActivatingModule] = useState<{ userId: string; moduleId: string } | null>(null);
+    const [activatingModule, setActivatingModule] = useState<{ userId: string, moduleId: string } | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [manualEmail, setManualEmail] = useState('');
+    const [manualModule, setManualModule] = useState('estoque');
+    const [manualMonths, setManualMonths] = useState(6);
 
     useEffect(() => {
         if (isAdmin) {
@@ -70,7 +74,7 @@ export const AdminUsers: React.FC = () => {
                         if (orgData) {
                             const { data: subData } = await supabase
                                 .from('subscriptions')
-                                .select('active_modules')
+                                .select('id, active_modules')
                                 .eq('organization_id', orgData.id)
                                 .single();
 
@@ -156,7 +160,7 @@ export const AdminUsers: React.FC = () => {
                 p_subscription_id: subData.id,
                 p_module_id: moduleId,
                 p_months: months,
-                p_payment_amount: moduleId === 'ilimitado' ? 99 : 29,
+                p_payment_amount: moduleId === 'ilimitado' ? 99 : 39.9,
                 p_payment_reference: 'ADMIN-MANUAL'
             });
 
@@ -185,6 +189,26 @@ export const AdminUsers: React.FC = () => {
         return profile.subscription?.active_modules?.includes(moduleId) || false;
     };
 
+    const filteredProfiles = profiles.filter(p =>
+        p.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.organization?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const handleManualActivation = async () => {
+        if (!manualEmail) return;
+
+        const profile = profiles.find(p => p.email?.toLowerCase() === manualEmail.toLowerCase());
+        if (!profile) {
+            alert('Usuário não encontrado na lista atual.');
+            return;
+        }
+
+        if (confirm(`Ativar ${manualModule} para ${manualEmail} por ${manualMonths} meses?`)) {
+            await activateModuleForUser(profile, manualModule, manualMonths);
+            setManualEmail('');
+        }
+    };
+
     if (!isAdmin) return null;
 
     return (
@@ -211,6 +235,70 @@ export const AdminUsers: React.FC = () => {
                 </div>
             </div>
 
+            {/* Busca e Ativação Manual */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                        <Search className="w-5 h-5 text-blue-500" />
+                        Buscar Usuário
+                    </h3>
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Email ou nome da empresa..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        />
+                        <Search className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-amber-500" />
+                        Ativação Rápida
+                    </h3>
+                    <div className="flex flex-col gap-3">
+                        <input
+                            type="email"
+                            placeholder="Email do usuário..."
+                            value={manualEmail}
+                            onChange={(e) => setManualEmail(e.target.value)}
+                            className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                        <div className="flex gap-2">
+                            <select
+                                value={manualModule}
+                                onChange={(e) => setManualModule(e.target.value)}
+                                className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none"
+                            >
+                                {AVAILABLE_MODULES.map(m => (
+                                    <option key={m.id} value={m.id}>{m.name}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={manualMonths}
+                                onChange={(e) => setManualMonths(Number(e.target.value))}
+                                className="w-24 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none"
+                            >
+                                <option value={1}>1 mês</option>
+                                <option value={3}>3 meses</option>
+                                <option value={6}>6 meses</option>
+                                <option value={12}>12 meses</option>
+                            </select>
+                            <button
+                                onClick={handleManualActivation}
+                                disabled={!manualEmail || loading}
+                                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-sm transition-colors disabled:opacity-50"
+                            >
+                                Ativar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Tabela de usuários */}
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
@@ -230,12 +318,12 @@ export const AdminUsers: React.FC = () => {
                         <div className="px-6 py-8 text-center text-slate-500">
                             Carregando usuários...
                         </div>
-                    ) : profiles.length === 0 ? (
+                    ) : filteredProfiles.length === 0 ? (
                         <div className="px-6 py-8 text-center text-slate-500">
                             Nenhum usuário encontrado.
                         </div>
                     ) : (
-                        profiles.map(profile => {
+                        filteredProfiles.map(profile => {
                             const isExpanded = expandedUser === profile.id;
                             const activeModulesCount = profile.subscription?.active_modules?.length || 0;
                             const hasFullPackage = isModuleActive(profile, 'ilimitado');
@@ -250,10 +338,10 @@ export const AdminUsers: React.FC = () => {
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-4">
                                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${hasFullPackage
-                                                        ? 'bg-gradient-to-br from-amber-400 to-yellow-500'
-                                                        : activeModulesCount > 0
-                                                            ? 'bg-green-500'
-                                                            : 'bg-slate-300 dark:bg-slate-600'
+                                                    ? 'bg-gradient-to-br from-amber-400 to-yellow-500'
+                                                    : activeModulesCount > 0
+                                                        ? 'bg-green-500'
+                                                        : 'bg-slate-300 dark:bg-slate-600'
                                                     }`}>
                                                     {hasFullPackage ? (
                                                         <Crown className="w-5 h-5 text-white" />
@@ -268,6 +356,11 @@ export const AdminUsers: React.FC = () => {
                                                         <span className="font-medium text-slate-900 dark:text-white">
                                                             {profile.email}
                                                         </span>
+                                                        {profile.organization?.name && (
+                                                            <span className="text-xs text-slate-400 font-normal">
+                                                                ({profile.organization.name})
+                                                            </span>
+                                                        )}
                                                         {profile.role === 'admin' && (
                                                             <span className="px-2 py-0.5 text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-full font-bold uppercase">
                                                                 Admin
@@ -356,8 +449,8 @@ export const AdminUsers: React.FC = () => {
                                                             <div
                                                                 key={module.id}
                                                                 className={`p-3 rounded-lg border text-center transition-all ${isActive
-                                                                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                                                                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                                                                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                                                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
                                                                     }`}
                                                             >
                                                                 <div className="flex items-center justify-center gap-1 mb-1">

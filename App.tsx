@@ -53,6 +53,7 @@ const PdfHistoryView = lazy(() => import('./components/views/PdfHistoryView'));
 const FilmListView = lazy(() => import('./components/views/FilmListView'));
 const AgendaView = lazy(() => import('./components/views/AgendaView'));
 const EstoqueView = lazy(() => import('./components/views/EstoqueView'));
+const CuttingOptimizationPanel = lazy(() => import('./components/CuttingOptimizationPanel'));
 
 
 type UIMeasurement = Measurement & { isNew?: boolean };
@@ -159,7 +160,7 @@ const App: React.FC = () => {
 
     // Estados para modais de upgrade de módulos premium
     const [showQrUpgradeModal, setShowQrUpgradeModal] = useState(false);
-    const [showIaUpgradeModal, setShowIaUpgradeModal] = useState(false);
+
 
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [galleryImages, setGalleryImages] = useState<string[]>([]);
@@ -725,18 +726,29 @@ const App: React.FC = () => {
     }, [selectedClientId, hasLoadedHistory, loadAllPdfs, hasLoadedAgendamentos, loadAgendamentos, loadClients]);
 
     const handleSaveUserInfo = useCallback(async (info: UserInfo) => {
-        await db.saveUserInfo(info);
-        setUserInfo(info);
-    }, []);
+        try {
+            await db.saveUserInfo(info);
+            setUserInfo(info);
+        } catch (error: any) {
+            console.error("Erro ao salvar informações do usuário:", error);
+            handleShowInfo(error.message || "Erro ao salvar informações do usuário.");
+            throw error;
+        }
+    }, [handleShowInfo]);
 
     const handleSavePaymentMethods = useCallback(async (methods: PaymentMethods) => {
         if (userInfo) {
-            const updatedUserInfo = { ...userInfo, payment_methods: methods };
-            await db.saveUserInfo(updatedUserInfo);
-            setUserInfo(updatedUserInfo);
-            setIsPaymentModalOpen(false);
+            try {
+                const updatedUserInfo = { ...userInfo, payment_methods: methods };
+                await db.saveUserInfo(updatedUserInfo);
+                setUserInfo(updatedUserInfo);
+                setIsPaymentModalOpen(false);
+            } catch (error: any) {
+                console.error("Erro ao salvar formas de pagamento:", error);
+                handleShowInfo(error.message || "Erro ao salvar formas de pagamento.");
+            }
         }
-    }, [userInfo]);
+    }, [userInfo, handleShowInfo]);
 
     const handleOpenFilmModal = useCallback((film: Film | null) => {
         setEditingFilm(film);
@@ -816,8 +828,21 @@ const App: React.FC = () => {
     }, [filmToDeleteName, loadFilms]);
 
 
-    const downloadBlob = useCallback((blob: Blob, filename: string) => {
-        const url = URL.createObjectURL(blob);
+    const downloadBlob = useCallback(async (blob: Blob, filename: string, pdfId?: number) => {
+        let finalBlob = blob;
+
+        // Se o blob estiver vazio e tivermos um ID, buscamos do banco
+        if ((!finalBlob || finalBlob.size === 0) && pdfId) {
+            const fetchedBlob = await db.getPDFBlob(pdfId);
+            if (fetchedBlob) {
+                finalBlob = fetchedBlob;
+            } else {
+                handleShowInfo("Não foi possível carregar o arquivo PDF.");
+                return;
+            }
+        }
+
+        const url = URL.createObjectURL(finalBlob);
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
@@ -825,7 +850,7 @@ const App: React.FC = () => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-    }, []);
+    }, [handleShowInfo]);
 
     const totals = useMemo(() => {
         const result = measurements.reduce((acc, m) => {
@@ -888,28 +913,34 @@ const App: React.FC = () => {
     }, [measurements, films, generalDiscount]);
 
     const executePdfGeneration = useCallback(async () => {
-        const activeMeasurements = measurements.filter(m => m.active && parseFloat(String(m.largura).replace(',', '.')) > 0 && parseFloat(String(m.altura).replace(',', '.')) > 0);
-        if (activeMeasurements.length === 0) {
-            handleShowInfo("Não há medidas válidas para gerar um orçamento.");
-            return;
-        }
-
         setPdfGenerationStatus('generating');
         try {
-            // Passando o nome da opção de proposta para o gerador de PDF
+            const activeMeasurements = measurements.filter(m => m.active && parseFloat(String(m.largura).replace(',', '.')) > 0 && parseFloat(String(m.altura).replace(',', '.')) > 0);
+            if (activeMeasurements.length === 0) {
+                handleShowInfo("Não há medidas válidas para gerar um orçamento.");
+                setPdfGenerationStatus('idle');
+                return;
+            }
+
+            // 1. Gerar o PDF (Rápido)
             const pdfBlob = await generatePDF(selectedClient!, userInfo!, activeMeasurements, films, generalDiscount, totals, activeOption!.name);
             const filename = `orcamento_${selectedClient!.nome.replace(/\s+/g, '_').toLowerCase()}_${activeOption!.name.replace(/\s+/g, '_').toLowerCase()}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
+
+            // 2. Disponibilizar para o usuário IMEDIATAMENTE
+            downloadBlob(pdfBlob, filename);
+            setPdfGenerationStatus('success');
+
+            // 3. Salvar no banco de dados em segundo plano
+            const validityDays = userInfo!.proposalValidityDays || 60;
+            const issueDate = new Date();
+            const expirationDate = new Date();
+            expirationDate.setDate(issueDate.getDate() + validityDays);
 
             const generalDiscountForDb: SavedPDF['generalDiscount'] = {
                 ...generalDiscount,
                 value: parseFloat(String(generalDiscount.value).replace(',', '.')) || 0,
                 type: generalDiscount.value ? generalDiscount.type : 'none',
             };
-
-            const validityDays = userInfo!.proposalValidityDays || 60;
-            const issueDate = new Date();
-            const expirationDate = new Date();
-            expirationDate.setDate(issueDate.getDate() + validityDays);
 
             const pdfToSave: Omit<SavedPDF, 'id'> = {
                 clienteId: selectedClientId!,
@@ -927,18 +958,19 @@ const App: React.FC = () => {
                 proposalOptionName: activeOption!.name,
                 proposalOptionId: activeOption!.id
             };
-            await db.savePDF(pdfToSave);
 
-            downloadBlob(pdfBlob, filename);
+            // Executa o salvamento sem dar await no sucesso da UI
+            db.savePDF(pdfToSave).then(() => {
+                if (hasLoadedHistory) {
+                    loadAllPdfs();
+                }
+            }).catch(err => {
+                console.error("Erro ao salvar cópia no histórico:", err);
+            });
 
-            setPdfGenerationStatus('success');
-
-            if (hasLoadedHistory) {
-                await loadAllPdfs();
-            }
         } catch (error) {
-            console.error("Erro ao gerar ou salvar PDF:", error);
-            handleShowInfo("Ocorreu um erro ao gerar o PDF. Verifique o console para mais detalhes.");
+            console.error("Erro ao gerar PDF:", error);
+            handleShowInfo("Ocorreu um erro ao gerar o PDF.");
             setPdfGenerationStatus('idle');
         }
     }, [measurements, films, generalDiscount, totals, selectedClient, userInfo, activeOption, selectedClientId, downloadBlob, hasLoadedHistory, loadAllPdfs, handleShowInfo]);
@@ -969,12 +1001,20 @@ const App: React.FC = () => {
             const client = clients.find(c => c.id === selectedPdfs[0].clienteId);
             if (!client) throw new Error("Cliente não encontrado para os orçamentos selecionados.");
 
-            const pdfBlob = await generateCombinedPDF(client, userInfo, selectedPdfs, films);
+            // Buscar os blobs de todos os PDFs selecionados, pois podem não estar carregados
+            const pdfsWithBlobs = await Promise.all(selectedPdfs.map(async (pdf) => {
+                if (pdf.pdfBlob && pdf.pdfBlob.size > 0) return pdf;
+
+                const blob = await db.getPDFBlob(pdf.id!);
+                return { ...pdf, pdfBlob: blob || new Blob() };
+            }));
+
+            const pdfBlob = await generateCombinedPDF(client, userInfo, pdfsWithBlobs, films);
 
             const firstOptionName = selectedPdfs[0].proposalOptionName || 'Opcao';
             const filename = `orcamento_combinado_${client.nome.replace(/\s+/g, '_').toLowerCase()}_${firstOptionName.replace(/\s+/g, '_').toLowerCase()}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
 
-            downloadBlob(pdfBlob, filename);
+            await downloadBlob(pdfBlob, filename);
 
             setPdfGenerationStatus('success');
         } catch (error) {
@@ -982,7 +1022,7 @@ const App: React.FC = () => {
             handleShowInfo(`Ocorreu um erro ao gerar o PDF combinado: ${error instanceof Error ? error.message : String(error)} `);
             setPdfGenerationStatus('idle');
         }
-    }, [userInfo, clients, films, downloadBlob]);
+    }, [userInfo, clients, films, downloadBlob, handleShowInfo]);
 
     const handleGoToHistoryFromPdf = useCallback(() => {
         setPdfGenerationStatus('idle');
@@ -2107,21 +2147,13 @@ const App: React.FC = () => {
     }, []);
 
     const handleOpenAIClientModal = useCallback(() => {
-        if (hasModule('ia_ocr')) {
-            setIsClientModalOpen(false);
-            setIsAIClientModalOpen(true);
-        } else {
-            setShowIaUpgradeModal(true);
-        }
-    }, [hasModule]);
+        setIsClientModalOpen(false);
+        setIsAIClientModalOpen(true);
+    }, []);
 
     const handleOpenAIFilmModal = useCallback(() => {
-        if (hasModule('ia_ocr')) {
-            setIsAIFilmModalOpen(true);
-        } else {
-            setShowIaUpgradeModal(true);
-        }
-    }, [hasModule]);
+        setIsAIFilmModalOpen(true);
+    }, []);
 
     const handleProcessAIMeasurementInput = useCallback(async (
         input: { type: 'text' | 'image' | 'audio'; data: string | File[] | Blob }
@@ -2300,7 +2332,21 @@ Se não conseguir extrair, retorne: []`;
         }
 
         if (activeTab === 'admin') {
-            return <AdminUsers />;
+            return (
+                <div className="space-y-8">
+                    <AdminUsers />
+                    <FeatureGate moduleId="corte_inteligente">
+                        <Suspense fallback={<LoadingSpinner />}>
+                            <CuttingOptimizationPanel
+                                measurements={measurements}
+                                clientId={selectedClientId}
+                                optionId={activeOptionId}
+                                films={films}
+                            />
+                        </Suspense>
+                    </FeatureGate>
+                </div>
+            );
         }
 
         if (activeTab === 'account') {
@@ -2396,28 +2442,40 @@ Se não conseguir extrair, retorne: []`;
 
         if (selectedClientId && measurements.length > 0) {
             return (
-                <MeasurementList
-                    measurements={measurements}
-                    films={films}
-                    clientId={selectedClientId}
-                    optionId={activeOptionId}
-                    onMeasurementsChange={handleMeasurementsChange}
-                    onOpenFilmModal={handleOpenFilmModal}
-                    onOpenFilmSelectionModal={handleOpenFilmSelectionModal}
-                    onOpenClearAllModal={() => setIsClearAllModalOpen(true)}
-                    onOpenApplyFilmToAllModal={() => setIsApplyFilmToAllModalOpen(true)}
-                    numpadConfig={numpadConfig}
-                    onOpenNumpad={handleOpenNumpad}
-                    activeMeasurementId={numpadConfig.measurementId}
-                    onOpenEditModal={handleOpenEditMeasurementModal}
-                    onOpenDiscountModal={handleOpenDiscountModal}
-                    swipeDirection={swipeDirection}
-                    swipeDistance={swipeDistance}
-                    onDeleteMeasurement={handleDeleteMeasurementFromGroup}
-                    onDeleteMeasurementImmediate={handleImmediateDeleteMeasurement}
-                    totalM2={totals.totalM2}
-                    totalQuantity={totals.totalQuantity}
-                />
+                <>
+                    <MeasurementList
+                        measurements={measurements}
+                        films={films}
+                        clientId={selectedClientId}
+                        optionId={activeOptionId}
+                        onMeasurementsChange={handleMeasurementsChange}
+                        onOpenFilmModal={handleOpenFilmModal}
+                        onOpenFilmSelectionModal={handleOpenFilmSelectionModal}
+                        onOpenClearAllModal={() => setIsClearAllModalOpen(true)}
+                        onOpenApplyFilmToAllModal={() => setIsApplyFilmToAllModalOpen(true)}
+                        numpadConfig={numpadConfig}
+                        onOpenNumpad={handleOpenNumpad}
+                        activeMeasurementId={numpadConfig.measurementId}
+                        onOpenEditModal={handleOpenEditMeasurementModal}
+                        onOpenDiscountModal={handleOpenDiscountModal}
+                        swipeDirection={swipeDirection}
+                        swipeDistance={swipeDistance}
+                        onDeleteMeasurement={handleDeleteMeasurementFromGroup}
+                        onDeleteMeasurementImmediate={handleImmediateDeleteMeasurement}
+                        totalM2={totals.totalM2}
+                        totalQuantity={totals.totalQuantity}
+                    />
+                    <FeatureGate moduleId="corte_inteligente">
+                        <Suspense fallback={<LoadingSpinner />}>
+                            <CuttingOptimizationPanel
+                                measurements={measurements}
+                                clientId={selectedClientId}
+                                optionId={activeOptionId}
+                                films={films}
+                            />
+                        </Suspense>
+                    </FeatureGate>
+                </>
             );
         }
         if (selectedClientId && measurements.length === 0) {
@@ -2697,13 +2755,7 @@ Se não conseguir extrair, retorne: []`;
                                             onDuplicateMeasurements={duplicateAllMeasurements}
                                             onGeneratePdf={handleGeneratePdf}
                                             isGeneratingPdf={pdfGenerationStatus === 'generating'}
-                                            onOpenAIModal={() => {
-                                                if (hasModule('ia_ocr')) {
-                                                    setIsAIMeasurementModalOpen(true);
-                                                } else {
-                                                    setShowIaUpgradeModal(true);
-                                                }
-                                            }}
+                                            onOpenAIModal={() => setIsAIMeasurementModalOpen(true)}
                                         />
                                     </div>
                                     <MobileFooter
@@ -2715,13 +2767,7 @@ Se não conseguir extrair, retorne: []`;
                                         onDuplicateMeasurements={duplicateAllMeasurements}
                                         onGeneratePdf={handleGeneratePdf}
                                         isGeneratingPdf={pdfGenerationStatus === 'generating'}
-                                        onOpenAIModal={() => {
-                                            if (hasModule('ia_ocr')) {
-                                                setIsAIMeasurementModalOpen(true);
-                                            } else {
-                                                setShowIaUpgradeModal(true);
-                                            }
-                                        }}
+                                        onOpenAIModal={() => setIsAIMeasurementModalOpen(true)}
                                     />
                                 </>
                             )}
@@ -2821,26 +2867,7 @@ Se não conseguir extrair, retorne: []`;
                 </div>
             )}
 
-            {/* Modal de Upgrade - IA/OCR */}
-            {showIaUpgradeModal && (
-                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-                    <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                        <UpgradePrompt
-                            module={modules.find(m => m.id === 'ia_ocr')}
-                            onUpgradeClick={() => {
-                                setShowIaUpgradeModal(false);
-                                setActiveTab('account');
-                            }}
-                        />
-                        <button
-                            onClick={() => setShowIaUpgradeModal(false)}
-                            className="w-full mt-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                        >
-                            Fechar
-                        </button>
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 };

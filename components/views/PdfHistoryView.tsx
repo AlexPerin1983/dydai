@@ -6,7 +6,7 @@ interface PdfHistoryViewProps {
     clients: Client[];
     agendamentos: Agendamento[];
     onDelete: (pdfId: number) => void;
-    onDownload: (blob: Blob, filename: string) => void;
+    onDownload: (blob: Blob, filename: string, pdfId?: number) => void;
     onUpdateStatus: (pdfId: number, status: SavedPDF['status']) => void;
     onSchedule: (info: { pdf: SavedPDF; agendamento?: Agendamento } | { agendamento: Agendamento; pdf?: SavedPDF }) => void;
     onGenerateCombinedPdf: (pdfs: SavedPDF[]) => void;
@@ -24,7 +24,7 @@ const PdfHistoryItem: React.FC<{
     pdf: SavedPDF;
     clientName: string;
     agendamento: Agendamento | undefined;
-    onDownload: (blob: Blob, filename: string) => void;
+    onDownload: (blob: Blob, filename: string, pdfId?: number) => void;
     onDelete: (id: number) => void;
     onUpdateStatus: (id: number, status: SavedPDF['status']) => void;
     onSchedule: (info: { pdf: SavedPDF; agendamento?: Agendamento } | { agendamento: Agendamento; pdf?: SavedPDF }) => void;
@@ -219,7 +219,7 @@ const PdfHistoryItem: React.FC<{
                         </div>
                         <div className="flex items-center space-x-1 text-slate-500 flex-shrink-0">
                             <button
-                                onClick={(e) => { e.stopPropagation(); onDownload(pdf.pdfBlob, pdf.nomeArquivo); }}
+                                onClick={(e) => { e.stopPropagation(); onDownload(pdf.pdfBlob, pdf.nomeArquivo, pdf.id); }}
                                 className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-white transition-colors"
                                 aria-label="Baixar PDF"
                             >

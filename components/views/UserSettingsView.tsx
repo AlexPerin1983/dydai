@@ -98,14 +98,45 @@ const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, o
         }));
     };
 
+    const resizeImage = (base64Str: string, maxWidth = 800, maxHeight = 800): Promise<string> => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = base64Str;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width *= maxHeight / height;
+                        height = maxHeight;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7)); // Salva como JPEG com 70% de qualidade para reduzir o peso
+            };
+        });
+    };
+
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onloadend = () => {
+            reader.onloadend = async () => {
                 const base64String = reader.result as string;
-                setFormData(prev => ({ ...prev, logo: base64String }));
-                setLogoPreview(base64String);
+                const resizedBase64 = await resizeImage(base64String);
+                setFormData(prev => ({ ...prev, logo: resizedBase64 }));
+                setLogoPreview(resizedBase64);
             };
             reader.readAsDataURL(file);
         }
@@ -119,12 +150,18 @@ const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, o
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
-        await (onSave(formData) || Promise.resolve());
-        setIsSaving(false);
-        setShowSuccess(true);
-        setTimeout(() => {
-            setShowSuccess(false);
-        }, 3000);
+        try {
+            await (onSave(formData) || Promise.resolve());
+            setShowSuccess(true);
+            setTimeout(() => {
+                setShowSuccess(false);
+            }, 3000);
+        } catch (error: any) {
+            console.error("Erro ao salvar configurações:", error);
+            alert(error.message || "Ocorreu um erro ao salvar as configurações. Verifique sua conexão ou tente fazer login novamente.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleWorkingDayChange = (dayIndex: number, checked: boolean) => {
@@ -472,7 +509,6 @@ const UserSettingsView: React.FC<UserSettingsViewProps> = ({ userInfo, onSave, o
                 )}
             </div>
 
-            {/* Bloco PWA Removido */}
             <div className={sectionClass}>
                 <h3 className={sectionTitleClass}>Política de Privacidade</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">

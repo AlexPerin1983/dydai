@@ -6,6 +6,9 @@ import { mockUserInfo } from './mockData';
 
 // Helper para obter o user_id atual
 const getCurrentUserId = async (): Promise<string | null> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) return session.user.id;
+
     const { data: { user } } = await supabase.auth.getUser();
     return user?.id || null;
 };
@@ -18,11 +21,9 @@ export const getAllClients = async (): Promise<Client[]> => {
     const userId = await getCurrentUserId();
     if (!userId) return [];
 
-    // RLS controla acesso por organização - não filtrar por user_id
     const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .order('pinned', { ascending: false, nullsFirst: false })
         .order('nome', { ascending: true });
 
     if (error) {
@@ -30,7 +31,6 @@ export const getAllClients = async (): Promise<Client[]> => {
         return [];
     }
 
-    // Mapeia os campos do Supabase para o formato do Client
     return (data || []).map(row => ({
         id: row.id,
         nome: row.nome || '',
@@ -73,19 +73,16 @@ export const saveClient = async (client: Omit<Client, 'id'> | Client): Promise<C
     };
 
     if ('id' in client && client.id) {
-        // Update existing client
         const { data, error } = await supabase
             .from('clients')
             .update(clientData)
             .eq('id', client.id)
-            .eq('user_id', userId)
             .select()
             .single();
 
         if (error) throw error;
         return mapRowToClient(data);
     } else {
-        // Insert new client
         const { data, error } = await supabase
             .from('clients')
             .insert(clientData)
@@ -104,8 +101,7 @@ export const deleteClient = async (id: number): Promise<void> => {
     const { error } = await supabase
         .from('clients')
         .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
+        .eq('id', id);
 
     if (error) throw error;
 };
@@ -133,10 +129,6 @@ const mapRowToClient = (row: any): Client => ({
 // ============================================
 
 export const getProposalOptions = async (clientId: number): Promise<ProposalOption[]> => {
-    const userId = await getCurrentUserId();
-    if (!userId) return [];
-
-    // RLS controla acesso por organização
     const { data, error } = await supabase
         .from('proposal_options')
         .select('*')
@@ -159,27 +151,14 @@ export const saveProposalOptions = async (clientId: number, options: ProposalOpt
     const userId = await getCurrentUserId();
     if (!userId) throw new Error('User not authenticated');
 
-    // Buscar organization_id do usuário para manter consistência
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', userId)
-        .single();
-
-    const orgId = profile?.organization_id;
-
-    // Delete existing options for this client (RLS controla acesso por organização)
-    // Não filtramos por user_id para permitir colaboradores editar dados do owner
     await supabase
         .from('proposal_options')
         .delete()
         .eq('client_id', clientId);
 
-    // Insert new options
     if (options.length > 0) {
         const optionsData = options.map(opt => ({
-            user_id: userId,  // Quem está salvando
-            organization_id: orgId,  // Organização para RLS
+            user_id: userId,
             client_id: clientId,
             name: opt.name,
             measurements: opt.measurements,
@@ -193,7 +172,6 @@ export const saveProposalOptions = async (clientId: number, options: ProposalOpt
         if (error) throw error;
     }
 
-    // Update client's lastUpdated timestamp (sem filtro de user_id)
     await supabase
         .from('clients')
         .update({ last_updated: new Date().toISOString() })
@@ -201,14 +179,10 @@ export const saveProposalOptions = async (clientId: number, options: ProposalOpt
 };
 
 export const deleteProposalOptions = async (clientId: number): Promise<void> => {
-    const userId = await getCurrentUserId();
-    if (!userId) throw new Error('User not authenticated');
-
     const { error } = await supabase
         .from('proposal_options')
         .delete()
-        .eq('client_id', clientId)
-        .eq('user_id', userId);
+        .eq('client_id', clientId);
 
     if (error) throw error;
 };
@@ -221,51 +195,16 @@ export const getUserInfo = async (): Promise<UserInfo> => {
     const userId = await getCurrentUserId();
     if (!userId) return mockUserInfo;
 
-    // Primeiro, buscar o organization_id do usuário atual  
-    const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', userId)
-        .single();
-
-    console.log('[getUserInfo] userId:', userId);
-    console.log('[getUserInfo] profile:', profile, 'error:', profileError);
-
-    let targetUserId = userId;
-
-    // Se tem organização, buscar o user_info do owner da organização
-    if (profile?.organization_id) {
-        console.log('[getUserInfo] organization_id encontrado:', profile.organization_id);
-        const { data: org, error: orgError } = await supabase
-            .from('organizations')
-            .select('owner_id')
-            .eq('id', profile.organization_id)
-            .single();
-
-        console.log('[getUserInfo] org:', org, 'error:', orgError);
-
-        if (org?.owner_id) {
-            targetUserId = org.owner_id;
-            console.log('[getUserInfo] Usando owner_id:', targetUserId);
-        }
-    } else {
-        console.log('[getUserInfo] SEM organization_id, usando userId próprio');
-    }
-
-    // Buscar user_info do owner (ou do próprio usuário se for owner)
     const { data, error } = await supabase
         .from('user_info')
         .select('*')
-        .eq('user_id', targetUserId)
+        .eq('user_id', userId)
         .single();
 
-    if (error || !data) {
-        // Return mock data if no user info exists
-        return mockUserInfo;
-    }
+    if (error || !data) return mockUserInfo;
 
-    const userInfo: UserInfo = {
-        id: 'info',
+    return {
+        ...mockUserInfo,
         nome: data.nome || mockUserInfo.nome,
         empresa: data.empresa || mockUserInfo.empresa,
         telefone: data.telefone || mockUserInfo.telefone,
@@ -284,13 +223,11 @@ export const getUserInfo = async (): Promise<UserInfo> => {
         aiConfig: data.ai_config || mockUserInfo.aiConfig,
         lastSelectedClientId: data.last_selected_client_id
     };
-
-    return { ...mockUserInfo, ...userInfo };
 };
 
 export const saveUserInfo = async (userInfo: UserInfo): Promise<UserInfo> => {
     const userId = await getCurrentUserId();
-    if (!userId) throw new Error('User not authenticated');
+    if (!userId) throw new Error('Usuário não autenticado. Por favor, faça login novamente.');
 
     const userInfoData = {
         user_id: userId,
@@ -313,13 +250,14 @@ export const saveUserInfo = async (userInfo: UserInfo): Promise<UserInfo> => {
         last_selected_client_id: userInfo.lastSelectedClientId
     };
 
-    const { data, error } = await supabase
+    const { error } = await supabase
         .from('user_info')
-        .upsert(userInfoData, { onConflict: 'user_id' })
-        .select()
-        .single();
+        .upsert(userInfoData, { onConflict: 'user_id' });
 
-    if (error) throw error;
+    if (error) {
+        console.error('Erro ao salvar informações do usuário:', error);
+        throw error;
+    }
     return userInfo;
 };
 
@@ -328,10 +266,6 @@ export const saveUserInfo = async (userInfo: UserInfo): Promise<UserInfo> => {
 // ============================================
 
 export const getAllCustomFilms = async (): Promise<Film[]> => {
-    const userId = await getCurrentUserId();
-    if (!userId) return [];
-
-    // RLS controla acesso por organização
     const { data, error } = await supabase
         .from('films')
         .select('*')
@@ -385,11 +319,9 @@ export const saveCustomFilm = async (film: Film): Promise<Film> => {
         custom_fields: film.customFields
     };
 
-    const { data, error } = await supabase
+    const { error } = await supabase
         .from('films')
-        .upsert(filmData, { onConflict: 'user_id,nome' })
-        .select()
-        .single();
+        .upsert(filmData, { onConflict: 'user_id,nome' });
 
     if (error) throw error;
     return film;
@@ -412,11 +344,51 @@ export const deleteCustomFilm = async (filmName: string): Promise<void> => {
 // SAVED PDF FUNCTIONS
 // ============================================
 
+const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+};
+
+const base64ToBlob = (base64: string): Blob => {
+    const parts = base64.split(',');
+    const mime = parts[0].match(/:(.*?);/)?.[1] || 'application/pdf';
+    const bstr = atob(parts[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+};
+
+const mapRowToPDF = (row: any): SavedPDF => ({
+    id: row.id,
+    clienteId: row.client_id,
+    clientName: row.client_name,
+    date: row.date,
+    expirationDate: row.expiration_date,
+    totalPreco: row.total_preco,
+    totalM2: row.total_m2,
+    subtotal: row.subtotal,
+    generalDiscountAmount: row.general_discount_amount,
+    generalDiscount: row.general_discount,
+    pdfBlob: row.pdf_blob ? base64ToBlob(row.pdf_blob) : new Blob(),
+    nomeArquivo: row.nome_arquivo,
+    measurements: row.measurements,
+    status: row.status,
+    agendamentoId: row.agendamento_id,
+    proposalOptionName: row.proposal_option_name,
+    proposalOptionId: row.proposal_option_id
+});
+
 export const savePDF = async (pdfData: Omit<SavedPDF, 'id'>): Promise<SavedPDF> => {
     const userId = await getCurrentUserId();
     if (!userId) throw new Error('User not authenticated');
 
-    // Convert Blob to base64
     const blobBase64 = await blobToBase64(pdfData.pdfBlob);
 
     const pdfRow = {
@@ -446,7 +418,7 @@ export const savePDF = async (pdfData: Omit<SavedPDF, 'id'>): Promise<SavedPDF> 
         .single();
 
     if (error) throw error;
-    return await mapRowToPDF(data);
+    return mapRowToPDF(data);
 };
 
 export const updatePDF = async (pdfData: SavedPDF): Promise<SavedPDF> => {
@@ -478,22 +450,17 @@ export const updatePDF = async (pdfData: SavedPDF): Promise<SavedPDF> => {
         .from('saved_pdfs')
         .update(pdfRow)
         .eq('id', pdfData.id)
-        .eq('user_id', userId)
         .select()
         .single();
 
     if (error) throw error;
-    return await mapRowToPDF(data);
+    return mapRowToPDF(data);
 };
 
 export const getAllPDFs = async (): Promise<SavedPDF[]> => {
-    const userId = await getCurrentUserId();
-    if (!userId) return [];
-
-    // RLS controla acesso por organização
     const { data, error } = await supabase
         .from('saved_pdfs')
-        .select('*')
+        .select('id, client_id, client_name, date, expiration_date, total_preco, total_m2, subtotal, general_discount_amount, general_discount, nome_arquivo, measurements, status, agendamento_id, proposal_option_name, proposal_option_id')
         .order('date', { ascending: false });
 
     if (error) {
@@ -501,18 +468,13 @@ export const getAllPDFs = async (): Promise<SavedPDF[]> => {
         return [];
     }
 
-    const pdfs = await Promise.all((data || []).map(row => mapRowToPDF(row)));
-    return pdfs;
+    return (data || []).map(row => mapRowToPDF(row));
 };
 
 export const getPDFsForClient = async (clientId: number): Promise<SavedPDF[]> => {
-    const userId = await getCurrentUserId();
-    if (!userId) return [];
-
-    // RLS controla acesso por organização
     const { data, error } = await supabase
         .from('saved_pdfs')
-        .select('*')
+        .select('id, client_id, client_name, date, expiration_date, total_preco, total_m2, subtotal, general_discount_amount, general_discount, nome_arquivo, measurements, status, agendamento_id, proposal_option_name, proposal_option_id')
         .eq('client_id', clientId)
         .order('date', { ascending: false });
 
@@ -521,20 +483,25 @@ export const getPDFsForClient = async (clientId: number): Promise<SavedPDF[]> =>
         return [];
     }
 
-    const pdfs = await Promise.all((data || []).map(row => mapRowToPDF(row)));
-    return pdfs;
+    return (data || []).map(row => mapRowToPDF(row));
+};
+
+export const getPDFBlob = async (id: number): Promise<Blob | null> => {
+    const { data, error } = await supabase
+        .from('saved_pdfs')
+        .select('pdf_blob')
+        .eq('id', id)
+        .single();
+
+    if (error || !data?.pdf_blob) return null;
+    return base64ToBlob(data.pdf_blob);
 };
 
 export const deletePDF = async (id: number): Promise<void> => {
-    const userId = await getCurrentUserId();
-    if (!userId) throw new Error('User not authenticated');
-
-    // First get the PDF to check for agendamento
     const { data: pdf } = await supabase
         .from('saved_pdfs')
         .select('agendamento_id')
         .eq('id', id)
-        .eq('user_id', userId)
         .single();
 
     if (pdf?.agendamento_id) {
@@ -544,63 +511,16 @@ export const deletePDF = async (id: number): Promise<void> => {
     const { error } = await supabase
         .from('saved_pdfs')
         .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
+        .eq('id', id);
 
     if (error) throw error;
 };
-
-// Helper functions for PDF blob handling
-const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
-};
-
-const base64ToBlob = (base64: string): Blob => {
-    const parts = base64.split(',');
-    const mime = parts[0].match(/:(.*?);/)?.[1] || 'application/pdf';
-    const bstr = atob(parts[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new Blob([u8arr], { type: mime });
-};
-
-const mapRowToPDF = async (row: any): Promise<SavedPDF> => ({
-    id: row.id,
-    clienteId: row.client_id,
-    clientName: row.client_name,
-    date: row.date,
-    expirationDate: row.expiration_date,
-    totalPreco: row.total_preco,
-    totalM2: row.total_m2,
-    subtotal: row.subtotal,
-    generalDiscountAmount: row.general_discount_amount,
-    generalDiscount: row.general_discount,
-    pdfBlob: base64ToBlob(row.pdf_blob),
-    nomeArquivo: row.nome_arquivo,
-    measurements: row.measurements,
-    status: row.status,
-    agendamentoId: row.agendamento_id,
-    proposalOptionName: row.proposal_option_name,
-    proposalOptionId: row.proposal_option_id
-});
 
 // ============================================
 // AGENDAMENTO FUNCTIONS
 // ============================================
 
 export const getAllAgendamentos = async (): Promise<Agendamento[]> => {
-    const userId = await getCurrentUserId();
-    if (!userId) return [];
-
-    // RLS controla acesso por organização
     const { data, error } = await supabase
         .from('agendamentos')
         .select('*')
@@ -641,7 +561,6 @@ export const saveAgendamento = async (agendamento: Agendamento | Omit<Agendament
             .from('agendamentos')
             .update(agendamentoData)
             .eq('id', agendamento.id)
-            .eq('user_id', userId)
             .select()
             .single();
 
@@ -660,23 +579,15 @@ export const saveAgendamento = async (agendamento: Agendamento | Omit<Agendament
 };
 
 export const deleteAgendamento = async (id: number): Promise<void> => {
-    const userId = await getCurrentUserId();
-    if (!userId) throw new Error('User not authenticated');
-
     const { error } = await supabase
         .from('agendamentos')
         .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
+        .eq('id', id);
 
     if (error) throw error;
 };
 
 export const getAgendamentoByPdfId = async (pdfId: number): Promise<Agendamento | undefined> => {
-    const userId = await getCurrentUserId();
-    if (!userId) return undefined;
-
-    // RLS controla acesso por organização
     const { data, error } = await supabase
         .from('agendamentos')
         .select('*')
@@ -698,15 +609,12 @@ const mapRowToAgendamento = (row: any): Agendamento => ({
 });
 
 // ============================================
-// MEASUREMENTS FUNCTIONS (deprecated - use proposal options)
+// MEASUREMENTS FUNCTIONS (deprecated)
 // ============================================
 
 export const getMeasurements = async (clientId: number): Promise<Measurement[] | null> => {
     const options = await getProposalOptions(clientId);
-    if (options.length > 0) {
-        return options[0].measurements;
-    }
-    return null;
+    return options.length > 0 ? options[0].measurements : null;
 };
 
 export const saveMeasurements = async (clientId: number, medidas: Measurement[]): Promise<void> => {
@@ -728,12 +636,6 @@ export const deleteMeasurements = async (clientId: number): Promise<void> => {
     await deleteProposalOptions(clientId);
 };
 
-// ============================================
-// MIGRATION FUNCTION
-// ============================================
-
 export const migratePDFsWithProposalOptionId = async (): Promise<{ updated: number; skipped: number; errors: number }> => {
-    // This migration is now handled differently in Supabase
-    // Returning default values for compatibility
     return { updated: 0, skipped: 0, errors: 0 };
 };

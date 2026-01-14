@@ -32,6 +32,7 @@ export {
     updatePDF,
     getAllPDFs,
     getPDFsForClient,
+    getPDFBlob,
     deletePDF,
 
     // Agendamento functions

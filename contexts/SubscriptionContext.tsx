@@ -132,9 +132,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
         switch (resource) {
             case 'clients':
-                return currentCount >= limits.max_clients;
             case 'films':
-                return currentCount >= limits.max_films;
+                return false; // Ilimitado para todos
             case 'pdfs':
                 return usage.pdfs_generated >= limits.max_pdfs_month;
             case 'agendamentos':
@@ -155,9 +154,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
         switch (resource) {
             case 'clients':
-                return Math.max(0, limits.max_clients - currentCount);
             case 'films':
-                return Math.max(0, limits.max_films - currentCount);
+                return -1; // Infinito para todos
             case 'pdfs':
                 return Math.max(0, limits.max_pdfs_month - usage.pdfs_generated);
             case 'agendamentos':
@@ -171,8 +169,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     const canUseEstoque = hasModule('estoque');
     const canUseQrServicos = hasModule('qr_servicos');
     const canUseColaboradores = hasModule('colaboradores');
-    const canUseIA = hasModule('ia_ocr');
-    const canCustomize = hasModule('personalizacao');
+    const canUseIA = true; // Liberado para todos
+    const canCustomize = true; // Liberado para todos
     const canAddLocais = hasModule('locais_global');
     const canUseCorteInteligente = hasModule('corte_inteligente');
     const isUnlimited = hasModule('ilimitado');

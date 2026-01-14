@@ -57,31 +57,13 @@ export function SubscriptionPage({ onBack, userInfo }: SubscriptionPageProps) {
     const adminPixKey = userInfo?.payment_methods?.find(p => p.tipo === 'pix')?.chave_pix || 'contato@peliculasbr.com';
 
     const handleActivateClick = (module: SubscriptionModule) => {
-        setSelectedModule(module);
-        setIsModalOpen(true);
+        const message = module.id === 'ilimitado'
+            ? 'Olá, quero ativar o Pacote Completo'
+            : `Olá, quero ativar o módulo ${module.name}`;
+        window.open(`https://wa.me/5583996476052?text=${encodeURIComponent(message)}`, '_blank');
     };
 
-    const handleConfirmActivation = async (billingCycle: 'monthly' | 'yearly') => {
-        if (!selectedModule) return;
 
-        setIsSubmitting(true);
-        try {
-            const result = await requestModuleActivation(selectedModule.id, billingCycle);
-
-            if (result.success) {
-                setSuccessMessage(`Solicitação enviada! Assim que confirmarmos seu pagamento, o módulo "${selectedModule.name}" será ativado.`);
-                setIsModalOpen(false);
-                await refresh();
-            } else {
-                alert(`Erro: ${result.error}`);
-            }
-        } catch (error) {
-            console.error('Erro ao solicitar ativação:', error);
-            alert('Erro ao processar solicitação. Tente novamente.');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
 
     // Mapear quais módulos estão ativos
     const activeModulesSet = new Set(info?.active_modules || []);
@@ -145,8 +127,8 @@ export function SubscriptionPage({ onBack, userInfo }: SubscriptionPageProps) {
                 <div className="bg-gradient-to-br from-gray-800/80 to-gray-900 border border-gray-700 rounded-xl p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeModulesSet.size > 0
-                                ? 'bg-gradient-to-br from-amber-500/30 to-yellow-500/30 text-amber-400'
-                                : 'bg-gray-700 text-gray-400'
+                            ? 'bg-gradient-to-br from-amber-500/30 to-yellow-500/30 text-amber-400'
+                            : 'bg-gray-700 text-gray-400'
                             }`}>
                             {activeModulesSet.size > 0 ? <Star className="w-5 h-5" /> : <Package className="w-5 h-5" />}
                         </div>
@@ -294,19 +276,7 @@ export function SubscriptionPage({ onBack, userInfo }: SubscriptionPageProps) {
                 </p>
             </div>
 
-            {/* Modal de Ativação */}
-            {selectedModule && (
-                <ActivateModuleModal
-                    isOpen={isModalOpen}
-                    onClose={() => {
-                        setIsModalOpen(false);
-                        setSelectedModule(null);
-                    }}
-                    module={selectedModule}
-                    onConfirm={handleConfirmActivation}
-                    pixKey={adminPixKey}
-                />
-            )}
+
         </div>
     );
 }

@@ -11,7 +11,7 @@ export const UserAccount: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
-    const [showActivateModal, setShowActivateModal] = useState<string | null>(null);
+
 
     const handleUpdatePassword = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -131,7 +131,7 @@ export const UserAccount: React.FC = () => {
                                             <span className="px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full">
                                                 ⚡ OFERTA ESPECIAL
                                             </span>
-                                            <span className="text-indigo-200 text-sm line-through">R$ 203,00</span>
+                                            <span className="text-indigo-200 text-sm line-through">R$ 199,50</span>
                                         </div>
 
                                         <h4 className="text-xl font-bold mb-1">Pacote Completo</h4>
@@ -144,7 +144,7 @@ export const UserAccount: React.FC = () => {
                                             <span className="text-indigo-200">/6 meses</span>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
+                                        <div className="grid grid-cols-2 gap-y-2 gap-x-4 mb-6 text-sm">
                                             <div className="flex items-center gap-2">
                                                 <Check className="w-4 h-4 text-green-400" /> Estoque
                                             </div>
@@ -155,23 +155,22 @@ export const UserAccount: React.FC = () => {
                                                 <Check className="w-4 h-4 text-green-400" /> Corte Inteligente
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Check className="w-4 h-4 text-green-400" /> IA/OCR
-                                            </div>
-                                            <div className="flex items-center gap-2">
                                                 <Check className="w-4 h-4 text-green-400" /> Colaboradores
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Check className="w-4 h-4 text-green-400" /> Sem Limites
+                                                <Check className="w-4 h-4 text-green-400" /> Locais PRO
                                             </div>
                                         </div>
 
-                                        <button
-                                            onClick={() => setShowActivateModal('ilimitado')}
+                                        <a
+                                            href={`https://wa.me/5583996476052?text=${encodeURIComponent('Olá, quero ativar o Pacote Completo')}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
                                             className="w-full py-3 bg-white text-indigo-600 font-bold rounded-lg hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2"
                                         >
                                             <Zap className="w-5 h-5" />
                                             Quero o Pacote Completo
-                                        </button>
+                                        </a>
                                     </div>
                                 </div>
                             )}
@@ -179,63 +178,71 @@ export const UserAccount: React.FC = () => {
                             {/* Lista de Módulos */}
                             <div>
                                 <h4 className="text-sm font-medium text-slate-900 dark:text-white mb-4">
-                                    Módulos Disponíveis
+                                    Módulos Individuais
                                 </h4>
-                                <div className="space-y-3">
-                                    {modules.filter(m => m.id !== 'ilimitado').map(module => {
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {(modules.length > 0 ? modules.filter(m => m.id !== 'ilimitado') : [
+                                        { id: 'estoque', name: 'Estoque', description: 'Controle de bobinas e retalhos' },
+                                        { id: 'qr_servicos', name: 'QR Serviços', description: 'Selo de garantia via QR Code' },
+                                        { id: 'colaboradores', name: 'Colaboradores', description: 'Gestão de equipe e acessos' },
+                                        { id: 'locais_global', name: 'Locais PRO', description: 'Base de medidas inteligente' },
+                                        { id: 'corte_inteligente', name: 'Corte Inteligente', description: 'Otimizador de corte de película' }
+                                    ]).map(module => {
                                         const isActive = hasModule(module.id) || hasFullPackage;
                                         const expiryInfo = getModuleExpiry(module.id);
 
                                         return (
                                             <div
                                                 key={module.id}
-                                                className={`p-4 rounded-xl border transition-all ${isActive
+                                                className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${isActive
                                                     ? 'bg-green-500/5 border-green-500/30'
                                                     : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700'
                                                     }`}
                                             >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isActive
-                                                            ? 'bg-green-500/20 text-green-400'
-                                                            : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
-                                                            }`}>
-                                                            <Package className="w-5 h-5" />
-                                                        </div>
-                                                        <div>
-                                                            <h5 className="font-medium text-slate-900 dark:text-white">
-                                                                {module.name}
-                                                            </h5>
-                                                            {isActive ? (
-                                                                <div className="flex items-center gap-2 text-sm">
-                                                                    <span className="text-green-400 font-medium">✓ Ativo</span>
-                                                                    {expiryInfo && (
-                                                                        <span className="text-slate-400">
-                                                                            • {expiryInfo.daysLeft} dias restantes
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            ) : (
-                                                                <p className="text-sm text-slate-500">
-                                                                    {module.description}
-                                                                </p>
+                                                <div className="flex items-start gap-3 mb-4">
+                                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive
+                                                        ? 'bg-green-500/20 text-green-400'
+                                                        : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
+                                                        }`}>
+                                                        <Package className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <h5 className="font-bold text-slate-900 dark:text-white">
+                                                            {module.name}
+                                                        </h5>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                                                            {module.description}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                                                    {isActive ? (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-green-400 text-xs font-bold flex items-center gap-1">
+                                                                <Check className="w-3 h-3" /> ATIVO
+                                                            </span>
+                                                            {expiryInfo && (
+                                                                <span className="text-[10px] text-slate-500">
+                                                                    {expiryInfo.daysLeft} dias
+                                                                </span>
                                                             )}
                                                         </div>
-                                                    </div>
-
-                                                    {!isActive && (
-                                                        <div className="text-right">
-                                                            <div className="text-lg font-bold text-slate-900 dark:text-white">
-                                                                R$ 29
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-sm font-bold text-slate-900 dark:text-white">R$ 39,90</span>
+                                                                <span className="text-[10px] text-slate-500">6 meses</span>
                                                             </div>
-                                                            <div className="text-xs text-slate-500">/ 6 meses</div>
-                                                            <button
-                                                                onClick={() => setShowActivateModal(module.id)}
-                                                                className="mt-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
+                                                            <a
+                                                                href={`https://wa.me/5583996476052?text=${encodeURIComponent(`Olá, quero ativar o módulo ${module.name}`)}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors"
                                                             >
                                                                 Ativar
-                                                            </button>
-                                                        </div>
+                                                            </a>
+                                                        </>
                                                     )}
                                                 </div>
                                             </div>
@@ -319,59 +326,7 @@ export const UserAccount: React.FC = () => {
                 </div>
             </div>
 
-            {/* Modal de Ativação */}
-            {showActivateModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                            {showActivateModal === 'ilimitado' ? 'Ativar Pacote Completo' : 'Ativar Módulo'}
-                        </h3>
-                        <p className="text-slate-500 dark:text-slate-400 mb-6">
-                            Para ativar, faça o pagamento via PIX e aguarde a confirmação.
-                        </p>
 
-                        <div className="bg-slate-100 dark:bg-slate-900 rounded-xl p-4 mb-6">
-                            <div className="flex justify-between items-center mb-3">
-                                <span className="text-slate-600 dark:text-slate-400">Valor:</span>
-                                <span className="text-2xl font-bold text-slate-900 dark:text-white">
-                                    R$ {showActivateModal === 'ilimitado' ? '99,00' : '29,00'}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-slate-600 dark:text-slate-400">Validade:</span>
-                                <span className="font-medium text-green-500">6 meses</span>
-                            </div>
-                        </div>
-
-                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
-                            <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-2">
-                                💳 Pagamento via PIX
-                            </h4>
-                            <p className="text-sm text-blue-700 dark:text-blue-400 mb-3">
-                                Entre em contato para receber os dados do PIX:
-                            </p>
-                            <a
-                                href="https://wa.me/5583996476052"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-center gap-2 w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition-colors"
-                            >
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                                </svg>
-                                WhatsApp
-                            </a>
-                        </div>
-
-                        <button
-                            onClick={() => setShowActivateModal(null)}
-                            className="w-full py-3 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
-                        >
-                            Fechar
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

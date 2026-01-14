@@ -92,10 +92,13 @@ export async function getAvailableModules(): Promise<SubscriptionModule[]> {
         return [];
     }
 
-    return data.map(m => ({
-        ...m,
-        features: m.features || []
-    }));
+    // Filtrar módulos que agora são gratuitos
+    return data
+        .filter(m => m.id !== 'ia_ocr' && m.id !== 'personalizacao')
+        .map(m => ({
+            ...m,
+            features: m.features || []
+        }));
 }
 
 /**
@@ -172,9 +175,8 @@ export async function hasReachedLimit(resource: 'clients' | 'films' | 'pdfs' | '
 
     switch (resource) {
         case 'clients':
-            return currentCount >= info.limits.max_clients;
         case 'films':
-            return currentCount >= info.limits.max_films;
+            return false; // Ilimitado para todos
         case 'pdfs':
             return info.usage.pdfs_generated >= info.limits.max_pdfs_month;
         case 'agendamentos':
@@ -372,14 +374,14 @@ export async function checkPermissions(): Promise<{
     const isUnlimited = info.active_modules.includes('ilimitado');
 
     return {
-        canAddClient: isUnlimited || true, // Precisará verificar contagem real
-        canAddFilm: isUnlimited || true,
+        canAddClient: true,
+        canAddFilm: true,
         canGeneratePdf: isUnlimited || info.usage.pdfs_generated < info.limits.max_pdfs_month,
         canUseEstoque: info.active_modules.includes('estoque'),
         canUseQrServicos: info.active_modules.includes('qr_servicos'),
         canUseColaboradores: info.active_modules.includes('colaboradores'),
-        canUseIA: info.active_modules.includes('ia_ocr'),
-        canCustomize: info.active_modules.includes('personalizacao'),
+        canUseIA: true, // IA/OCR agora é gratuito para todos
+        canCustomize: true, // Personalização agora é gratuita para todos
         canAddLocais: info.active_modules.includes('locais_global'),
         limits: info.limits,
         usage: info.usage,

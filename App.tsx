@@ -1055,7 +1055,7 @@ const App: React.FC = () => {
         try {
             const genAI = new GoogleGenerativeAI(userInfo!.aiConfig!.apiKey);
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash-exp",
+                model: "gemini-2.0-flash",
             });
 
             const prompt = `
@@ -1291,7 +1291,7 @@ const App: React.FC = () => {
 
         try {
             const genAI = new GoogleGenerativeAI(userInfo.aiConfig.apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
             const prompt = `Você é um assistente especialista em extração de dados de películas automotivas (insulfilm). Sua tarefa é extrair o máximo de informações técnicas de películas a partir da entrada fornecida (texto ou imagem). Retorne APENAS um objeto JSON válido, sem markdown. Campos: nome, preco (apenas números), uv (%), ir (%), vtl (%), tser (%), espessura (micras), garantiaFabricante (anos), precoMetroLinear. Se algum campo não for encontrado, NÃO inclua no JSON.`;
 
@@ -1340,7 +1340,7 @@ const App: React.FC = () => {
         try {
             const genAI = new GoogleGenerativeAI(userInfo!.aiConfig!.apiKey);
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash-exp",
+                model: "gemini-2.0-flash",
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: {
@@ -2166,7 +2166,7 @@ const App: React.FC = () => {
         setIsProcessingAI(true);
         try {
             const genAI = new GoogleGenerativeAI(userInfo.aiConfig.apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
             const prompt = `Você é um assistente especialista em extração de medidas de janelas/vidros para instalação de películas.
 
